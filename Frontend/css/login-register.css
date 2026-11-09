@@ -1,0 +1,331 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background: #eaf1f3;
+}
+
+/* =================================================
+    MAIN CONTAINER
+================================================= */
+.auth {
+    position: relative;
+    width: min(920px, 100%);
+    height: 550px;
+    background: white;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 18px 55px rgba(0, 44, 53, .12);
+}
+
+/* =================================================
+    FORMS (CONTAINER & ANIMATIONS)
+================================================= */
+.forms {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 50%;
+    height: 100%;
+    transition: left .85s cubic-bezier(.68, -.1, .25, 1.1);
+}
+
+.auth.register-mode .forms {
+    left: 0;
+}
+
+.form {
+    position: absolute;
+    inset: 0;
+    padding: 55px 9%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: opacity .5s, transform .7s;
+}
+
+.form h1 {
+    text-align: center;
+    margin-bottom: 28px;
+    font-size: 30px;
+    color: #171717;
+}
+
+.form input {
+    width: 100%;
+    height: 43px;
+    padding: 0 15px;
+    margin-bottom: 15px;
+    border: none;
+    outline: none;
+    border-radius: 9px;
+    background: #f0f1f2;
+    font-size: 14px;
+}
+
+.form input:focus {
+    box-shadow: 0 0 0 2px #00c9d5;
+}
+
+.submit {
+    width: 100%;
+    height: 46px;
+    border: none;
+    border-radius: 30px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    background: linear-gradient(100deg, #003b48, #00d4df);
+    transition: .3s;
+}
+
+.submit:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+
+.login-form {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.register-form {
+    opacity: 0;
+    transform: translateX(35px);
+    pointer-events: none;
+}
+
+.auth.register-mode .login-form {
+    opacity: 0;
+    transform: translateX(-35px);
+    pointer-events: none;
+}
+
+.auth.register-mode .register-form {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+
+.forgot {
+    text-align: right;
+    font-size: 12px;
+    margin: -3px 0 16px;
+    color: #333;
+    cursor: pointer;
+}
+
+.social {
+    text-align: center;
+    margin-top: 22px;
+}
+
+.social p {
+    font-size: 12px;
+    margin-bottom: 13px;
+    color: #555;
+}
+
+.social-icons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.social-icons span {
+    width: 39px;
+    height: 39px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #ccc;
+    font-weight: bold;
+    cursor: pointer;
+    transition: .2s;
+    border-radius: 50%;
+}
+
+.social-icons span:hover {
+    background: #e7fbfc;
+    border-color: #00c9d5;
+}
+
+.message {
+    min-height: 20px;
+    text-align: center;
+    font-size: 12px;
+    margin-top: 10px;
+    color: #008d82;
+}
+
+/* =================================================
+    SWITCH PANEL & WELCOME TEXT
+================================================= */
+.switch-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    color: white;
+    background: linear-gradient(140deg, #003b48, #00d5df);
+    border-radius: 0 100px 100px 0;
+    z-index: 2;
+    overflow: hidden;
+    transition: left .85s cubic-bezier(.68, -.1, .25, 1.1), border-radius .85s;
+}
+
+.auth.register-mode .switch-panel {
+    left: 50%;
+    border-radius: 100px 0 0 100px;
+}
+
+.welcome {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 35px;
+    text-align: center;
+    transition: transform .85s cubic-bezier(.68, -.1, .25, 1.1), opacity .6s ease;
+    will-change: transform, opacity;
+}
+
+.welcome h2 {
+    font-size: 29px;
+    margin-bottom: 10px;
+}
+
+.welcome p {
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.welcome button {
+    min-width: 145px;
+    padding: 13px;
+    border: 1px solid white;
+    border-radius: 30px;
+    color: white;
+    background: transparent;
+    font-weight: bold;
+    cursor: pointer;
+    transition: .3s;
+}
+
+.welcome button:hover {
+    background: white;
+    color: #00545c;
+}
+
+
+.welcome-login {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.welcome-register {
+    opacity: 0;
+    transform: translateX(25%);
+    pointer-events: none;
+}
+
+.auth.register-mode .welcome-login {
+    opacity: 0;
+    transform: translateX(-25%);
+    pointer-events: none;
+}
+
+.auth.register-mode .welcome-register {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+/* =================================================
+    RESPONSIVE DESIGN: TABLET (601px - 1024px)
+================================================= */
+@media (min-width: 601px) and (max-width: 1024px) {
+    .auth {
+        height: 510px;
+    }
+
+    .form {
+        padding: 40px 7%;
+    }
+
+    .form h1 {
+        font-size: 26px;
+    }
+
+    .welcome h2 {
+        font-size: 23px;
+    }
+
+    .welcome p {
+        font-size: 13px;
+    }
+
+    .switch-panel {
+        border-radius: 0 75px 75px 0;
+    }
+
+    .auth.register-mode .switch-panel {
+        border-radius: 75px 0 0 75px;
+    }
+}
+
+/* =================================================
+    RESPONSIVE DESIGN: MOBILE (max-width: 600px)
+================================================= */
+
+@media (max-width: 600px) {
+
+    /* Căn giữa nội dung Welcome trong khung xanh trên Mobile */
+    .welcome {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: flex !important;
+        flex-direction: column;
+        justify-content: center; /* Căn giữa chiều dọc */
+        align-items: center;    /* Căn giữa chiều ngang */
+        padding: 20px;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    /* Căn giữa tiêu đề Login/Register và Form trên Mobile */
+    .form {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .form h1 {
+        width: 100%;
+        text-align: center;
+    }
+
+    .forgot {
+        width: 100%;
+        text-align: center;
+    }
+}

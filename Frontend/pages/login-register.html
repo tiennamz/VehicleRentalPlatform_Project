@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Register</title>
+
+    <link rel="stylesheet" href="../css/login-register.css">
+</head>
+
+<body>
+
+    <div class="auth" id="auth">
+
+        <div class="forms">
+
+            <!-- LOGIN FORM -->
+            <form class="form login-form" id="loginForm">
+
+                <h1>Login</h1>
+
+                <input type="text" placeholder="Username" required>
+
+                <input type="password" placeholder="Password" required>
+
+                <div class="forgot" onclick="alert('Demo: Forgot Password')">
+                    Forgot Password?
+                </div>
+
+                <button class="submit" type="submit">
+                    Login
+                </button>
+
+                <div class="social">
+                    <p>or login with social platforms</p>
+
+                    <div class="social-icons">
+                        <span>G</span>
+                        <span>f</span>
+                        <span>◉</span>
+                        <span>in</span>
+                    </div>
+                </div>
+                <div class="message" id="loginMessage"></div>
+
+            </form>
+
+
+            <!-- REGISTER FORM -->
+            <form class="form register-form" id="registerForm">
+
+                <h1>Registration</h1>
+
+                <input type="text" placeholder="Username" required>
+
+                <input type="email" placeholder="Email" required>
+
+                <input type="password" placeholder="Password" minlength="6" required>
+
+                <input type="password" placeholder="Confirm Password" minlength="6" required>
+
+                <button class="submit" type="submit">
+                    Register
+                </button>
+
+                <div class="social">
+                    <p>or register with social platforms</p>
+
+                    <div class="social-icons">
+                        <span>G</span>
+                        <span>f</span>
+                        <span>◉</span>
+                        <span>in</span>
+                    </div>
+                </div>
+
+                <div class="message" id="registerMessage"></div>
+
+            </form>
+
+        </div>
+
+
+        <!-- SWITCH PANEL -->
+        <div class="switch-panel">
+
+            <div class="welcome welcome-login">
+
+                <h2>Hello, Welcome!</h2>
+
+                <p>Don't have an Account?</p>
+
+                <button type="button" onclick="switchMode()">
+                    Register
+                </button>
+ 
+            </div>
+
+
+            <div class="welcome welcome-register">
+
+                <h2>Welcome Back!</h2>
+
+                <p>Already have an Account?</p>
+
+                <button type="button" onclick="switchMode()">
+                    Login
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+    <script src="../js/login-register.js"></script>
+</body>
+
+</html>
