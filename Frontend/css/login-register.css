@@ -295,7 +295,6 @@ body {
 
 @media (max-width: 600px) {
 
-    /* Căn giữa nội dung Welcome trong khung xanh trên Mobile */
     .welcome {
         position: absolute;
         inset: 0;
@@ -303,14 +302,13 @@ body {
         height: 100%;
         display: flex !important;
         flex-direction: column;
-        justify-content: center; /* Căn giữa chiều dọc */
-        align-items: center;    /* Căn giữa chiều ngang */
+        justify-content: center; 
+        align-items: center;   
         padding: 20px;
         text-align: center;
         box-sizing: border-box;
     }
 
-    /* Căn giữa tiêu đề Login/Register và Form trên Mobile */
     .form {
         display: flex;
         flex-direction: column;
