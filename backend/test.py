@@ -1,22 +1,21 @@
 
-import pytest
-from app.main import app
 from fastapi.testclient import TestClient
+from app.main import app
 
 client = TestClient(app)
 
 
 # ==========================================
-# FR-01: TEST ĐĂNG KÝ TÀI KHOẢN
+# FR-01: TEST ĐĂNG KÝ
 # ==========================================
 
 def test_register_success():
-    """Đăng ký tài khoản với số điện thoại hợp lệ."""
+    """Đăng ký thành công với email và password hợp lệ."""
 
     response = client.post(
         "/auth/register",
         json={
-            "phone": "0912345678",
+            "email": "test@example.com",
             "password": "Password123"
         }
     )
@@ -24,11 +23,11 @@ def test_register_success():
     assert response.status_code == 201
 
 
-def test_register_duplicate_phone():
-    """Không cho phép đăng ký số điện thoại đã tồn tại."""
+def test_register_duplicate_email():
+    """Không cho phép đăng ký email đã tồn tại."""
 
     payload = {
-        "phone": "0912345678",
+        "email": "test@example.com",
         "password": "Password123"
     }
 
@@ -39,13 +38,13 @@ def test_register_duplicate_phone():
     assert response.status_code == 409
 
 
-def test_register_invalid_phone():
-    """Không chấp nhận số điện thoại sai định dạng."""
+def test_register_invalid_email():
+    """Không chấp nhận email sai định dạng."""
 
     response = client.post(
         "/auth/register",
         json={
-            "phone": "123",
+            "email": "invalid-email",
             "password": "Password123"
         }
     )
@@ -53,37 +52,17 @@ def test_register_invalid_phone():
     assert response.status_code == 422
 
 
-# ==========================================
-# FR-01: TEST XÁC THỰC OTP
-# ==========================================
+def test_register_missing_password():
+    """Không cho phép đăng ký khi thiếu password."""
 
-def test_verify_otp_success():
-    """Xác thực OTP chính xác."""
-
-    # Giả sử tài khoản đã đăng ký và OTP đã được gửi.
     response = client.post(
-        "/auth/verify-otp",
+        "/auth/register",
         json={
-            "phone": "0912345678",
-            "otp": "123456"
+            "email": "test@example.com"
         }
     )
 
-    assert response.status_code == 200
-
-
-def test_verify_otp_invalid():
-    """Từ chối OTP không chính xác."""
-
-    response = client.post(
-        "/auth/verify-otp",
-        json={
-            "phone": "0912345678",
-            "otp": "000000"
-        }
-    )
-
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 # ==========================================
@@ -91,12 +70,12 @@ def test_verify_otp_invalid():
 # ==========================================
 
 def test_login_success():
-    """Đăng nhập với thông tin chính xác."""
+    """Đăng nhập thành công."""
 
     response = client.post(
         "/auth/login",
         json={
-            "phone": "0912345678",
+            "email": "test@example.com",
             "password": "Password123"
         }
     )
@@ -106,26 +85,26 @@ def test_login_success():
 
 
 def test_login_wrong_password():
-    """Đăng nhập với mật khẩu sai."""
+    """Đăng nhập với password sai."""
 
     response = client.post(
         "/auth/login",
         json={
-            "phone": "0912345678",
-            "password": "WrongPassword"
+            "email": "test@example.com",
+            "password": "WrongPassword123"
         }
     )
 
     assert response.status_code == 401
 
 
-def test_login_nonexistent_account():
-    """Đăng nhập bằng tài khoản không tồn tại."""
+def test_login_nonexistent_email():
+    """Đăng nhập bằng email chưa đăng ký."""
 
     response = client.post(
         "/auth/login",
         json={
-            "phone": "0999999999",
+            "email": "unknown@example.com",
             "password": "Password123"
         }
     )
@@ -133,44 +112,57 @@ def test_login_nonexistent_account():
     assert response.status_code == 401
 
 
+def test_login_invalid_email():
+    """Đăng nhập với email sai định dạng."""
+
+    response = client.post(
+        "/auth/login",
+        json={
+            "email": "invalid-email",
+            "password": "Password123"
+        }
+    )
+
+    assert response.status_code == 422
+
+
+# ==========================================
+# FR-02: TEST QUÊN MẬT KHẨU
+# ==========================================
+
 def test_forgot_password_success():
-    """Yêu cầu gửi OTP để đặt lại mật khẩu."""
+    """Yêu cầu đặt lại mật khẩu thành công."""
 
     response = client.post(
         "/auth/forgot-password",
         json={
-            "phone": "0912345678"
+            "email": "test@example.com"
         }
     )
 
     assert response.status_code == 200
 
 
-def test_reset_password_success():
-    """Đặt lại mật khẩu bằng OTP hợp lệ."""
+def test_forgot_password_nonexistent_email():
+    """Yêu cầu đặt lại mật khẩu bằng email không tồn tại."""
 
     response = client.post(
-        "/auth/reset-password",
+        "/auth/forgot-password",
         json={
-            "phone": "0912345678",
-            "otp": "123456",
-            "new_password": "NewPassword123"
+            "email": "unknown@example.com"
         }
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 404
 
 
-def test_reset_password_invalid_otp():
-    """Không cho phép đổi mật khẩu bằng OTP sai."""
+# ==========================================
+# TEST PHÂN QUYỀN
+# ==========================================
 
-    response = client.post(
-        "/auth/reset-password",
-        json={
-            "phone": "0912345678",
-            "otp": "000000",
-            "new_password": "NewPassword123"
-        }
-    )
+def test_access_protected_api_without_token():
+    """Không cho phép truy cập API cần đăng nhập khi thiếu token."""
 
-    assert response.status_code == 400
+    response = client.get("/users/me")
+
+    assert response.status_code == 401
