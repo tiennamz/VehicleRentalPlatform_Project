@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login & Register</title>
+    <title>Login &amp; Register</title>
 
     <link rel="stylesheet" href="../css/login-register.css">
 </head>
@@ -22,7 +22,7 @@
 
                 <input type="email" placeholder="Email" required>
 
-                <input type="password" placeholder="Mật khẩu" required>
+                <input type="password" autocomplete="current-password" placeholder="Mật khẩu" required>
 
                 <div class="forgot" onclick="alert('Demo: Forgot Password')">
                     Quên mật khẩu?
@@ -56,9 +56,9 @@
 
                 <input type="email" placeholder="Email" required>
 
-                <input type="password" placeholder="Mật khẩu" minlength="6" required>
+                <input type="password" autocomplete="new-password" placeholder="Mật khẩu" minlength="6" >
 
-                <input type="password" placeholder="Xác nhận mật khẩu" minlength="6" required>
+                <input type="password" autocomplete="new-password" placeholder="Xác nhận mật khẩu" minlength="6" required>
 
                 <button class="submit" type="submit">
                     Đăng ký
