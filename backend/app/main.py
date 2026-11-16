@@ -2,6 +2,8 @@ from fastapi import FastAPI, Depends, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.database import Base, engine, get_db
 from app.routers.auth_routers import router as auth_routers
+from app.routers.verification_routers import router as verification_routers
+from app.routers.audit_routers import router as audit_routers
 from sqlalchemy.orm import Session
 from app.utils.response import handle_exception, create_response
 from sqlalchemy import text
@@ -19,8 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import os
 handle_exception(app)
-Base.metadata.create_all(bind=engine)
+if os.getenv("AUTO_CREATE_TABLES", "false").lower() == "true":
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"Warning: Could not connect to database on startup: {e}")
+
 
 
 @app.get('/health/check', tags=['Check system'])
@@ -39,3 +47,5 @@ def check_system(request: Request, db: Session = Depends(get_db)):
         )
 
 app.include_router(auth_routers)
+app.include_router(verification_routers)
+app.include_router(audit_routers)

@@ -194,8 +194,12 @@ CREATE TABLE verifiable_information (
         'Bị từ chối',
         'Đã xác thực'
     ),
+    rejected_reason VARCHAR(255),
+    verified_at DATETIME,
+    verified_by BIGINT,
 
-    CONSTRAINT fk_verifiable_information_user FOREIGN KEY (information_id) REFERENCES users(user_id)
+    CONSTRAINT fk_verifiable_information_user FOREIGN KEY (information_id) REFERENCES users(user_id),
+    CONSTRAINT fk_verifiable_information_verifier FOREIGN KEY (verified_by) REFERENCES users(user_id)
 );
 
 CREATE TABLE favorite_vehicles (
@@ -224,7 +228,25 @@ CREATE TABLE driver_license (
     ),
     rejected_reason VARCHAR(255),
     verified_at DATETIME,
+    verified_by BIGINT,
 
-    CONSTRAINT fk_driver_license_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+    CONSTRAINT fk_driver_license_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_driver_license_verifier FOREIGN KEY (verified_by) REFERENCES users(user_id)
 );
+
+CREATE TABLE personal_data_access_logs (
+    log_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    accessor_id BIGINT NOT NULL,
+    target_user_id BIGINT NOT NULL,
+    data_type VARCHAR(50) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    reason VARCHAR(255),
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(255),
+    accessed_at DATETIME NOT NULL,
+
+    CONSTRAINT fk_audit_accessor_user FOREIGN KEY (accessor_id) REFERENCES users(user_id),
+    CONSTRAINT fk_audit_target_user FOREIGN KEY (target_user_id) REFERENCES users(user_id)
+);
+
 
