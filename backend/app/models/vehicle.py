@@ -1,10 +1,10 @@
-from sqlalchemy import Column, BigInteger, String, Enum, ForeignKey
+from sqlalchemy import Column, BigInteger, Integer, String, Enum, ForeignKey
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
 class Vehicle(Base):
     __tablename__ = "vehicles"
-    vehicle_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    vehicle_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     store_id = Column(BigInteger, ForeignKey("stores.store_id"))
     brand = Column(String(255))
     license_plate = Column(String(255), unique=True)
@@ -23,4 +23,4 @@ class Vehicle(Base):
     price_tables = relationship("PriceTable", back_populates="vehicle")
     orders = relationship("Order", back_populates="vehicle")
     images = relationship("Image", back_populates="vehicle")
-    favorite_vehicles = relationship("FavoriteVehicle",back_populates="vehicle")
+    favorite_vehicles = relationship("FavoriteVehicle", back_populates="vehicle")

@@ -1,10 +1,10 @@
-from sqlalchemy import Column, BigInteger, DateTime, ForeignKey, String, Enum
+from sqlalchemy import Column, BigInteger, Integer, DateTime, ForeignKey, String, Enum
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
 class DriverLicense(Base):
     __tablename__ = "driver_license"
-    drivers_license_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    drivers_license_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.user_id"), unique=True)
     license_number = Column(String(255), unique=True)
     license_class = Column(Enum("A", "A1", "B1", "C"))

@@ -1,23 +1,25 @@
-from sqlalchemy import Column, BigInteger, String, DateTime, Text
+from sqlalchemy import Column, BigInteger, Integer, String, DateTime, Date, Text
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
-    user_id = Column(BigInteger,primary_key=True,autoincrement=True)
+    user_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     fullname = Column(String(255))
-    email = Column(String(255),unique=True)
-    phone_number  = Column(String(15),unique=True)
-    status = Column(String(255))
+    email = Column(String(255), unique=True)
+    phone_number = Column(String(15), unique=True)
+    date_of_birth = Column(Date, nullable=True)
+    address = Column(String(255), nullable=True)
+    status = Column(String(255), default="active")
     created_at = Column(DateTime)
 
     stores = relationship("Store", back_populates="owner")
     user_roles = relationship("UserRole", back_populates="user")
-    rented_orders = relationship("Order",back_populates="renter",foreign_keys="Order.renter_id")
+    rented_orders = relationship("Order", back_populates="renter", foreign_keys="Order.renter_id")
     handover_records = relationship("HandoverRecord", back_populates="staff")
     reviews = relationship("Review", back_populates="reviewer")
     complaints = relationship("Complaint", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
     verifiable_information = relationship("VerifiableInformation", back_populates="user", uselist=False, foreign_keys="VerifiableInformation.information_id")
     favorite_vehicles = relationship("FavoriteVehicle", back_populates="user")
-    drivers_license = relationship("DriverLicense", back_populates="user", foreign_keys="DriverLicense.user_id")
+    drivers_license = relationship("DriverLicense", back_populates="user", uselist=False, foreign_keys="DriverLicense.user_id")

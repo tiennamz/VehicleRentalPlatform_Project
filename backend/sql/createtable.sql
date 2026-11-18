@@ -5,6 +5,8 @@ CREATE TABLE users (
     fullname VARCHAR(255),
     email VARCHAR(255) UNIQUE,
     phone_number VARCHAR(255) UNIQUE,
+    date_of_birth DATE,
+    address VARCHAR(255),
     status VARCHAR(255) DEFAULT 'active',
     created_at DATETIME
 );
