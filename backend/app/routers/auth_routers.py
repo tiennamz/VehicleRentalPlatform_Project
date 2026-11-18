@@ -20,3 +20,18 @@ async def register(request: Request, new_user: RegisterSchema, db: Session = Dep
         'Success',
         user
     )
+
+
+@router.post('/login')
+def login(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(firebase_bearer),
+    db: Session = Depends(get_db)
+):
+    access_token = login_service(credentials.credentials, db)
+    return create_response(
+        request,
+        status.HTTP_200_OK,
+        'Success',
+        {"access_token": access_token, "token_type": "bearer"}
+    )

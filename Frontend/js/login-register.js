@@ -55,25 +55,42 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
 
         e.preventDefault();
 
-//         const email_login = document.getElementById("email_login").value.trim()
-//         const password_login = document.getElementById("password_login").value.trim()
+        const email_login = document.getElementById("email_login").value.trim()
+        const password_login = document.getElementById("password_login").value.trim()
 
-//         signInWithEmailAndPassword(auth, email_login, password_login)
-//             .then(()=>{
-//                 Swal.fire({
-//                 title: "Drag me!",
-//                 icon: "success",
-//                 timer: 2000,
-//                 draggable: true
-// });
-//             })
-//             .catch(()=>{
-//                 const login_message = document.getElementById("loginMessage")
-//                 login_message.style.color='red'
-//                 login_message.textContent  = "Email hoặc mật khẩu không chính xác" 
-//                 document.getElementById("email_login").value = "";
-//                 document.getElementById("password_login").value = "";
-//             })
+        signInWithEmailAndPassword(auth, email_login, password_login)
+            .then(async ({ user })=>{
+                const firebaseIdToken = await user.getIdToken();
+                const response = await fetch("http://127.0.0.1:8000/auth/login", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${firebaseIdToken}`
+                    }
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(typeof result.error === "string"
+                        ? result.error
+                        : "Không thể cấp access token");
+                }
+
+                sessionStorage.setItem("access_token", result.data.access_token);
+                Swal.fire({
+                title: "Drag me!",
+                icon: "success",
+                timer: 2000,
+                draggable: true
+});
+            })
+            .catch((error)=>{
+                const login_message = document.getElementById("loginMessage")
+                login_message.style.color='red'
+                login_message.textContent = error.code?.startsWith("auth/")
+                    ? "Email hoặc mật khẩu không chính xác"
+                    : error.message || "Không thể đăng nhập";
+                document.getElementById("email_login").value = "";
+                document.getElementById("password_login").value = "";
+            })
     })
 
 
