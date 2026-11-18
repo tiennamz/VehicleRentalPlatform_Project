@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth,
     sendPasswordResetEmail,
-    sendEmailVerification,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
@@ -117,10 +116,9 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
         }
 
         createUserWithEmailAndPassword(auth, email_register, confirmPassword)
-            .then(async ({ user })=>{
-                await sendEmailVerification(user);
+            .then(async ()=>{
                 Swal.fire({
-                title: "Đăng ký thành công! Vui lòng xác minh email.",
+                title: "Đăng ký thành công!",
                 icon: "success",
                 timer: 2000,
                 draggable: true

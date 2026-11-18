@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from app.services.auth_services import login_service, register_service
+from app.services.auth_services import register_service
+from slowapi import Limiter
 from app.schemas.auth_schemas import RegisterSchema
 from sqlalchemy.orm import Session  
 from app.database.database import get_db
-from app.utils.response import create_response
+from app.utils.response import create_response, BaseResponse
+
 
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
-firebase_bearer = HTTPBearer()
 
 @router.post('/register', status_code=status.HTTP_201_CREATED)
-def register(request: Request, new_user: RegisterSchema, db: Session = Depends(get_db)):
+async def register(request: Request, new_user: RegisterSchema, db: Session = Depends(get_db)):
     user = register_service(new_user, db)
 
     return create_response(

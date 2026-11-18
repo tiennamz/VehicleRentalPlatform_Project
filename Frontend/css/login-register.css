@@ -76,6 +76,40 @@ body {
     box-shadow: 0 0 0 2px #00c9d5;
 }
 
+.password-group {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.password-group input {
+    margin-bottom: 0;
+    padding-right: 42px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    padding: 4px;
+    border-radius: 5px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.toggle-password:hover {
+    color: #008d82;
+    background: rgba(0, 0, 0, 0.05);
+}
+
 .submit {
     width: 100%;
     height: 46px;
@@ -125,40 +159,6 @@ body {
     margin: -3px 0 16px;
     color: #333;
     cursor: pointer;
-}
-
-.social {
-    text-align: center;
-    margin-top: 22px;
-}
-
-.social p {
-    font-size: 12px;
-    margin-bottom: 13px;
-    color: #555;
-}
-
-.social-icons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-}
-
-.social-icons span {
-    width: 39px;
-    height: 39px;
-    display: grid;
-    place-items: center;
-    border: 1px solid #ccc;
-    font-weight: bold;
-    cursor: pointer;
-    transition: .2s;
-    border-radius: 50%;
-}
-
-.social-icons span:hover {
-    background: #e7fbfc;
-    border-color: #00c9d5;
 }
 
 .message {
