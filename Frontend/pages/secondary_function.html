@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UI Kit Components</title>
+  <link rel="stylesheet" href="secondary_function.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Hàng trên: 2 cột -->
+    <div class="top-grid">
+      <!-- Cột trái -->
+      <div class="col-left">
+        <!-- 1. BUTTON -->
+        <section class="section">
+          <h2 class="section-title">1. BUTTON</h2>
+          <div class="btn-group">
+            <button type="button" class="btn btn-primary" id="btnPrimary">Primary</button>
+            <button type="button" class="btn btn-secondary" id="btnSecondary">Secondary</button>
+            <button type="button" class="btn btn-danger" id="btnDanger">Danger</button>
+          </div>
+        </section>
+
+        <!-- 2. INPUT -->
+        <section class="section">
+          <h2 class="section-title">2. INPUT</h2>
+          <div class="form-group">
+            <label for="fullName" class="input-label">Họ và tên</label>
+            <input
+              type="text"
+              id="fullName"
+              class="input-control"
+              placeholder="Nhập thông tin tại đây..."
+            />
+          </div>
+        </section>
+
+        <!-- 3. FORM -->
+        <section class="section">
+          <h2 class="section-title">3. FORM</h2>
+          <form class="card form-card" id="infoForm">
+            <h3 class="card-title">Biểu mẫu thông tin</h3>
+            <div class="form-stack">
+              <input
+                type="text"
+                id="username"
+                class="input-control input-filled"
+                placeholder="Tên đăng nhập"
+                required
+              />
+              <input
+                type="password"
+                id="password"
+                class="input-control input-filled"
+                placeholder="Mật khẩu"
+                required
+              />
+              <div>
+                <button type="submit" class="btn btn-primary btn-submit">Gửi</button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <!-- Cột phải -->
+      <div class="col-right">
+        <!-- 4. MODAL -->
+        <section class="section">
+          <h2 class="section-title">4. MODEL</h2>
+          <div class="card modal-card" id="modalBox">
+            <div class="modal-header">
+              <h3 class="card-title">Xác nhận thao tác?</h3>
+              <button type="button" class="modal-close" id="modalCloseBtn" aria-label="Đóng">
+                &times;
+              </button>
+            </div>
+            <p class="modal-desc">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary btn-modal" id="modalCancelBtn">
+                Hủy
+              </button>
+              <button type="button" class="btn btn-primary btn-modal" id="modalConfirmBtn">
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. TOAST -->
+        <section class="section">
+          <h2 class="section-title">5. TOAST</h2>
+          <div class="toast" id="toastBox">
+            <span class="toast-icon">✓</span>
+            <span class="toast-text" id="toastText">Thành công! Thao tác đã lưu.</span>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- 6. BẢNG (TABLE) -->
+    <section class="section">
+      <h2 class="section-title">6. BẢNG (TABLE)</h2>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã đơn</th>
+              <th>Khách hàng</th>
+              <th>Trạng thái</th>
+              <th>Tổng tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>#MG01</td>
+              <td>Trần Tùng Dương</td>
+              <td><span class="status status-waiting">Chờ nhận</span></td>
+              <td class="price">500.000đ</td>
+            </tr>
+            <tr>
+              <td>#MG02</td>
+              <td>Nguyễn Văn A</td>
+              <td><span class="status status-renting">Đang thuê</span></td>
+              <td class="price">1.200.000đ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7. PHÂN TRANG (PAGINATION) -->
+    <section class="section">
+      <h2 class="section-title">7. PHÂN TRANG (PAGINATION)</h2>
+      <div class="pagination" id="pagination">
+        <button type="button" class="page-nav" id="prevPage">◄ Trước</button>
+        <button type="button" class="page-num active" data-page="1">1</button>
+        <button type="button" class="page-num" data-page="2">2</button>
+        <button type="button" class="page-num" data-page="3">3</button>
+        <span class="page-dots">...</span>
+        <button type="button" class="page-nav" id="nextPage">Sau ►</button>
+      </div>
+    </section>
+
+    <!-- 8. UPLOAD ẢNH CÓ XEM TRƯỚC -->
+    <section class="section">
+      <h2 class="section-title">8. UPLOAD ẢNH CÓ XEM TRƯỚC</h2>
+      <div class="upload-wrapper">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="image/png, image/jpeg" hidden />
+          <p class="drop-title">📁 Kéo thả ảnh hoặc bấm để tải lên</p>
+          <p class="drop-sub">Hỗ trợ PNG, JPG tối đa 5MB</p>
+        </div>
+
+        <div class="preview-box" id="previewBox">
+          <button type="button" class="preview-remove" id="removePreviewBtn" title="Xóa ảnh">
+            &times;
+          </button>
+          <span class="preview-placeholder" id="previewPlaceholder">[Ảnh xem trước]</span>
+          <img id="previewImage" src="" alt="Ảnh xem trước" hidden />
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="secondary_function.js"></script>
+</body>
+</html>
