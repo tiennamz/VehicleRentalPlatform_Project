@@ -2,6 +2,7 @@ from sqlalchemy import Column, BigInteger, Integer, DateTime, Numeric, String, F
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
+
 class Order(Base):
     __tablename__ = "orders"
     order_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
@@ -10,6 +11,10 @@ class Order(Base):
     price_id = Column(BigInteger, ForeignKey("price_tables.price_id"))
     start_time = Column(DateTime)
     end_time = Column(DateTime)
+    delivery_method = Column(String(50), default="Nhận tại cửa hàng")
+    delivery_address = Column(String(255), nullable=True)
+    delivery_distance_km = Column(Numeric(6, 2), default=0)
+    delivery_fee = Column(Numeric(12, 2), default=0)
     total_amount = Column(Numeric(12, 2))
     order_status = Column(String(255))
     created_at = Column(DateTime)

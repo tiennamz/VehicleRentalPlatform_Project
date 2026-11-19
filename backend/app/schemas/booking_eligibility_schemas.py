@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Optional, Literal
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -70,6 +71,9 @@ class OrderCreateSchema(BaseModel):
     price_id: Optional[int] = None
     start_time: datetime
     end_time: datetime
+    delivery_method: str = "Nhận tại cửa hàng"
+    delivery_address: Optional[str] = None
+    delivery_distance_km: Optional[Decimal] = Decimal("0.00")
 
     @model_validator(mode="after")
     def validate_rental_period(self):

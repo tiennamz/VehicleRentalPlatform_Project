@@ -2,6 +2,7 @@ from sqlalchemy import Column, BigInteger, String, Enum, ForeignKey, DateTime
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
+
 class VerifiableInformation(Base):
     __tablename__ = "verifiable_information"
     information_id = Column(BigInteger, ForeignKey("users.user_id"), primary_key=True, autoincrement=False)
@@ -11,9 +12,9 @@ class VerifiableInformation(Base):
         Enum(
             "Đang chờ",
             "Bị từ chối",
-            "Đã xác thực"
+            "Đã xác thực",
         ),
-        default="Đang chờ"
+        default="Đang chờ",
     )
     rejected_reason = Column(String(255), nullable=True)
     verified_at = Column(DateTime, nullable=True)

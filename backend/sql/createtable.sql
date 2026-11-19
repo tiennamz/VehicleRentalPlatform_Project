@@ -76,6 +76,10 @@ CREATE TABLE orders (
     price_id BIGINT,
     start_time DATETIME,
     end_time DATETIME,
+    delivery_method VARCHAR(50) DEFAULT 'Nhận tại cửa hàng',
+    delivery_address VARCHAR(255),
+    delivery_distance_km DECIMAL(6,2) DEFAULT 0.00,
+    delivery_fee DECIMAL(12,2) DEFAULT 0.00,
     total_amount DECIMAL(12,2),
     order_status VARCHAR(255),
     created_at DATETIME,
@@ -250,5 +254,4 @@ CREATE TABLE personal_data_access_logs (
     CONSTRAINT fk_audit_accessor_user FOREIGN KEY (accessor_id) REFERENCES users(user_id),
     CONSTRAINT fk_audit_target_user FOREIGN KEY (target_user_id) REFERENCES users(user_id)
 );
-
 
