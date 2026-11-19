@@ -30,7 +30,7 @@
                     </button>
                 </div>
 
-                <div class="forgot" onclick="alert('Demo: Forgot Password')">
+                <div class="forgot" id="forgotPasswordBtn" style="cursor: pointer;">
                     Quên mật khẩu?
                 </div>
 
@@ -110,6 +110,25 @@
         </div>
 
     </div>
+
+    <!-- CUSTOM FORGOT PASSWORD POPUP -->
+    <div class="modal-overlay" id="forgotModal">
+        <div class="modal-card">
+            <button type="button" class="modal-close" id="closeForgotModal" aria-label="Đóng">&times;</button>
+            <h2>Quên mật khẩu</h2>
+            <p class="modal-desc">Nhập địa chỉ email của bạn để nhận liên kết đặt lại mật khẩu từ hệ thống.</p>
+            
+            <form id="forgotForm">
+                <input type="email" id="forgot_email" placeholder="Nhập địa chỉ email của bạn" required>
+                <div class="modal-message" id="forgotMessage"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="cancelForgotModal">Hủy</button>
+                    <button type="submit" class="btn-submit" id="submitForgotBtn">Gửi liên kết</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="module" src="../js/login-register.js"></script>
 </body>

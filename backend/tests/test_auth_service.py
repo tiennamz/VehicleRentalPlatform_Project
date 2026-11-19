@@ -32,7 +32,7 @@ def test_login_issues_token_with_profile_and_roles(monkeypatch):
         email="renter@example.com",
         fullname="Renter User",
         user_roles=[
-            SimpleNamespace(role=SimpleNamespace(role_name="Khách hàng"))
+            SimpleNamespace(role_id=2, role=SimpleNamespace(role_id=2, role_name="Khách hàng"))
         ]
     )
     monkeypatch.setattr(auth_services, "FIREBASE_PROJECT_ID", "test-project")
@@ -55,7 +55,8 @@ def test_login_issues_token_with_profile_and_roles(monkeypatch):
     assert payload["sub"] == "renter@example.com"
     assert payload["name"] == "Renter User"
     assert payload["email"] == "renter@example.com"
-    assert payload["role"] == ["Khách hàng"]
+    assert payload["role_id"] == [2]
+    assert payload["role"] == [2]
 
 
 def test_login_defaults_unassigned_users_to_customer(monkeypatch):
@@ -81,7 +82,8 @@ def test_login_defaults_unassigned_users_to_customer(monkeypatch):
     token = auth_services.login_service("firebase-id-token", FakeDatabase(user))
     payload = jwt.decode(token, test_secret, algorithms=["HS256"])
 
-    assert payload["role"] == ["Khách hàng"]
+    assert payload["role_id"] == [2]
+    assert payload["role"] == [2]
 
 
 def test_login_rejects_unverified_firebase_email(monkeypatch):
