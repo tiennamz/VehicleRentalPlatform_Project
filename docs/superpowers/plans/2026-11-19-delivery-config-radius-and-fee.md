@@ -1,4 +1,4 @@
-# Kế Hoạch Triển Khai: Cấu Hình Giao Tại Cửa Hàng Hoặc Giao Tận Nơi Trong Bán Kính Quy Định & Tính Phí Tương Ứng
+# Kế Hoạch Triển Khai Task TF13FE6: Cấu Hình Giao Tại Cửa Hàng Hoặc Giao Tận Nơi Trong Bán Kính Quy Định & Tính Phí Tương Ứng
 
 > **Dành cho agent thực thi:** KỸ NĂNG BẮT BUỘC: Sử dụng `superpowers:executing-plans` và `superpowers:test-driven-development` để triển khai kế hoạch này theo từng task. Các bước sử dụng cú pháp checkbox (`- [ ]`) để theo dõi tiến độ.
 
