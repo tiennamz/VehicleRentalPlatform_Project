@@ -16,3 +16,4 @@ from app.models.system_config import SystemConfig
 from app.models.verifiable_information import VerifiableInformation
 from app.models.favorite_vehicle import FavoriteVehicle
 from app.models.drivers_license import DriverLicense
+from app.models.personal_data_access_log import PersonalDataAccessLog

@@ -1,10 +1,10 @@
-from sqlalchemy import Column, BigInteger, DateTime, Numeric, String, ForeignKey
+from sqlalchemy import Column, BigInteger, Integer, DateTime, Numeric, String, ForeignKey
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
 class PriceTable(Base):
     __tablename__ = "price_tables"
-    price_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    price_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     vehicle_id = Column(BigInteger, ForeignKey("vehicles.vehicle_id"))
     effective_from = Column(DateTime)
     effective_to = Column(DateTime)
