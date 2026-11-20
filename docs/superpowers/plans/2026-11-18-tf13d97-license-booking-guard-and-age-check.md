@@ -4,7 +4,7 @@
 
 **Mục tiêu:** Triển khai chức năng cho phép tài khoản chưa duyệt giấy phép lái xe vẫn tìm kiếm xe bình thường nhưng bị chặn khi tạo đơn đặt xe, đồng thời kiểm tra điều kiện người dùng phải từ đủ 18 tuổi trở lên (Task `TF13D97`).
 
-**Kiến trúc:** Kiến trúc phân tầng (`Routers` -> `Services` -> `SQLAlchemy Models` -> `MySQL/SQLite`) sử dụng chuẩn phản hồi `create_response`. Kiểm tra độ tuổi ($\ge 18$ tuổi) được áp dụng cả ở tầng Schema/Service khi cập nhật hồ sơ cá nhân, nộp GPLX và khi tạo đơn đặt xe. API tìm kiếm xe (`GET /vehicles`) mở cho mọi tài khoản, trong khi API đặt xe (`POST /orders`) kiểm tra nghiêm ngặt độ tuổi $\ge 18$, trạng thái GPLX `"Đã xác thực"`, thời hạn GPLX và hạng bằng lái phù hợp với loại xe.
+**Kiến trúc:** Kiến trúc phân tầng (`Routers` -> `Services` -> `SQLAlchemy Models` -> `TiDB Cloud / MySQL`) sử dụng chuẩn phản hồi `create_response`. Kiểm tra độ tuổi ($\ge 18$ tuổi) được áp dụng cả ở tầng Schema/Service khi cập nhật hồ sơ cá nhân, nộp GPLX và khi tạo đơn đặt xe. API tìm kiếm xe (`GET /vehicles`) mở cho mọi tài khoản, trong khi API đặt xe (`POST /orders`) kiểm tra nghiêm ngặt độ tuổi $\ge 18$, trạng thái GPLX `"Đã xác thực"`, thời hạn GPLX và hạng bằng lái phù hợp với loại xe.
 
 **Công nghệ sử dụng:** FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic, Pytest, Python 3.10+.
 

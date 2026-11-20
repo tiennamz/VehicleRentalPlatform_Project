@@ -1,6 +1,9 @@
+
+from sqlalchemy import Column, BigInteger, Integer, String, DateTime, Date
 from sqlalchemy import Column, BigInteger, Integer, String, DateTime, Date, Text, Enum
 from app.database.database import Base
 from sqlalchemy.orm import relationship
+
 
 class User(Base):
     __tablename__ = "users"
@@ -20,6 +23,16 @@ class User(Base):
     reviews = relationship("Review", back_populates="reviewer")
     complaints = relationship("Complaint", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
-    verifiable_information = relationship("VerifiableInformation", back_populates="user", uselist=False, foreign_keys="VerifiableInformation.information_id")
+    verifiable_information = relationship(
+        "VerifiableInformation",
+        back_populates="user",
+        uselist=False,
+        foreign_keys="VerifiableInformation.information_id",
+    )
     favorite_vehicles = relationship("FavoriteVehicle", back_populates="user")
-    drivers_license = relationship("DriverLicense", back_populates="user", uselist=False, foreign_keys="DriverLicense.user_id")
+    drivers_license = relationship(
+        "DriverLicense",
+        back_populates="user",
+        uselist=False,
+        foreign_keys="DriverLicense.user_id",
+    )

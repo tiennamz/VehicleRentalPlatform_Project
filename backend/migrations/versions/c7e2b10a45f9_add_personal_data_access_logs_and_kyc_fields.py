@@ -15,6 +15,7 @@ down_revision: Union[str, Sequence[str], None] = 'bf69f1bd7df7'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+
 def upgrade() -> None:
     # 1. Tạo bảng personal_data_access_logs
     op.create_table(
@@ -30,13 +31,26 @@ def upgrade() -> None:
         sa.Column('accessed_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['accessor_id'], ['users.user_id'], name='fk_audit_accessor_user'),
         sa.ForeignKeyConstraint(['target_user_id'], ['users.user_id'], name='fk_audit_target_user'),
-        sa.PrimaryKeyConstraint('log_id')
+        sa.PrimaryKeyConstraint('log_id'),
     )
 
-    # 2. Thêm verified_by vào driver_license
+    # 2. Thêm verification_status và verified_by vào bảng driver's_license trên TiDB Cloud
     try:
-        op.add_column('driver_license', sa.Column('verified_by', sa.BigInteger(), nullable=True))
-        op.create_foreign_key('fk_driver_license_verified_by', 'driver_license', 'users', ['verified_by'], ['user_id'])
+        op.add_column(
+            "driver's_license",
+            sa.Column(
+                'verification_status',
+                sa.Enum('Đang chờ', 'Đã xác thực', 'Bị từ chối', 'Đã hết hạn'),
+                nullable=True,
+                server_default='Đang chờ',
+            ),
+        )
+    except Exception:
+        pass
+
+    try:
+        op.add_column("driver's_license", sa.Column('verified_by', sa.BigInteger(), nullable=True))
+        op.create_foreign_key('fk_driver_license_verified_by', "driver's_license", 'users', ['verified_by'], ['user_id'])
     except Exception:
         pass
 
@@ -49,6 +63,7 @@ def upgrade() -> None:
     except Exception:
         pass
 
+
 def downgrade() -> None:
     op.drop_table('personal_data_access_logs')
     try:
@@ -60,8 +75,8 @@ def downgrade() -> None:
         pass
 
     try:
-        op.drop_constraint('fk_driver_license_verified_by', 'driver_license', type_='foreignkey')
-        op.drop_column('driver_license', 'verified_by')
+        op.drop_constraint('fk_driver_license_verified_by', "driver's_license", type_='foreignkey')
+        op.drop_column("driver's_license", 'verified_by')
+        op.drop_column("driver's_license", 'verification_status')
     except Exception:
         pass
-

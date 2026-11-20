@@ -6,9 +6,11 @@ from app.models.personal_data_access_log import PersonalDataAccessLog
 
 MIN_RETENTION_DAYS = 365
 
+
 def get_current_utc_time() -> datetime:
-    """Trả về thời gian UTC dạng naive datetime tương thích với SQLAlchemy MySQL/SQLite."""
+    """Trả về thời gian UTC dạng naive datetime tương thích với SQLAlchemy MySQL/TiDB/SQLite."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 def record_personal_data_access(
     db: Session,
@@ -35,7 +37,7 @@ def record_personal_data_access(
         reason=reason,
         ip_address=safe_ip,
         user_agent=safe_ua,
-        accessed_at=get_current_utc_time()
+        accessed_at=get_current_utc_time(),
     )
 
     try:
@@ -47,8 +49,9 @@ def record_personal_data_access(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Không thể ghi nhật ký truy cập dữ liệu cá nhân: {str(e)}"
+            detail=f"Không thể ghi nhật ký truy cập dữ liệu cá nhân: {str(e)}",
         )
+
 
 def get_personal_data_audit_logs(
     db: Session,
@@ -59,7 +62,7 @@ def get_personal_data_audit_logs(
     from_date: Optional[datetime] = None,
     to_date: Optional[datetime] = None,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
 ) -> List[PersonalDataAccessLog]:
     """
     Truy vấn lịch sử nhật ký truy cập dữ liệu cá nhân theo các tiêu chí lọc.
@@ -81,9 +84,10 @@ def get_personal_data_audit_logs(
 
     return query.order_by(PersonalDataAccessLog.accessed_at.desc()).offset(offset).limit(limit).all()
 
+
 def purge_audit_logs_older_than_12_months(
     db: Session,
-    cutoff_date: Optional[datetime] = None
+    cutoff_date: Optional[datetime] = None,
 ) -> int:
     """
     Quy tắc lưu trữ tối thiểu 12 tháng:
@@ -97,18 +101,20 @@ def purge_audit_logs_older_than_12_months(
     elif cutoff_date > max_allowable_cutoff:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Vi phạm chính sách lưu trữ: Nhật ký truy cập dữ liệu cá nhân phải được lưu trữ tối thiểu 12 tháng."
+            detail="Vi phạm chính sách lưu trữ: Nhật ký truy cập dữ liệu cá nhân phải được lưu trữ tối thiểu 12 tháng.",
         )
 
     try:
-        deleted_count = db.query(PersonalDataAccessLog).filter(
-            PersonalDataAccessLog.accessed_at < cutoff_date
-        ).delete(synchronize_session=False)
+        deleted_count = (
+            db.query(PersonalDataAccessLog)
+            .filter(PersonalDataAccessLog.accessed_at < cutoff_date)
+            .delete(synchronize_session=False)
+        )
         db.commit()
         return deleted_count
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi xóa nhật ký hết hạn: {str(e)}"
+            detail=f"Lỗi khi xóa nhật ký hết hạn: {str(e)}",
         )

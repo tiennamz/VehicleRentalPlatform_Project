@@ -2,8 +2,9 @@ from sqlalchemy import Column, BigInteger, Integer, DateTime, ForeignKey, String
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
+
 class DriverLicense(Base):
-    __tablename__ = "driver_license"
+    __tablename__ = "driver's_license"
     drivers_license_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.user_id"), unique=True)
     license_number = Column(String(255), unique=True)
@@ -15,9 +16,9 @@ class DriverLicense(Base):
             "Đang chờ",
             "Đã xác thực",
             "Bị từ chối",
-            "Đã hết hạn"
+            "Đã hết hạn",
         ),
-        default="Đang chờ"
+        default="Đang chờ",
     )
     rejected_reason = Column(String(255), nullable=True)
     verified_at = Column(DateTime, nullable=True)

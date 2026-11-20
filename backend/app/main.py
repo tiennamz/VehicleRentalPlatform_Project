@@ -5,6 +5,7 @@ from app.routers.auth_routers import router as auth_routers
 from app.routers.verification_routers import router as verification_routers
 from app.routers.audit_routers import router as audit_routers
 from app.routers.booking_eligibility_routers import router as booking_eligibility_routers
+from app.routers.delivery_routers import router as delivery_routers
 from sqlalchemy.orm import Session
 from app.utils.response import handle_exception, create_response
 from sqlalchemy import text
@@ -51,3 +52,4 @@ app.include_router(auth_routers)
 app.include_router(verification_routers)
 app.include_router(audit_routers)
 app.include_router(booking_eligibility_routers)
+app.include_router(delivery_routers)

@@ -17,4 +17,9 @@ VALUES
 ('commission_rate', '12', 'Phần trăm hoa hồng hệ thống'),
 ('booking_hold_minutes', '30', 'Thời gian giữ đơn đặt xe tính bằng phút'),
 ('deposit_rate', '30', 'Phần trăm tiền đặt cọc'),
-('late_return_fee_rate', '20', 'Phần trăm giá thuê một ngày tính cho mỗi giờ trả xe muộn');
+('late_return_fee_rate', '20', 'Phần trăm giá thuê một ngày tính cho mỗi giờ trả xe muộn'),
+('allow_store_pickup', 'true', 'Cho phép khách nhận xe trực tiếp tại cửa hàng'),
+('allow_home_delivery', 'true', 'Cho phép giao xe tận nơi trong bán kính quy định'),
+('max_delivery_radius_km', '15', 'Bán kính giao xe tận nơi tối đa tính bằng km'),
+('delivery_base_fee', '30000', 'Phí cố định cơ bản khi giao xe tận nơi (VNĐ)'),
+('delivery_fee_per_km', '10000', 'Đơn giá phí giao xe tận nơi trên mỗi km (VNĐ)');

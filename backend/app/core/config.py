@@ -9,16 +9,14 @@ if backend_env.exists():
 else:
     load_dotenv()
 
+DB_HOST = (os.getenv('DB_HOST') or '127.0.0.1').strip()
+DB_PORT = (os.getenv('DB_PORT') or '3306').strip()
+DB_USER = (os.getenv('DB_USER') or 'root').strip()
+DB_PASSWORD = (os.getenv('DB_PASSWORD') or '').strip()
+DB_NAME = (os.getenv('DB_NAME') or 'vehicle_rental_platform_db').strip()
 
-DB_PORT = os.getenv('DB_PORT')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_USER = os.getenv('DB_USER')
-DB_HOST = os.getenv('DB_HOST')
-DB_NAME = os.getenv('DB_NAME')
-SECRET_KEY = os.getenv('SECRET_KEY')
-ALGORITHMS = os.getenv('ALGORITHMS')
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES')
+SECRET_KEY = os.getenv('SECRET_KEY', 'replace_with_a_long_random_secret_at_least_32_chars')
+ALGORITHMS = os.getenv('ALGORITHMS', 'HS256')
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '30')
 REFRESH_TOKEN_EXPIRE_DAY = os.getenv('REFRESH_TOKEN_EXPIRE_DAY', '7')
-FIREBASE_PROJECT_ID = os.getenv('FIREBASE_PROJECT_ID')
-
 

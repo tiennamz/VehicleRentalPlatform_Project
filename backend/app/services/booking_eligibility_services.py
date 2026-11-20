@@ -16,6 +16,7 @@ from app.schemas.booking_eligibility_schemas import (
     DriverLicenseSubmitSchema,
     OrderCreateSchema,
 )
+from app.services.delivery_services import calculate_and_validate_delivery_fee
 
 
 MOTORBIKE_TYPES = {"Xe tay ga", "Xe số"}
@@ -183,11 +184,11 @@ def create_rental_order(
     order_data: OrderCreateSchema,
 ) -> Order:
     """
-    Tạo đơn đặt xe (TF13D97):
+    Tạo đơn đặt xe (TF13D97 + Cấu hình giao nhận & tính phí giao xe):
     1. Kiểm tra khách hàng tồn tại và đủ 18 tuổi trở lên.
-    2. Kiểm tra khách hàng đã có GPLX và GPLX phải ở trạng thái 'Đã xác thực' (nếu đang chờ/bị từ chối/chưa có -> chặn).
-    3. Kiểm tra GPLX còn thời hạn sử dụng.
-    4. Kiểm tra hạng GPLX phù hợp với loại xe cần thuê.
+    2. Kiểm tra khách hàng đã có GPLX và GPLX phải ở trạng thái 'Đã xác thực'.
+    3. Kiểm tra GPLX còn thời hạn sử dụng & hạng GPLX phù hợp với loại xe.
+    4. Kiểm tra phương thức giao nhận (Nhận tại cửa hàng hoặc Giao tận nơi trong bán kính quy định) và tính phí giao xe tương ứng.
     """
     renter = db.query(User).filter(User.user_id == order_data.renter_id).first()
     if not renter:
@@ -234,7 +235,15 @@ def create_rental_order(
             detail=f"Hạng giấy phép lái xe ({license_record.license_class}) không phù hợp để thuê loại xe '{vehicle.type}'.",
         )
 
-    # 4. Tính tổng tiền đơn thuê
+    # 4. Kiểm tra phương thức giao nhận, bán kính giao xe & tính phí giao xe tương ứng
+    delivery_info = calculate_and_validate_delivery_fee(
+        db=db,
+        delivery_method=order_data.delivery_method,
+        delivery_distance_km=order_data.delivery_distance_km,
+        delivery_address=order_data.delivery_address,
+    )
+
+    # 5. Tính tổng tiền đơn thuê (tiền thuê xe + phí giao xe)
     price_record = None
     if order_data.price_id:
         price_record = db.query(PriceTable).filter(PriceTable.price_id == order_data.price_id).first()
@@ -247,7 +256,9 @@ def create_rental_order(
     duration_days = max(1, math.ceil(elapsed_seconds / 86400))
 
     unit_amount = Decimal(str(price_record.amount)) if (price_record and price_record.amount) else Decimal("0.00")
-    total_amount = (unit_amount * Decimal(duration_days)).quantize(Decimal("0.01"))
+    rental_amount = (unit_amount * Decimal(duration_days)).quantize(Decimal("0.01"))
+    delivery_fee = delivery_info["delivery_fee"]
+    total_amount = (rental_amount + delivery_fee).quantize(Decimal("0.01"))
 
     new_order = Order(
         renter_id=order_data.renter_id,
@@ -255,6 +266,10 @@ def create_rental_order(
         price_id=price_record.price_id if price_record else order_data.price_id,
         start_time=start_naive,
         end_time=end_naive,
+        delivery_method=delivery_info["delivery_method"],
+        delivery_address=delivery_info["delivery_address"],
+        delivery_distance_km=delivery_info["delivery_distance_km"],
+        delivery_fee=delivery_fee,
         total_amount=total_amount,
         order_status="Chờ thanh toán",
         created_at=now_utc,
