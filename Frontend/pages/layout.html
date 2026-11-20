@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VRP-Go Platform - Layout & Điều hướng theo vai trò</title>
+  <link rel="stylesheet" href="../css/layout.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- HEADER DÙNG CHUNG -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-box">V</div>
+        <span class="brand-name">VRP / <span class="brand-accent">Go</span></span>
+      </div>
+
+      <div class="header-right">
+        <button type="button" class="notify-btn" id="notifyBtn" title="Thông báo">
+          🔔
+        </button>
+
+        <!-- Dropdown chuyển đổi vai trò -->
+        <div class="role-switcher">
+          <button type="button" class="user-badge" id="roleToggleBtn">
+            <span class="avatar" id="userAvatar">TD</span>
+            <span class="role-label" id="userRoleLabel">Khách ▾</span>
+          </button>
+
+          <ul class="role-dropdown" id="roleDropdown" hidden>
+            <li data-role="customer">Khách thuê (TD)</li>
+            <li data-role="owner">Chủ cửa hàng (VD)</li>
+            <li data-role="staff">Nhân viên cửa hàng (NV)</li>
+            <li data-role="ops">Vận hành viên (VH)</li>
+            <li data-role="admin">Quản trị hệ thống (AD)</li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <!-- PHẦN THÂN: MENU ĐIỀU HƯỚNG + NỘI DUNG -->
+    <div class="app-body">
+      <aside class="sidebar">
+        <p class="menu-heading" id="menuHeading">KHÁCH THUÊ • ĐIỀU HƯỚNG CHUNG</p>
+        <nav class="menu-list" id="menuList"></nav>
+      </aside>
+
+      <main class="main-content">
+        <div class="content-card">
+          <span class="role-pill" id="contentRoleBadge">Khách thuê</span>
+          <h1 class="page-title" id="pageTitle">Trang chủ / Tìm kiếm xe</h1>
+          <p class="page-desc" id="pageDesc">
+            Đang hiển thị giao diện điều hướng dành cho vai trò Khách thuê.
+          </p>
+        </div>
+      </main>
+    </div>
+
+    <!-- FOOTER DÙNG CHUNG -->
+    <footer class="app-footer">
+      © 2026 VRP-Go Platform
+    </footer>
+  </div>
+
+  <script src="../js/layout.js"></script>
+</body>
+</html>

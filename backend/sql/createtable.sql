@@ -7,7 +7,7 @@ CREATE TABLE users (
     phone_number VARCHAR(255) UNIQUE,
     date_of_birth DATE,
     address VARCHAR(255),
-    status VARCHAR(255) DEFAULT 'active',
+    status ENUM('Hoạt động', 'Không hoạt động') DEFAULT 'Hoạt động',
     created_at DATETIME
 );
 

@@ -19,4 +19,4 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'replace_with_a_long_random_secret_at_least
 ALGORITHMS = os.getenv('ALGORITHMS', 'HS256')
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '30')
 REFRESH_TOKEN_EXPIRE_DAY = os.getenv('REFRESH_TOKEN_EXPIRE_DAY', '7')
-FIREBASE_PROJECT_ID = os.getenv('FIREBASE_PROJECT_ID', 'vehiclerentalflatform')
+

@@ -20,7 +20,9 @@ def register_service(new_user: RegisterSchema, db: Session):
 
     user = User(
         fullname = new_user.fullname.title(),
-        email = new_user.email.strip().lower()
+        email = new_user.email.strip().lower(),
+        status = "Hoạt động",
+        created_at = datetime.now()
     )
 
     try:
