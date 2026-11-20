@@ -1,8 +1,6 @@
-<<<<<<< HEAD
+
 from sqlalchemy import Column, BigInteger, Integer, String, DateTime, Date
-=======
 from sqlalchemy import Column, BigInteger, Integer, String, DateTime, Date, Text, Enum
->>>>>>> origin/developers
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
