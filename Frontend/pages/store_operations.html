@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VRP / Go - Tạm ngưng hoạt động & Cấu hình điểm giao nhận</title>
+  <link rel="stylesheet" href="../css/store_operations.css" />
+</head>
+<body>
+  <!-- HEADER DÙNG CHUNG -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-left">
+        <div class="logo-box">V</div>
+        <span class="brand-name">VRP - <span class="brand-accent">Go</span></span>
+        <nav class="main-nav">
+          <button type="button" class="nav-tab active" data-tab="suspend-form">Tạm ngưng hoạt động</button>
+          <button type="button" class="nav-tab" data-tab="delivery-config">
+            Cấu hình điểm giao nhận &amp; Phí <span class="nav-badge" id="hubCountBadge">3</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="header-right">
+        <button type="button" class="btn-outline-light" id="fillSampleBtn">⚡ Điền dữ liệu mẫu</button>
+        <div class="user-profile">
+          <div class="avatar">VD</div>
+          <span>Vu Duc ▾</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NỘI DUNG CHÍNH -->
+  <main class="main-wrapper">
+    <!-- TAB 1: FORM TẠM NGƯNG HOẠT ĐỘNG KÈM THỜI GIAN DỰ KIẾN -->
+    <section id="tab-suspend-form" class="tab-panel active">
+      <div class="page-header">
+        <div>
+          <p class="breadcrumb">VRP Go - Chi nhánh Tây Hồ &rsaquo; Vận hành cửa hàng</p>
+          <h1 class="page-title">Thiết lập tạm ngưng hoạt động</h1>
+          <p class="page-subtitle">Cấu hình phạm vi tạm ngưng, lý do và thời gian dự kiến mở lại để tự động thông báo tới khách hàng.</p>
+        </div>
+        <div class="status-pill-wrap">
+          <span class="status-indicator online" id="storeLiveBadge">● Chi nhánh đang hoạt động</span>
+        </div>
+      </div>
+
+      <form id="suspendForm" class="register-grid">
+        <!-- CỘT TRÁI (65%): THÔNG TIN TẠM NGƯNG & THỜI GIAN DỰ KIẾN -->
+        <div class="col-main">
+          <!-- Khối 1: Phạm vi & Lý do tạm ngưng -->
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">1</span>
+              <h2>Phạm vi &amp; Lý do tạm ngưng</h2>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="suspendScope">Đối tượng áp dụng <span class="req">*</span></label>
+                <select id="suspendScope" required>
+                  <option value="store">Toàn bộ chi nhánh Tây Hồ (Ngưng nhận đơn mới)</option>
+                  <option value="delivery">Chỉ tạm ngưng dịch vụ giao nhận tận nơi</option>
+                  <option value="vehicle">Tạm ngưng một số phương tiện cụ thể</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="suspendReason">Lý do tạm ngưng <span class="req">*</span></label>
+                <select id="suspendReason" required>
+                  <option value="">-- Chọn lý do --</option>
+                  <option value="Bảo trì & kiểm định định kỳ đội xe">Bảo trì &amp; kiểm định định kỳ đội xe</option>
+                  <option value="Nghỉ lễ / Lịch nghỉ nội bộ cửa hàng">Nghỉ lễ / Lịch nghỉ nội bộ cửa hàng</option>
+                  <option value="Nâng cấp hệ thống & kho bãi">Nâng cấp hệ thống &amp; kho bãi</option>
+                  <option value="Điều kiện thời tiết xấu / Bất khả kháng">Điều kiện thời tiết xấu / Bất khả kháng</option>
+                </select>
+              </div>
+              <div class="form-group" id="targetVehicleGroup" hidden>
+                <label for="targetVehicle">Chọn phương tiện áp dụng <span class="req">*</span></label>
+                <select id="targetVehicle">
+                  <option value="Honda Air Blade 160 ABS (29F1 - 889.26)">Honda Air Blade 160 ABS (29F1 - 889.26)</option>
+                  <option value="VinFast Klara S2 (29MĐ1 - 452.10)">VinFast Klara S2 (29MĐ1 - 452.10)</option>
+                  <option value="Honda Vision Thể Thao (29B2 - 119.04)">Honda Vision Thể Thao (29B2 - 119.04)</option>
+                  <option value="Yamaha Exciter 155 VVA (29D2 - 773.81)">Yamaha Exciter 155 VVA (29D2 - 773.81)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="activeOrderPolicy">Xử lý các đơn đã đặt trước <span class="req">*</span></label>
+                <select id="activeOrderPolicy" required>
+                  <option value="Vẫn phục vụ các đơn đã xác nhận trước đó">Vẫn phục vụ các đơn đã xác nhận trước đó</option>
+                  <option value="Liên hệ khách dời lịch / Hỗ trợ chuyển chi nhánh">Liên hệ khách dời lịch / Hỗ trợ chuyển chi nhánh</option>
+                </select>
+              </div>
+              <div class="form-group full-span">
+                <label for="suspendNote">Thông báo hiển thị cho khách hàng <span class="req">*</span></label>
+                <input type="text" id="suspendNote" placeholder="VD: Chi nhánh tạm ngưng nhận đơn mới để bảo dưỡng toàn bộ đội xe định kỳ. Mong quý khách thông cảm!" required />
+              </div>
+            </div>
+          </div>
+
+          <!-- Khối 2: Thời gian dự kiến tạm ngưng & mở lại -->
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">2</span>
+              <h2>Thời gian dự kiến tạm ngưng &amp; mở lại</h2>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="startDateTime">Thời điểm bắt đầu tạm ngưng <span class="req">*</span></label>
+                <input type="datetime-local" id="startDateTime" required />
+              </div>
+              <div class="form-group">
+                <label for="endDateTime">Thời gian dự kiến hoạt động lại <span class="req">*</span></label>
+                <input type="datetime-local" id="endDateTime" required />
+              </div>
+              <div class="form-group">
+                <label>Tổng thời lượng dự kiến</label>
+                <div class="duration-box" id="durationDisplay">Chưa xác định mốc thời gian</div>
+              </div>
+              <div class="form-group">
+                <label for="autoReopen">Tự động mở lại khi hết hạn</label>
+                <select id="autoReopen">
+                  <option value="auto">Tự động mở nhận đơn đúng giờ dự kiến</option>
+                  <option value="manual">Giữ tạm ngưng cho đến khi mở thủ công</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI (35%): XEM TRƯỚC THÔNG BÁO & LỊCH SỬ TẠM NGƯNG -->
+        <div class="col-side">
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">3</span>
+              <h2>Xem trước cảnh báo trên sàn</h2>
+            </div>
+            <p class="helper-text">Bản xem trước banner thông báo khách hàng sẽ nhìn thấy khi truy cập trang đặt xe:</p>
+
+            <div class="alert-preview-card" id="alertPreviewCard">
+              <div class="alert-preview-top">
+                <span class="badge badge-maintenance" id="previewScopeBadge">Tạm ngưng toàn chi nhánh</span>
+                <span class="preview-time-tag" id="previewDurationTag">-- giờ</span>
+              </div>
+              <h3 class="alert-preview-title" id="previewReasonTitle">Chưa chọn lý do tạm ngưng</h3>
+              <p class="alert-preview-desc" id="previewNoteText">Nội dung thông báo gửi tới khách thuê sẽ hiển thị tại đây...</p>
+              <div class="alert-preview-schedule">
+                <div><span>Bắt đầu:</span> <strong id="previewStartText">--/--/---- --:--</strong></div>
+                <div><span>Dự kiến mở lại:</span> <strong class="text-green" id="previewEndText">--/--/---- --:--</strong></div>
+              </div>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="confirmSuspendCheck" required />
+              <span>Xác nhận gửi thông báo tự động tới khách hàng và tạm ẩn các xe thuộc phạm vi trên khỏi danh sách đặt mới.</span>
+            </label>
+
+            <div class="btn-stack">
+              <button type="submit" class="btn-danger btn-block" id="submitSuspendBtn">⏸ Kích hoạt tạm ngưng</button>
+              <button type="button" class="btn-primary btn-block" id="resumeStoreBtn" hidden>▶ Mở hoạt động trở lại ngay</button>
+            </div>
+          </div>
+
+          <!-- Lịch sử / Lịch hẹn tạm ngưng gần đây -->
+          <div class="card mt-20">
+            <div class="card-header">
+              <span class="step-badge">📋</span>
+              <h2>Lịch tạm ngưng đã thiết lập</h2>
+            </div>
+            <div class="history-list" id="suspendHistoryList"></div>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- TAB 2: CẤU HÌNH ĐIỂM GIAO NHẬN & PHÍ -->
+    <section id="tab-delivery-config" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <p class="breadcrumb">VRP Go - Chi nhánh Tây Hồ &rsaquo; Cấu hình vận chuyển</p>
+          <h1 class="page-title">Cấu hình điểm giao nhận &amp; Biểu phí</h1>
+          <p class="page-subtitle">Quản lý các điểm giao nhận cố định, bán kính phục vụ tận nơi và công thức tính phí vận chuyển.</p>
+        </div>
+        <button type="button" class="btn-primary" id="saveAllFeeConfigBtn">💾 Lưu toàn bộ cấu hình phí</button>
+      </div>
+
+      <!-- 4 THẺ KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Điểm giao nhận đang bật</span>
+            <strong class="kpi-value" id="kpiActiveHubs">3</strong>
+            <span class="kpi-note text-green">Hoạt động trên bản đồ</span>
+          </div>
+          <div class="kpi-icon kpi-green">📍</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Bán kính giao miễn phí</span>
+            <strong class="kpi-value" id="kpiFreeRadius">3 km</strong>
+            <span class="kpi-note">Tính từ chi nhánh gốc</span>
+          </div>
+          <div class="kpi-icon kpi-blue">🛵</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Đơn giá vượt bán kính</span>
+            <strong class="kpi-value" id="kpiPerKmFee">10.000 đ</strong>
+            <span class="kpi-note">Mỗi km tiếp theo</span>
+          </div>
+          <div class="kpi-icon kpi-amber">💳</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Phụ phí ngoài giờ hành chính</span>
+            <strong class="kpi-value" id="kpiAfterHoursFee">30.000 đ</strong>
+            <span class="kpi-note text-red">Từ 21:00 - 07:00</span>
+          </div>
+          <div class="kpi-icon kpi-red">🌙</div>
+        </div>
+      </div>
+
+      <div class="register-grid">
+        <!-- CỘT TRÁI: THÊM ĐIỂM GIAO NHẬN & DANH SÁCH ĐIỂM -->
+        <div class="col-main">
+          <!-- Form thêm điểm giao nhận mới -->
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">1</span>
+              <h2>Thêm điểm giao nhận xe mới</h2>
+            </div>
+            <form id="addHubForm" class="form-grid-2">
+              <div class="form-group">
+                <label for="hubName">Tên điểm giao nhận <span class="req">*</span></label>
+                <input type="text" id="hubName" placeholder="VD: Bến xe Mỹ Đình - Cổng số 2" required />
+              </div>
+              <div class="form-group">
+                <label for="hubType">Loại điểm giao nhận <span class="req">*</span></label>
+                <select id="hubType" required>
+                  <option value="Chi nhánh chính (Miễn phí)">Chi nhánh chính (Miễn phí)</option>
+                  <option value="Điểm trung chuyển cố định">Điểm trung chuyển cố định</option>
+                  <option value="Sân bay / Nhà ga / Bến xe">Sân bay / Nhà ga / Bến xe</option>
+                </select>
+              </div>
+              <div class="form-group full-span">
+                <label for="hubAddress">Địa chỉ chi tiết &amp; Hướng dẫn đỗ xe <span class="req">*</span></label>
+                <input type="text" id="hubAddress" placeholder="VD: Số 20 Phạm Hùng, Nam Từ Liêm, Hà Nội (Gặp nhân viên áo xanh VRP)" required />
+              </div>
+              <div class="form-group">
+                <label for="hubDistance">Khoảng cách từ chi nhánh (km) <span class="req">*</span></label>
+                <input type="number" id="hubDistance" min="0" max="50" step="0.5" placeholder="VD: 6.5" required />
+              </div>
+              <div class="form-group">
+                <label for="hubFee">Phí giao nhận cố định (VNĐ) <span class="req">*</span></label>
+                <input type="number" id="hubFee" min="0" step="5000" placeholder="VD: 35000 (Nhập 0 nếu miễn phí)" required />
+              </div>
+              <div class="form-group">
+                <label for="hubHours">Khung giờ phục vụ <span class="req">*</span></label>
+                <input type="text" id="hubHours" value="07:00 - 21:30" required />
+              </div>
+              <div class="form-group" style="display:flex; align-items:flex-end;">
+                <button type="submit" class="btn-primary btn-block">+ Thêm điểm giao nhận</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Bảng danh sách điểm giao nhận -->
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">2</span>
+              <h2>Danh sách điểm giao nhận đang cấu hình</h2>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Tên điểm &amp; Địa chỉ</th>
+                    <th>Phân loại</th>
+                    <th>Khoảng cách</th>
+                    <th>Phí giao / lượt</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="hubTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI: BIỂU PHÍ GIAO TẬN NƠI & BỘ TÍNH THỬ -->
+        <div class="col-side">
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">3</span>
+              <h2>Quy tắc tính phí giao tận nơi</h2>
+            </div>
+            <div class="form-stack">
+              <div class="form-group">
+                <label for="freeRadiusInput">Bán kính miễn phí giao xe (km)</label>
+                <input type="number" id="freeRadiusInput" min="0" max="20" step="0.5" value="3" />
+              </div>
+              <div class="form-group">
+                <label for="maxRadiusInput">Bán kính giao tối đa (km)</label>
+                <input type="number" id="maxRadiusInput" min="1" max="60" step="1" value="25" />
+              </div>
+              <div class="form-group">
+                <label for="pricePerKmInput">Đơn giá mỗi km vượt mức (VNĐ/km)</label>
+                <input type="number" id="pricePerKmInput" min="0" step="1000" value="10000" />
+              </div>
+              <div class="form-group">
+                <label for="afterHoursFeeInput">Phụ phí giao/nhận ngoài giờ (21:00 - 07:00)</label>
+                <input type="number" id="afterHoursFeeInput" min="0" step="5000" value="30000" />
+              </div>
+              <div class="form-group">
+                <label for="freeMinDaysInput">Miễn phí giao nội thành nếu thuê từ (ngày)</label>
+                <input type="number" id="freeMinDaysInput" min="1" max="30" value="3" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Công cụ tính thử phí giao nhận -->
+          <div class="card mt-20">
+            <div class="card-header">
+              <span class="step-badge">🧮</span>
+              <h2>Tính thử phí giao nhận</h2>
+            </div>
+            <div class="form-stack">
+              <div class="form-group">
+                <label for="simDistance">Khoảng cách tới khách (km)</label>
+                <input type="number" id="simDistance" min="0" max="60" step="0.5" value="7.5" />
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="simDays">Số ngày thuê</label>
+                  <input type="number" id="simDays" min="1" max="30" value="2" />
+                </div>
+                <div class="form-group">
+                  <label for="simTimeSlot">Khung giờ giao</label>
+                  <select id="simTimeSlot">
+                    <option value="day">Trong giờ (07:00 - 21:00)</option>
+                    <option value="night">Ngoài giờ (21:00 - 07:00)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fee-summary-box">
+                <div class="fee-row">
+                  <span>Phí khoảng cách (1 chiều):</span>
+                  <strong id="simBaseFee">45.000 đ</strong>
+                </div>
+                <div class="fee-row">
+                  <span>Phụ phí ngoài giờ:</span>
+                  <strong id="simNightFee">0 đ</strong>
+                </div>
+                <div class="fee-row fee-total">
+                  <span>Tổng phí giao dự kiến:</span>
+                  <strong class="price-text" id="simTotalFee">45.000 đ</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- TOAST THÔNG BÁO -->
+  <div class="toast" id="toast" hidden>
+    <span class="toast-check">✓</span>
+    <span id="toastMsg">Thao tác thành công!</span>
+  </div>
+
+  <!-- FOOTER DÙNG CHUNG -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <span><strong>VRP - Go</strong> • Nền tảng cho thuê phương tiện thông minh</span>
+      <span>© 2026 VRP / Go. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <script src="../js/store_operations.js"></script>
+</body>
+</html>
