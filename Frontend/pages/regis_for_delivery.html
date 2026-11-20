@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VRP / Go - Đăng ký gian hàng & Theo dõi duyệt hồ sơ</title>
+  <link rel="stylesheet" href="../css/regis_for_delivery.css" />
+</head>
+<body>
+  <!-- HEADER DÙNG CHUNG -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-left">
+        <div class="logo-box">V</div>
+        <span class="brand-name">VRP - <span class="brand-accent">Go</span></span>
+        <nav class="main-nav">
+          <button type="button" class="nav-tab active" data-tab="register">Đăng ký gian hàng</button>
+          <button type="button" class="nav-tab" data-tab="tracking">
+            Theo dõi duyệt hồ sơ <span class="nav-badge" id="profileCountBadge">4</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="header-right">
+        <button type="button" class="btn-outline-light" id="fillSampleBtn">⚡ Điền dữ liệu mẫu</button>
+        <div class="user-profile">
+          <div class="avatar">VD</div>
+          <span>Vu Duc ▾</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NỘI DUNG CHÍNH -->
+  <main class="main-wrapper">
+    <!-- TAB 1: FORM ĐĂNG KÝ GIAN HÀNG -->
+    <section id="tab-register" class="tab-panel active">
+      <div class="page-header">
+        <div>
+          <p class="breadcrumb">Đối tác VRP / Go &rsaquo; Đăng ký gian hàng mới</p>
+          <h1 class="page-title">Đăng ký gian hàng đối tác</h1>
+          <p class="page-subtitle">Hoàn tất thông tin cửa hàng và hồ sơ pháp lý để bắt đầu kinh doanh cho thuê xe trên nền tảng.</p>
+        </div>
+      </div>
+
+      <form id="partnerRegisterForm" class="register-grid">
+        <!-- CỘT TRÁI (65%): THÔNG TIN CHI TIẾT -->
+        <div class="col-main">
+          <!-- Khối 1: Thông tin gian hàng -->
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">1</span>
+              <h2>Thông tin gian hàng</h2>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="storeName">Tên gian hàng / Cửa hàng <span class="req">*</span></label>
+                <input type="text" id="storeName" placeholder="VD: Xe Máy Hoàng Gia - Cầu Giấy" required />
+              </div>
+              <div class="form-group">
+                <label for="businessType">Loại hình kinh doanh <span class="req">*</span></label>
+                <select id="businessType" required>
+                  <option value="">-- Chọn loại hình --</option>
+                  <option value="Hộ kinh doanh cá thể">Hộ kinh doanh cá thể</option>
+                  <option value="Doanh nghiệp / Công ty">Doanh nghiệp / Công ty</option>
+                  <option value="Chủ xe cá nhân">Chủ xe cá nhân</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="vehicleCategory">Danh mục xe cho thuê <span class="req">*</span></label>
+                <select id="vehicleCategory" required>
+                  <option value="">-- Chọn danh mục --</option>
+                  <option value="Xe máy & Xe điện">Xe máy &amp; Xe điện</option>
+                  <option value="Ô tô tự lái">Ô tô tự lái</option>
+                  <option value="Đa phương tiện (Xe máy + Ô tô)">Đa phương tiện (Xe máy + Ô tô)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="fleetSize">Số lượng xe dự kiến <span class="req">*</span></label>
+                <input type="number" id="fleetSize" min="1" placeholder="VD: 15" required />
+              </div>
+              <div class="form-group full-span">
+                <label for="storeAddress">Địa chỉ bãi xe / Cửa hàng giao nhận <span class="req">*</span></label>
+                <input type="text" id="storeAddress" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" required />
+              </div>
+            </div>
+          </div>
+
+          <!-- Khối 2: Thông tin người đại diện -->
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">2</span>
+              <h2>Thông tin người đại diện</h2>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="ownerName">Họ và tên chủ gian hàng <span class="req">*</span></label>
+                <input type="text" id="ownerName" placeholder="VD: Nguyễn Văn An" required />
+              </div>
+              <div class="form-group">
+                <label for="ownerIdNumber">Số CCCD / CMND <span class="req">*</span></label>
+                <input type="text" id="ownerIdNumber" placeholder="12 chữ số trên CCCD" maxlength="12" required />
+              </div>
+              <div class="form-group">
+                <label for="ownerPhone">Số điện thoại liên hệ <span class="req">*</span></label>
+                <input type="tel" id="ownerPhone" placeholder="VD: 0912345678" required />
+              </div>
+              <div class="form-group">
+                <label for="ownerEmail">Email nhận thông báo duyệt <span class="req">*</span></label>
+                <input type="email" id="ownerEmail" placeholder="example@vrpgo.vn" required />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI (35%): HỒ SƠ PHÁP LÝ & UPLOAD ẢNH -->
+        <div class="col-side">
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">3</span>
+              <h2>Hồ sơ pháp lý (Bắt buộc)</h2>
+            </div>
+            <p class="helper-text">Tải lên ảnh chụp rõ nét, không mất góc (PNG, JPG tối đa 5MB/ảnh).</p>
+
+            <div class="upload-list">
+              <!-- Upload 1 -->
+              <div class="upload-item" data-doc="cccdFront">
+                <div class="upload-label">1. CCCD mặt trước <span class="req">*</span></div>
+                <div class="drop-area" id="drop-cccdFront">
+                  <input type="file" accept="image/*" hidden />
+                  <div class="drop-content">
+                    <span class="upload-icon">🪪</span>
+                    <span>Kéo thả hoặc <u>chọn ảnh</u></span>
+                  </div>
+                  <img class="preview-img" alt="Preview" hidden />
+                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
+                </div>
+              </div>
+
+              <!-- Upload 2 -->
+              <div class="upload-item" data-doc="cccdBack">
+                <div class="upload-label">2. CCCD mặt sau <span class="req">*</span></div>
+                <div class="drop-area" id="drop-cccdBack">
+                  <input type="file" accept="image/*" hidden />
+                  <div class="drop-content">
+                    <span class="upload-icon">🪪</span>
+                    <span>Kéo thả hoặc <u>chọn ảnh</u></span>
+                  </div>
+                  <img class="preview-img" alt="Preview" hidden />
+                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
+                </div>
+              </div>
+
+              <!-- Upload 3 -->
+              <div class="upload-item" data-doc="businessLicense">
+                <div class="upload-label">3. Giấy phép đăng ký kinh doanh <span class="req">*</span></div>
+                <div class="drop-area" id="drop-businessLicense">
+                  <input type="file" accept="image/*" hidden />
+                  <div class="drop-content">
+                    <span class="upload-icon">📄</span>
+                    <span>Kéo thả hoặc <u>chọn ảnh</u></span>
+                  </div>
+                  <img class="preview-img" alt="Preview" hidden />
+                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
+                </div>
+              </div>
+
+              <!-- Upload 4 -->
+              <div class="upload-item" data-doc="storePhoto">
+                <div class="upload-label">4. Ảnh mặt tiền cửa hàng / Bãi xe <span class="req">*</span></div>
+                <div class="drop-area" id="drop-storePhoto">
+                  <input type="file" accept="image/*" hidden />
+                  <div class="drop-content">
+                    <span class="upload-icon">🏪</span>
+                    <span>Kéo thả hoặc <u>chọn ảnh</u></span>
+                  </div>
+                  <img class="preview-img" alt="Preview" hidden />
+                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
+                </div>
+              </div>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="agreeTerms" required />
+              <span>Tôi cam kết thông tin và giấy tờ cung cấp là chính xác theo quy định của VRP / Go.</span>
+            </label>
+
+            <button type="submit" class="btn-primary btn-block">Gửi hồ sơ đăng ký duyệt</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- TAB 2: THEO DÕI TRẠNG THÁI DUYỆT HỒ SƠ -->
+    <section id="tab-tracking" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <p class="breadcrumb">Đối tác VRP / Go &rsaquo; Theo dõi duyệt hồ sơ</p>
+          <h1 class="page-title">Theo dõi trạng thái duyệt gian hàng</h1>
+          <p class="page-subtitle">Kiểm tra tiến độ thẩm định, trạng thái từng loại giấy tờ và bổ sung hồ sơ khi có yêu cầu.</p>
+        </div>
+        <button type="button" class="btn-primary" id="goToRegisterBtn">+ Đăng ký gian hàng mới</button>
+      </div>
+
+      <!-- 4 THẺ THỐNG KÊ KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Tổng hồ sơ đã gửi</span>
+            <strong class="kpi-value" id="kpiTotal">4</strong>
+            <span class="kpi-note">Tất cả gian hàng</span>
+          </div>
+          <div class="kpi-icon kpi-blue">📁</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Chờ thẩm định</span>
+            <strong class="kpi-value" id="kpiPending">1</strong>
+            <span class="kpi-note text-amber">Đang xử lý trong 24h</span>
+          </div>
+          <div class="kpi-icon kpi-amber">⏳</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Đã duyệt hoạt động</span>
+            <strong class="kpi-value" id="kpiApproved">1</strong>
+            <span class="kpi-note text-green">Sẵn sàng nhận đơn</span>
+          </div>
+          <div class="kpi-icon kpi-green">✅</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Cần bổ sung / Từ chối</span>
+            <strong class="kpi-value" id="kpiAction">2</strong>
+            <span class="kpi-note text-red">Cần cập nhật giấy tờ</span>
+          </div>
+          <div class="kpi-icon kpi-red">⚠️</div>
+        </div>
+      </div>
+
+      <!-- DANH SÁCH HỒ SƠ & BỘ LỌC -->
+      <div class="card">
+        <div class="filter-bar">
+          <input type="text" id="searchInput" class="search-box" placeholder="🔍 Tìm theo mã hồ sơ (#HS...), tên gian hàng..." />
+          <select id="statusFilter" class="filter-select">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="pending">Chờ duyệt</option>
+            <option value="approved">Đã duyệt</option>
+            <option value="missing">Thiếu giấy tờ</option>
+            <option value="rejected">Bị từ chối</option>
+          </select>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã hồ sơ</th>
+                <th>Tên gian hàng</th>
+                <th>Người đại diện</th>
+                <th>Ngày gửi</th>
+                <th>Giấy tờ</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="profileTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CHI TIẾT TIẾN ĐỘ THẨM ĐỊNH (STEPPER TIMELINE) -->
+      <div class="card detail-card" id="detailPanel">
+        <div class="detail-header">
+          <div>
+            <span class="detail-code" id="detailCode">#HS601</span>
+            <h3 class="detail-title" id="detailStoreName">Xe Máy Hoàng Gia - Cầu Giấy</h3>
+            <p class="detail-meta" id="detailMeta">Chủ gian hàng: Nguyễn Văn An • SĐT: 0912345678</p>
+          </div>
+          <span class="badge badge-pending" id="detailStatusBadge">Chờ duyệt</span>
+        </div>
+
+        <!-- Stepper ngang 4 bước -->
+        <div class="stepper" id="stepperContainer"></div>
+
+        <!-- Cảnh báo phản hồi từ Admin nếu thiếu/từ chối -->
+        <div class="feedback-alert" id="feedbackAlert" hidden>
+          <div class="feedback-text">
+            <strong>Yêu cầu từ bộ phận thẩm định VRP / Go:</strong>
+            <p id="feedbackReason"></p>
+          </div>
+          <button type="button" class="btn-primary btn-sm" id="resubmitBtn">📤 Bổ sung giấy tờ &amp; Gửi duyệt lại</button>
+        </div>
+
+        <!-- Bảng chi tiết từng loại giấy tờ -->
+        <h4 class="sub-heading">Chi tiết kiểm duyệt giấy tờ pháp lý</h4>
+        <div class="doc-status-grid" id="docStatusGrid"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- TOAST THÔNG BÁO -->
+  <div class="toast" id="toast" hidden>
+    <span class="toast-check">✓</span>
+    <span id="toastMsg">Thao tác thành công!</span>
+  </div>
+
+  <!-- FOOTER DÙNG CHUNG -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <span><strong>VRP - Go</strong> • Nền tảng cho thuê phương tiện thông minh</span>
+      <span>© 2026 VRP / Go. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <script src="../js/regis_for_delivery.js"></script>
+</body>
+</html>
