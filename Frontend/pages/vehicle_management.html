@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VRP / Go - Quản lý đội xe & Thêm phương tiện</title>
+  <link rel="stylesheet" href="../css/vehicle_management.css" />
+</head>
+<body>
+  <!-- HEADER DÙNG CHUNG -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-left">
+        <div class="logo-box">V</div>
+        <span class="brand-name">VRP - <span class="brand-accent">Go</span></span>
+        <nav class="main-nav">
+          <button type="button" class="nav-tab active" data-tab="add-vehicle">Quản lý đội xe</button>
+          <button type="button" class="nav-tab" data-tab="vehicle-list">
+            Danh sách xe cửa hàng <span class="nav-badge" id="vehicleCountBadge">4</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="header-right">
+        <button type="button" class="btn-outline-light" id="fillSampleBtn">⚡ Điền dữ liệu mẫu</button>
+        <div class="user-profile">
+          <div class="avatar">VD</div>
+          <span>Vu Duc ▾</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NỘI DUNG CHÍNH -->
+  <main class="main-wrapper">
+    <!-- TAB 1: FORM THÔNG TIN XE & TẢI TỐI THIỂU 4 ẢNH CÓ XEM TRƯỚC -->
+    <section id="tab-add-vehicle" class="tab-panel active">
+      <div class="page-header">
+        <div>
+          <p class="breadcrumb">VRP Go - Chi nhánh Tây Hồ &rsaquo; Thêm phương tiện mới</p>
+          <h1 class="page-title">Thêm xe mới vào cửa hàng</h1>
+          <p class="page-subtitle">Nhập thông tin kỹ thuật, giá thuê và tải lên tối thiểu 4 góc ảnh thực tế của xe.</p>
+        </div>
+        <button type="button" class="btn-outline-dark" id="viewListBtn">📋 Xem danh sách xe</button>
+      </div>
+
+      <form id="vehicleForm" class="register-grid">
+        <!-- CỘT TRÁI (65%): THÔNG TIN CHI TIẾT -->
+        <div class="col-main">
+          <!-- Khối 1: Thông tin phương tiện -->
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">1</span>
+              <h2>Thông tin phương tiện</h2>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="vehicleName">Tên xe / Dòng xe <span class="req">*</span></label>
+                <input type="text" id="vehicleName" placeholder="VD: Honda Air Blade 160 ABS" required />
+              </div>
+              <div class="form-group">
+                <label for="vehicleType">Loại phương tiện <span class="req">*</span></label>
+                <select id="vehicleType" required>
+                  <option value="">-- Chọn loại xe --</option>
+                  <option value="Xe tay ga">Xe tay ga</option>
+                  <option value="Xe số">Xe số</option>
+                  <option value="Xe côn tay">Xe côn tay</option>
+                  <option value="Xe máy điện">Xe máy điện</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="licensePlate">Biển số xe <span class="req">*</span></label>
+                <input type="text" id="licensePlate" placeholder="VD: 29F1 - 889.26" required />
+              </div>
+              <div class="form-group">
+                <label for="yearColor">Năm sản xuất &amp; Màu sắc <span class="req">*</span></label>
+                <input type="text" id="yearColor" placeholder="VD: 2025 • Đen Nhám" required />
+              </div>
+              <div class="form-group full-span">
+                <label for="vehicleDesc">Mô tả tình trạng &amp; Phụ kiện đi kèm <span class="req">*</span></label>
+                <input type="text" id="vehicleDesc" placeholder="VD: Xe mới bảo dưỡng định kỳ, ODO 4.200km. Tặng kèm 02 mũ bảo hiểm + áo mưa." required />
+              </div>
+            </div>
+          </div>
+
+          <!-- Khối 2: Giá thuê & Điều kiện nhận xe -->
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">2</span>
+              <h2>Giá thuê &amp; Điều kiện nhận xe</h2>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="dailyPrice">Giá thuê theo ngày (VNĐ) <span class="req">*</span></label>
+                <input type="number" id="dailyPrice" min="50000" step="10000" placeholder="VD: 180000" required />
+              </div>
+              <div class="form-group">
+                <label for="depositAmount">Tiền đặt cọc yêu cầu <span class="req">*</span></label>
+                <input type="text" id="depositAmount" placeholder="VD: 1.000.000 đ (Hoặc giữ CCCD gốc)" required />
+              </div>
+              <div class="form-group">
+                <label for="fuelType">Nhiên liệu / Pin <span class="req">*</span></label>
+                <select id="fuelType" required>
+                  <option value="Xăng RON 95 (Đầy bình khi giao)">Xăng RON 95 (Đầy bình khi giao)</option>
+                  <option value="Pin LFP (Sạc đầy 100% khi giao)">Pin LFP (Sạc đầy 100% khi giao)</option>
+                  <option value="Ắc quy (Sạc đầy 100% khi giao)">Ắc quy (Sạc đầy 100% khi giao)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="listingStatus">Trạng thái niêm yết <span class="req">*</span></label>
+                <select id="listingStatus" required>
+                  <option value="available">Sẵn sàng cho thuê ngay</option>
+                  <option value="maintenance">Đang bảo dưỡng / Chờ kiểm tra</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI (35%): HÌNH ẢNH XE (TỐI THIỂU 4 ẢNH CÓ XEM TRƯỚC) -->
+        <div class="col-side">
+          <div class="card">
+            <div class="card-header">
+              <span class="step-badge">3</span>
+              <h2>Hình ảnh xe (Tối thiểu 4 ảnh)</h2>
+            </div>
+            <p class="helper-text" id="photoCounterText">Đã tải lên <strong>0/4</strong> ảnh bắt buộc (PNG, JPG tối đa 5MB/ảnh).</p>
+
+            <!-- Grid 2x2 cho 4 góc ảnh bắt buộc -->
+            <div class="photo-grid-2x2">
+              <!-- Ảnh 1 -->
+              <div class="upload-item" data-doc="frontView">
+                <div class="upload-label">1. Góc chính diện <span class="req">*</span></div>
+                <div class="drop-area">
+                  <input type="file" accept="image/*" hidden />
+                  <div class="drop-content">
+                    <span class="upload-icon">🛵</span>
+                    <span>Chọn ảnh</span>
+                  </div>
+                  <img class="preview-img" alt="Góc chính diện" hidden />
+                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
+                </div>
+              </div>
+
+              <!-- Ảnh 2 -->
+              <div class="upload-item" data-doc="sideView">
+                <div class="upload-label">2. Ngang thân xe <span class="req">*</span></div>
+                <div class="drop-area">
+                  <input type="file" accept="image/*" hidden />
+                  <div class="drop-content">
+                    <span class="upload-icon">🏍️</span>
+                    <span>Chọn ảnh</span>
+                  </div>
+                  <img class="preview-img" alt="Ngang thân xe" hidden />
+                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
+                </div>
+              </div>
+
+              <!-- Ảnh 3 -->
+              <div class="upload-item" data-doc="rearPlate">
+                <div class="upload-label">3. Đuôi &amp; Biển số <span class="req">*</span></div>
+                <div class="drop-area">
+                  <input type="file" accept="image/*" hidden />
+                  <div class="drop-content">
+                    <span class="upload-icon">🔢</span>
+                    <span>Chọn ảnh</span>
+                  </div>
+                  <img class="preview-img" alt="Đuôi và biển số" hidden />
+                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
+                </div>
+              </div>
+
+              <!-- Ảnh 4 -->
+              <div class="upload-item" data-doc="odoTrunk">
+                <div class="upload-label">4. ODO &amp; Cốp xe <span class="req">*</span></div>
+                <div class="drop-area">
+                  <input type="file" accept="image/*" hidden />
+                  <div class="drop-content">
+                    <span class="upload-icon">⏱️</span>
+                    <span>Chọn ảnh</span>
+                  </div>
+                  <img class="preview-img" alt="ODO và cốp xe" hidden />
+                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Khu vực tải thêm ảnh chi tiết phụ (tùy chọn) -->
+            <div class="extra-upload-box">
+              <input type="file" id="extraPhotosInput" accept="image/*" multiple hidden />
+              <button type="button" class="btn-extra-upload" id="addExtraPhotosBtn">
+                ➕ Tải thêm ảnh chi tiết khác (<span id="extraCount">0</span>/4 ảnh phụ)
+              </button>
+              <div class="extra-thumbs" id="extraThumbsContainer"></div>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="agreeSafety" required />
+              <span>Cam kết xe có đầy đủ giấy tờ đăng ký, bảo hiểm và đạt tiêu chuẩn an toàn kỹ thuật.</span>
+            </label>
+
+            <button type="submit" class="btn-primary btn-block">Lưu &amp; Đăng xe lên cửa hàng</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- TAB 2: DANH SÁCH XE CỦA CỬA HÀNG -->
+    <section id="tab-vehicle-list" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <p class="breadcrumb">VRP Go - Chi nhánh Tây Hồ &rsaquo; Quản lý kho xe</p>
+          <h1 class="page-title">Danh sách xe của cửa hàng</h1>
+          <p class="page-subtitle">Theo dõi trạng thái hoạt động, giá thuê và lịch bảo dưỡng toàn bộ phương tiện tại chi nhánh.</p>
+        </div>
+        <button type="button" class="btn-primary" id="goToAddVehicleBtn">+ Thêm phương tiện mới</button>
+      </div>
+
+      <!-- 4 THẺ KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Tổng số xe quản lý</span>
+            <strong class="kpi-value" id="kpiTotal">4</strong>
+            <span class="kpi-note">Tất cả phương tiện</span>
+          </div>
+          <div class="kpi-icon kpi-blue">🛵</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Sẵn sàng cho thuê</span>
+            <strong class="kpi-value" id="kpiAvailable">2</strong>
+            <span class="kpi-note text-green">Đang hiển thị trên sàn</span>
+          </div>
+          <div class="kpi-icon kpi-green">✅</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Đang có khách thuê</span>
+            <strong class="kpi-value" id="kpiRented">1</strong>
+            <span class="kpi-note text-amber">Hợp đồng đang chạy</span>
+          </div>
+          <div class="kpi-icon kpi-amber">🔑</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Đang bảo dưỡng / Khóa</span>
+            <strong class="kpi-value" id="kpiMaintenance">1</strong>
+            <span class="kpi-note text-red">Tạm ngưng nhận đơn</span>
+          </div>
+          <div class="kpi-icon kpi-red">🔧</div>
+        </div>
+      </div>
+
+      <!-- BẢNG DANH SÁCH XE -->
+      <div class="card">
+        <div class="filter-bar">
+          <input type="text" id="searchInput" class="search-box" placeholder="🔍 Tìm theo tên xe, biển số (VD: 29F1...)..." />
+          <div class="filter-group">
+            <select id="typeFilter" class="filter-select">
+              <option value="all">Tất cả dòng xe</option>
+              <option value="Xe tay ga">Xe tay ga</option>
+              <option value="Xe máy điện">Xe máy điện</option>
+              <option value="Xe côn tay">Xe côn tay</option>
+              <option value="Xe số">Xe số</option>
+            </select>
+            <select id="statusFilter" class="filter-select">
+              <option value="all">Tất cả trạng thái</option>
+              <option value="available">Sẵn sàng thuê</option>
+              <option value="rented">Đang cho thuê</option>
+              <option value="maintenance">Bảo dưỡng</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Phương tiện</th>
+                <th>Biển số</th>
+                <th>Loại xe</th>
+                <th>Giá thuê / ngày</th>
+                <th>Hình ảnh</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="vehicleTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL XEM CHI TIẾT & ẢNH XE -->
+  <div class="modal-backdrop" id="previewModal" hidden>
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <span class="detail-code" id="modalPlate">29F1 - 889.26</span>
+          <h3 id="modalTitle">Honda Air Blade 160 ABS</h3>
+        </div>
+        <button type="button" class="close-modal-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <p class="modal-desc" id="modalDesc"></p>
+      <div class="modal-gallery" id="modalGallery"></div>
+    </div>
+  </div>
+
+  <!-- TOAST THÔNG BÁO -->
+  <div class="toast" id="toast" hidden>
+    <span class="toast-check">✓</span>
+    <span id="toastMsg">Thao tác thành công!</span>
+  </div>
+
+  <!-- FOOTER DÙNG CHUNG -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <span><strong>VRP - Go</strong> • Nền tảng cho thuê phương tiện thông minh</span>
+      <span>© 2026 VRP / Go. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <script src="../js/vehicle_management.js"></script>
+</body>
+</html>
