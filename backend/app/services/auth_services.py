@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.schemas.auth_schemas import RegisterSchema
 from fastapi import HTTPException, status
 from firebase_admin import auth, get_app, initialize_app
-from app.core.config import FIREBASE_PROJECT_ID
+from app.core.config import PROJECT_ID
 from app.core.security import create_access_token
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -46,7 +46,7 @@ def register_service(new_user: RegisterSchema, db: Session):
 
 
 def login_service(firebase_id_token: str, db: Session):
-    if not FIREBASE_PROJECT_ID:
+    if not PROJECT_ID:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Firebase project ID is not configured'
@@ -55,7 +55,7 @@ def login_service(firebase_id_token: str, db: Session):
     try:
         firebase_app = get_app()
     except ValueError:
-        firebase_app = initialize_app(options={"projectId": FIREBASE_PROJECT_ID})
+        firebase_app = initialize_app(options={"projectId": PROJECT_ID})
 
     try:
         firebase_claims = auth.verify_id_token(

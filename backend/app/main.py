@@ -9,6 +9,8 @@ from app.routers.delivery_routers import router as delivery_routers
 from sqlalchemy.orm import Session
 from app.utils.response import handle_exception, create_response
 from sqlalchemy import text
+from app.core.config import API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID, MEASUREMENT_ID
+
 
 app = FastAPI(
     title='Vehicle Rental Platfrom',
@@ -47,6 +49,25 @@ def check_system(request: Request, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Can't connect to server: {str(e)}"
         )
+
+
+@app.get('/firebase')
+def get_firebase_config():
+    api_key = API_KEY
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Not found Firebase'config"
+        )
+    return {
+        "apiKey": API_KEY,
+        "authDomain": AUTH_DOMAIN,
+        "projectId": PROJECT_ID,
+        "storageBucket": STORAGE_BUCKET,
+        "messagingSenderId": MEASUREMENT_ID,
+        "appId": APP_ID,
+        "measurementId": MEASUREMENT_ID
+    }
 
 app.include_router(auth_routers)
 app.include_router(verification_routers)

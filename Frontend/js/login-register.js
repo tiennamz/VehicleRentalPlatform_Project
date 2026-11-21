@@ -9,18 +9,19 @@ import { getAuth,
 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCKkSNAEypcF4KKmuCh4QfyMj8-5IrTagg",
-    authDomain: "vehiclerentalflatform.firebaseapp.com",
-    projectId: "vehiclerentalflatform",
-    storageBucket: "vehiclerentalflatform.firebasestorage.app",
-    messagingSenderId: "857032499308",
-    appId: "1:857032499308:web:3dad3252e7b15cdec73849",
-    measurementId: "G-2PVY3T7GJB"
-};
+const loadFirebase = async()=>{
+    const res = await fetch("http://127.0.0.1:8000/firebase")
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+    if (!res.ok) 
+        throw Error("Not found Firebase'config")
+    const firebaseConfig = await res.json()
+    const app = initializeApp(firebaseConfig)
+    return getAuth(app)
+}
+
+const auth = await loadFirebase()
+
+
 
 const container = document.getElementById("auth");
 
