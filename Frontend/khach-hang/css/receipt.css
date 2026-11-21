@@ -1,0 +1,424 @@
+:root {
+    --primary: #079b70;
+    --primary-dark: #0f4c36;
+    --primary-light: #e9f8f1;
+    --text: #14243a;
+    --muted: #718096;
+    --border: #e7edf0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Be Vietnam Pro", Arial, sans-serif;
+    color: var(--text);
+    background: #f4f6f5;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+button {
+    font: inherit;
+    cursor: pointer;
+}
+
+.container,
+.page-container {
+    width: min(1180px, calc(100% - 40px));
+    margin: 0 auto;
+}
+
+/* HEADER */
+
+.header {
+    background: var(--primary-dark);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
+}
+
+.header-container {
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    color: white;
+    font-size: 24px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.logo span,
+.receipt-logo span {
+    color: #10b981;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #145a43;
+    border: 1px solid #059669;
+    font-weight: 700;
+}
+
+/* KHUNG BIÊN NHẬN */
+
+.page-container {
+    padding: 35px 0 60px;
+}
+
+.receipt-top {
+    width: min(720px, 100%);
+    margin: 0 auto 15px;
+}
+
+.receipt-panel {
+    width: min(720px, 100%);
+    margin: 0 auto;
+    padding: 30px 36px;
+    border: 1px solid #e8eeeb;
+    border-radius: 16px;
+    background: white;
+    box-shadow: 0 5px 18px rgba(15, 76, 54, .05);
+}
+
+/* NÚT QUAY LẠI */
+
+.btn {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.btn-back {
+    border: 1px solid #dce7e1;
+    background: white;
+    color: var(--primary-dark);
+}
+
+.btn-back:hover {
+    background: var(--primary-light);
+}
+
+/* TRẠNG THÁI GIAO DỊCH */
+
+.transaction-status {
+    padding: 8px 0 20px;
+    text-align: center;
+}
+
+.status-icon {
+    width: 62px;
+    height: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 13px;
+    border-radius: 50%;
+    font-size: 26px;
+}
+
+.transaction-status.success .status-icon {
+    background: #e8f8ef;
+    color: var(--primary);
+}
+
+.transaction-status.failed .status-icon {
+    background: #fff0ef;
+    color: #dc5148;
+}
+
+.transaction-status.pending .status-icon {
+    background: #fff7e8;
+    color: #d99a2b;
+}
+
+.transaction-status h2 {
+    color: var(--primary-dark);
+    font-size: 21px;
+}
+
+.transaction-status.failed h2 {
+    color: #b93832;
+}
+
+.transaction-status.pending h2 {
+    color: #9a6417;
+}
+
+.transaction-status p {
+    margin: 5px 0 10px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.status-label {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.transaction-status.success .status-label {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.transaction-status.failed .status-label {
+    background: #fff0ef;
+    color: #c2413b;
+}
+
+.transaction-status.pending .status-label {
+    background: #fff7e8;
+    color: #9a6417;
+}
+
+/* TIÊU ĐỀ BIÊN NHẬN */
+
+.receipt-divider {
+    height: 1px;
+    margin: 5px 0 20px;
+    border-top: 1px dashed #d9e4de;
+}
+
+.receipt-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.step-label {
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .8px;
+}
+
+.receipt-heading h2 {
+    margin-top: 4px;
+    color: #183b30;
+    font-size: 18px;
+}
+
+.receipt-logo {
+    color: var(--primary-dark);
+    font-size: 18px;
+    font-weight: 800;
+}
+
+/* SỐ TIỀN GIAO DỊCH */
+
+.amount-section {
+    display: grid;
+    justify-items: center;
+    gap: 5px;
+    margin: 22px 0;
+    padding: 20px;
+    border-radius: 12px;
+    background: #f1fbf6;
+}
+
+.amount-section>span:first-child {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.amount-section h2 {
+    color: var(--primary);
+    font-size: 30px;
+    font-weight: 800;
+}
+
+.paid-label {
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.paid-label.failed {
+    color: #c2413b;
+}
+
+.paid-label.pending {
+    color: #b7791f;
+}
+
+/* CHI TIẾT GIAO DỊCH */
+
+.receipt-details {
+    display: grid;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+}
+
+.detail-row:last-child {
+    border-bottom: 0;
+}
+
+.detail-row span {
+    color: var(--muted);
+}
+
+.detail-row strong {
+    text-align: right;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.success-text {
+    color: var(--primary) !important;
+}
+
+.failed-text {
+    color: #c2413b !important;
+}
+
+.pending-text {
+    color: #b7791f !important;
+}
+
+/* GHI CHÚ */
+
+.receipt-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f7faf8;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.receipt-note i {
+    margin-top: 3px;
+    color: var(--primary);
+}
+
+/* NÚT IN BIÊN NHẬN */
+
+.receipt-actions {
+    margin-top: 22px;
+}
+
+.btn-print {
+    width: 100%;
+    border: 0;
+    background: var(--primary);
+    color: white;
+}
+
+.btn-print:hover {
+    background: #087e5e;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 600px) {
+    .page-container {
+        width: calc(100% - 28px);
+        padding-top: 22px;
+    }
+
+    .receipt-panel {
+        padding: 22px 16px;
+    }
+
+    .transaction-status h2 {
+        font-size: 19px;
+    }
+
+    .receipt-heading h2 {
+        font-size: 15px;
+    }
+
+    .receipt-logo {
+        font-size: 15px;
+    }
+
+    .amount-section h2 {
+        font-size: 26px;
+    }
+
+    .detail-row {
+        font-size: 11px;
+    }
+}
+
+/* CHẾ ĐỘ IN */
+
+@media print {
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+
+    body {
+        background: white;
+        font-size: 12px;
+    }
+
+    .header,
+    .receipt-top,
+    .receipt-actions {
+        display: none !important;
+    }
+
+    .page-container {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .receipt-section {
+        display: block !important;
+    }
+
+    .receipt-panel {
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .receipt-note {
+        background: white;
+        border: 1px solid #ddd;
+    }
+}
