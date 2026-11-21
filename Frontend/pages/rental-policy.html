@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chính sách thuê xe · VRP-GO</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="apple-touch-icon" href="../assets/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .policy { max-width: 800px; }
+    .policy h2 {
+      font-size: 18px; font-weight: 800; margin: 28px 0 12px;
+      color: var(--primary-dark); padding-top: 8px;
+    }
+    .policy h2:first-of-type { margin-top: 0; }
+    .policy p, .policy li {
+      font-size: 14.5px; color: #334155; line-height: 1.7; margin-bottom: 10px;
+    }
+    .policy ul { padding-left: 20px; margin-bottom: 12px; }
+    .policy .card { margin-bottom: 16px; }
+    .tier {
+      display: grid; grid-template-columns: 140px 1fr; gap: 10px;
+      padding: 12px 0; border-bottom: 1px solid #f0f4f2; font-size: 14px;
+    }
+    .tier:last-child { border-bottom: 0; }
+    .tier strong { color: var(--primary); }
+    @media (max-width: 600px) { .tier { grid-template-columns: 1fr; } }
+  </style>
+  <style>html,body{opacity:1!important;visibility:visible!important;background:#f4f7f5;}</style>
+</head>
+<body>
+<header class="header">
+  <div class="container header-container">
+    <a href="../index.html" class="logo"><span class="logo-mark" aria-hidden="true"><img src="../assets/logo-vrp.png" alt=""></span><span class="logo-text"><span class="vrp">VRP</span><span class="go">-GO</span></span></a>
+    <nav class="navbar">
+      <ul class="nav-list">
+        <li><a href="../index.html">Trang chủ</a></li>
+        <li><a href="../pages/vehicles.html">Thuê xe</a></li>
+        <li><a href="../pages/how-it-works.html">Cách hoạt động</a></li>
+        <li><a href="../pages/my-orders.html">Đơn của tôi</a></li>
+      </ul>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="btn btn-login">Đăng nhập</a>
+      <a href="register.html" class="btn btn-register">Đăng ký</a>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container policy">
+    <div class="page-head">
+      <p class="breadcrumb"><a href="../index.html">Trang chủ</a> / <a href="help-center.html">Hỗ trợ</a> / Chính sách thuê xe</p>
+      <h1>Chính sách thuê xe</h1>
+      <p>Áp dụng cho dịch vụ thuê xe máy VRP-GO tại Đà Nẵng.</p>
+    </div>
+
+    <div class="card">
+      <h2>1. Đặt xe & giữ chỗ</h2>
+      <ul>
+        <li>Khách chọn thành phố, thời gian nhận/trả; hệ thống chỉ hiện xe trống cả khung giờ.</li>
+        <li>Khi tạo đơn, xe được <strong>giữ chỗ 30 phút</strong>. Hết thời gian mà chưa thanh toán cọc → đơn hủy, xe mở lại.</li>
+        <li>Thanh toán cọc online thành công → cửa hàng có <strong>15 phút</strong> để xác nhận hoặc từ chối kèm lý do.</li>
+      </ul>
+
+      <h2>2. Đặt cọc</h2>
+      <ul>
+        <li>Mức cọc mặc định theo loại xe / giá trị xe (thường 30% hoặc mức cố định cửa hàng công bố).</li>
+        <li>Cọc được giữ đến khi tất toán biên bản nhận xe; hoàn phần còn lại sau khi trừ phí phát sinh (nếu có).</li>
+      </ul>
+
+      <h2 id="huy">3. Chính sách hủy</h2>
+      <div class="tier"><strong>≥ 24 giờ</strong><span>Hủy trước giờ nhận ≥ 24h: hoàn <strong>100%</strong> tiền cọc.</span></div>
+      <div class="tier"><strong>6 – 24 giờ</strong><span>Hủy trong khoảng 6–24h: hoàn một phần (thường 50% cọc) theo thông báo khi đặt.</span></div>
+      <div class="tier"><strong>&lt; 6 giờ</strong><span>Hủy sát giờ nhận: có thể mất toàn bộ cọc hoặc chịu phí phạt theo quy định đơn.</span></div>
+
+      <h2>4. Giao nhận & biên bản</h2>
+      <ul>
+        <li>Giao xe và nhận lại xe: chụp <strong>6 góc ảnh</strong>, ghi số km và mức xăng.</li>
+        <li>Phí phát sinh (xăng, hư hỏng, trả muộn…) phải có minh chứng ảnh / biên bản.</li>
+        <li>Khách nên đối chiếu ảnh lúc giao trước khi ký nhận.</li>
+      </ul>
+
+      <h2>5. Giấy tờ & trách nhiệm</h2>
+      <ul>
+        <li>Khách mang GPLX hạng tương ứng và CCCD/hộ chiếu khi nhận xe.</li>
+        <li>Không cần để lại bản gốc giấy tờ tại cửa hàng nếu đã xác minh trên nền tảng (mục tiêu giảm e ngại của khách).</li>
+        <li>Khách chịu trách nhiệm trong thời gian thuê; cửa hàng chịu trách nhiệm trạng thái xe lúc giao.</li>
+      </ul>
+
+      <h2>6. Khiếu nại</h2>
+      <ul>
+        <li>Trong <strong>48 giờ</strong> sau tất toán, khách có thể mở khiếu nại kèm ảnh.</li>
+        <li>Bộ phận hỗ trợ xem hồ sơ đơn và ghi kết luận.</li>
+      </ul>
+    </div>
+
+    <p style="margin-top:20px;font-size:13.5px;color:var(--muted)">
+      Xem thêm: <a href="faq.html" style="color:var(--primary);font-weight:600">Câu hỏi thường gặp</a> ·
+      <a href="help-center.html" style="color:var(--primary);font-weight:600">Trung tâm trợ giúp</a>
+    </p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-bottom">© 2026 VRP-GO · Chính sách có thể cập nhật theo phiên bản sản phẩm</div>
+  </div>
+</footer>
+<script src="../js/effects.js"></script>
+</body>
+</html>
