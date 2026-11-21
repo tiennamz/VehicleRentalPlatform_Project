@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tạo đơn thuê · VRP-GO</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="apple-touch-icon" href="../assets/favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .hold-banner {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 1px solid #f6e05e;
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hold-banner.expired {
+      background: linear-gradient(135deg, #fee2e2, #fecaca);
+      border-color: #fca5a5;
+    }
+    .hold-banner strong { color: #92400e; }
+    .hold-banner.expired strong { color: #991b1b; }
+    .hold-banner p { color: #a16207; font-size: 13px; margin: 2px 0 0; }
+    .hold-banner.expired p { color: #b91c1c; }
+    #countdown { font-weight: 800; font-variant-numeric: tabular-nums; color: #78350f; font-size: 14px; }
+    .hold-banner.expired #countdown { color: #7f1d1d; }
+    .hold-bar-wrap { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(146,64,14,0.15); }
+    .hold-bar { height: 100%; width: 100%; background: #d69e2e; transition: width 1s linear; }
+    .hold-banner.expired .hold-bar { background: #dc2626; }
+    .order-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+    .delivery-card {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      border: 1.5px solid var(--border); border-radius: 12px; padding: 14px;
+      margin-bottom: 10px; cursor: pointer; transition: 0.2s;
+    }
+    .delivery-card:has(input:checked) { border-color: var(--primary); background: #f0fdf7; }
+    .delivery-card input { margin-right: 10px; accent-color: var(--primary); }
+    .delivery-sub { font-size: 12px; color: var(--muted); display: block; margin-left: 24px; margin-top: 2px; }
+    .delivery-price { font-weight: 700; font-size: 13.5px; color: var(--primary); white-space: nowrap; }
+    .delivery-detail-box {
+      margin-top: 12px; padding: 12px 14px; border-radius: 10px;
+      background: #f8fbf9; border: 1px solid #d1e5dc; font-size: 13px;
+    }
+    .field-error { color: var(--danger); font-size: 12px; margin-top: 4px; display: none; }
+    @media (max-width: 900px) { .order-layout { grid-template-columns: 1fr; } }
+  </style>
+  <style>html,body{opacity:1!important;visibility:visible!important;background:#f4f7f5;}</style>
+</head>
+<body>
+<header class="header">
+  <div class="container header-container">
+    <a href="../index.html" class="logo"><span class="logo-mark" aria-hidden="true"><img src="../assets/logo-vrp.png" alt=""></span><span class="logo-text"><span class="vrp">VRP</span><span class="go">-GO</span></span></a>
+    <nav class="navbar">
+      <ul class="nav-list">
+        <li><a href="../index.html">Trang chủ</a></li>
+        <li><a href="../pages/vehicles.html" class="active">Thuê xe</a></li>
+        <li><a href="../pages/how-it-works.html">Cách hoạt động</a></li>
+        <li><a href="../pages/my-orders.html">Đơn của tôi</a></li>
+      </ul>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="btn btn-login">Đăng nhập</a>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container order-layout">
+    <div>
+      <!-- 1. Đếm ngược thời gian giữ chỗ -->
+      <div class="hold-banner" id="hold-banner" role="status" aria-live="polite">
+        <span style="font-size:24px" id="hold-icon">⏱</span>
+        <div>
+          <strong id="hold-title">Đang giữ chỗ xe cho bạn</strong>
+          <p id="hold-desc">Hoàn tất tạo đơn &amp; thanh toán cọc trong <span id="countdown">30:00</span> — hết giờ đơn tự hủy, xe mở lại.</p>
+        </div>
+        <div class="hold-bar-wrap"><div class="hold-bar" id="hold-bar"></div></div>
+      </div>
+
+      <!-- Thông tin xe thuê -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;gap:14px;align-items:center">
+          <img id="order-vehicle-img" src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=160&q=80" alt="Xe thuê" style="width:78px;height:58px;object-fit:cover;border-radius:10px">
+          <div>
+            <strong id="order-vehicle-name" style="font-size:16px">Honda Vision 2024</strong>
+            <p id="order-vehicle-time" style="font-size:13px;color:var(--muted);margin:3px 0 0">Nhận 13/11 09:00 → Trả 15/11 09:00 · 2 ngày · Hải Châu, Đà Nẵng</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Chọn hình thức giao nhận -->
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:12px">Hình thức giao nhận</h3>
+        <label class="delivery-card">
+          <div>
+            <input type="radio" name="deliveryMethod" value="self" data-fee="0" checked>
+            <strong>Tự đến cửa hàng nhận xe</strong>
+            <span class="delivery-sub">Nhận trực tiếp tại cơ sở VRP-GO Hải Châu, Đà Nẵng</span>
+          </div>
+          <span class="delivery-price">Miễn phí</span>
+        </label>
+        <label class="delivery-card">
+          <div>
+            <input type="radio" name="deliveryMethod" value="delivery" data-fee="50000">
+            <strong>Giao xe tận nơi trong nội thành</strong>
+            <span class="delivery-sub">Giao tận khách sạn, nhà riêng hoặc điểm hẹn (bán kính &lt; 10km)</span>
+          </div>
+          <span class="delivery-price">+50.000đ</span>
+        </label>
+        <label class="delivery-card">
+          <div>
+            <input type="radio" name="deliveryMethod" value="airport" data-fee="80000">
+            <strong>Giao nhận tại Sân bay / Ga tàu</strong>
+            <span class="delivery-sub">Sân bay Quốc tế Đà Nẵng hoặc Ga Đà Nẵng đúng giờ hạ cánh</span>
+          </div>
+          <span class="delivery-price">+80.000đ</span>
+        </label>
+
+        <div class="delivery-detail-box" id="store-address-box">
+          <strong>Địa điểm nhận xe:</strong> 120 Nguyễn Văn Linh, Quận Hải Châu, TP. Đà Nẵng (Mở cửa 07:00 – 22:00)
+        </div>
+        <div class="delivery-detail-box" id="custom-address-box" style="display:none">
+          <label for="delivery-address" style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Địa chỉ giao nhận xe *</label>
+          <input id="delivery-address" type="text" placeholder="Ví dụ: Khách sạn Mường Thanh, 270 Võ Nguyên Giáp, Đà Nẵng" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff">
+          <p class="field-error" id="err-address">Vui lòng nhập địa chỉ giao nhận xe.</p>
+        </div>
+      </div>
+
+      <!-- 3. Thông tin liên hệ & Ghi chú -->
+      <div class="card">
+        <h3 style="margin-bottom:12px">Thông tin liên hệ &amp; Ghi chú</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label for="customer-name" style="font-size:12px;font-weight:600">Họ và tên người thuê *</label>
+            <input id="customer-name" type="text" placeholder="Nguyễn Văn A" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-top:4px">
+            <p class="field-error" id="err-name">Vui lòng nhập họ tên người thuê.</p>
+          </div>
+          <div>
+            <label for="customer-phone" style="font-size:12px;font-weight:600">Số điện thoại liên hệ *</label>
+            <input id="customer-phone" type="tel" placeholder="0901 234 567" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-top:4px">
+            <p class="field-error" id="err-phone">Vui lòng nhập số điện thoại hợp lệ.</p>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <label for="order-note" style="font-size:12px;font-weight:600">Ghi chú cho cửa hàng</label>
+          <textarea id="order-note" rows="3" placeholder="Ví dụ: Chuẩn bị thêm 2 mũ bảo hiểm nửa đầu, áo mưa, giao lúc 09:00 sáng..." style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-top:4px;resize:vertical"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Bảng chi phí -->
+    <aside>
+      <div class="card" style="position:sticky;top:84px">
+        <h3 style="margin-bottom:14px">Bảng chi phí</h3>
+        <div style="font-size:13.5px;color:var(--muted)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span id="rent-label">Thuê xe (2 ngày)</span><strong id="rent-cost" style="color:var(--text)">300.000đ</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span>Phí dịch vụ (5%)</span><strong id="service-cost" style="color:var(--text)">15.000đ</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span>Bảo hiểm chuyến đi</span><strong id="insurance-cost" style="color:var(--text)">30.000đ</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span id="delivery-label">Phí giao nhận (Tại cửa hàng)</span><strong id="delivery-cost" style="color:var(--text)">0đ</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span>Cọc giữ chỗ (30%)</span><strong id="deposit-cost" style="color:var(--text)">103.500đ</strong></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px dashed #d1e5dc;margin-top:8px;font-weight:700">
+          <span>Tổng cộng</span><strong id="total-cost" style="color:var(--primary);font-size:18px">345.000đ</strong>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btn-pay" style="margin-top:12px">Xác nhận &amp; Thanh toán cọc</button>
+        <a href="../khach-hang/payment.html" class="btn btn-outline btn-block" style="margin-top:8px">Mở trang thanh toán cọc</a>
+        <a href="my-orders.html" class="btn btn-ghost btn-block" style="margin-top:6px">← Xem đơn của tôi</a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer class="footer"><div class="container footer-bottom">© 2026 VRP-GO</div></footer>
+<script src="../js/effects.js"></script>
+<script>
+/* FR-16 & FR-18: Hình thức giao nhận, ghi chú, bảng chi phí động & đếm ngược giữ chỗ */
+(function () {
+  const formatVND = n => Math.round(n).toLocaleString("vi-VN") + "đ";
+
+  // Đồng bộ thông tin xe nếu đi từ trang trước
+  const savedName = sessionStorage.getItem("selectedVehicleName");
+  const savedImg = sessionStorage.getItem("selectedVehicleImage");
+  if (savedName) document.getElementById("order-vehicle-name").textContent = savedName;
+  if (savedImg) document.getElementById("order-vehicle-img").src = savedImg;
+
+  // 1. Đếm ngược thời gian giữ chỗ (30:00)
+  let sec = 30 * 60;
+  const totalSec = sec;
+  const countdownEl = document.getElementById("countdown");
+  const barEl = document.getElementById("hold-bar");
+  const bannerEl = document.getElementById("hold-banner");
+  const btnPay = document.getElementById("btn-pay");
+
+  const timer = setInterval(() => {
+    if (sec <= 0) {
+      clearInterval(timer);
+      countdownEl.textContent = "00:00";
+      barEl.style.width = "0%";
+      bannerEl.classList.add("expired");
+      document.getElementById("hold-icon").textContent = "⚠️";
+      document.getElementById("hold-title").textContent = "Đã hết thời gian giữ chỗ";
+      document.getElementById("hold-desc").textContent = "Đơn tạm đã tự hủy và xe được mở lại. Vui lòng chọn lại xe để tạo đơn mới.";
+      btnPay.disabled = true;
+      btnPay.style.opacity = "0.5";
+      btnPay.style.cursor = "not-allowed";
+      return;
+    }
+    sec--;
+    const m = String(Math.floor(sec / 60)).padStart(2, "0");
+    const s = String(sec % 60).padStart(2, "0");
+    countdownEl.textContent = m + ":" + s;
+    barEl.style.width = ((sec / totalSec) * 100) + "%";
+  }, 1000);
+
+  // 2. Chọn hình thức giao nhận & cập nhật bảng chi phí
+  const rentCost = 300000;
+  const serviceCost = 15000;
+  const insuranceCost = 30000;
+  const radios = document.querySelectorAll('input[name="deliveryMethod"]');
+  const storeBox = document.getElementById("store-address-box");
+  const customBox = document.getElementById("custom-address-box");
+
+  function updateCosts() {
+    const selected = document.querySelector('input[name="deliveryMethod"]:checked');
+    const method = selected ? selected.value : "self";
+    const deliveryFee = selected ? parseInt(selected.dataset.fee || "0", 10) : 0;
+
+    if (method === "self") {
+      storeBox.style.display = "block";
+      customBox.style.display = "none";
+      document.getElementById("delivery-label").textContent = "Phí giao nhận (Tại cửa hàng)";
+    } else {
+      storeBox.style.display = "none";
+      customBox.style.display = "block";
+      document.getElementById("delivery-label").textContent =
+        method === "airport" ? "Phí giao nhận (Sân bay / ga)" : "Phí giao nhận (Tận nơi)";
+    }
+
+    const total = rentCost + serviceCost + insuranceCost + deliveryFee;
+    const deposit = Math.round(total * 0.3);
+
+    document.getElementById("delivery-cost").textContent = formatVND(deliveryFee);
+    document.getElementById("deposit-cost").textContent = formatVND(deposit);
+    document.getElementById("total-cost").textContent = formatVND(total);
+  }
+
+  radios.forEach(r => r.addEventListener("change", updateCosts));
+  updateCosts();
+
+  // 3. Kiểm tra dữ liệu & tạo đơn
+  btnPay.addEventListener("click", () => {
+    const nameInput = document.getElementById("customer-name");
+    const phoneInput = document.getElementById("customer-phone");
+    const addressInput = document.getElementById("delivery-address");
+    const noteInput = document.getElementById("order-note");
+    const selected = document.querySelector('input[name="deliveryMethod"]:checked');
+    const method = selected ? selected.value : "self";
+
+    let valid = true;
+    document.getElementById("err-name").style.display = nameInput.value.trim() ? "none" : "block";
+    if (!nameInput.value.trim()) valid = false;
+
+    const phoneOk = /^[0-9+\s]{9,15}$/.test(phoneInput.value.trim());
+    document.getElementById("err-phone").style.display = phoneOk ? "none" : "block";
+    if (!phoneOk) valid = false;
+
+    if (method !== "self") {
+      const addrOk = addressInput.value.trim().length > 0;
+      document.getElementById("err-address").style.display = addrOk ? "none" : "block";
+      if (!addrOk) valid = false;
+    } else {
+      document.getElementById("err-address").style.display = "none";
+    }
+
+    if (!valid) return;
+
+    sessionStorage.setItem("orderCustomerName", nameInput.value.trim());
+    sessionStorage.setItem("orderCustomerPhone", phoneInput.value.trim());
+    sessionStorage.setItem("orderDeliveryMethod", method);
+    sessionStorage.setItem("orderNote", noteInput.value.trim());
+
+    if (window.showToast) {
+      window.showToast("Đã tạo đơn giữ chỗ! Đang chuyển sang trang thanh toán cọc...");
+    }
+    setTimeout(() => {
+      if (window.motogoNavigate) {
+        window.motogoNavigate("../khach-hang/payment.html");
+      } else {
+        location.href = "../khach-hang/payment.html";
+      }
+    }, 650);
+  });
+})();
+</script>
+</body>
+</html>

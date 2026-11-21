@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRP-Go - Thanh toán đặt cọc</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+    <link rel="apple-touch-icon" href="../assets/favicon.svg">
+    <link rel="stylesheet" href="css/payment.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+  <style>html,body{opacity:1!important;visibility:visible!important;background:#f4f7f5;}</style>
+</head>
+
+<body>
+        <header class="header">
+        <div class="container header-container">
+            <a href="../index.html" class="logo"><span class="logo-mark" aria-hidden="true"><img src="../assets/logo-vrp.png" alt=""></span><span class="logo-text"><span class="vrp">VRP</span><span class="go">-GO</span></span></a>
+            <nav class="navbar">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Trang chủ</a></li>
+                    <li><a href="../pages/vehicles.html" class="active">Thuê xe</a></li>
+                    <li><a href="../pages/how-it-works.html">Cách hoạt động</a></li>
+                    <li><a href="../pages/my-orders.html">Đơn của tôi</a></li>
+                  </ul>
+            </nav>
+            <div class="header-actions">
+                <a href="../pages/login.html" class="btn btn-login">Đăng nhập</a>
+                <a href="../pages/register.html" class="btn btn-register">Đăng ký</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="nav-popup-overlay" id="navPopupOverlay"></div>
+
+    <div class="nav-popup" id="navPopup" aria-label="Menu điều hướng">
+        <div class="nav-popup-header">
+            <a href="../index.html" class="logo"><span class="logo-mark" aria-hidden="true"><img src="../assets/logo-vrp.png" alt=""></span><span class="logo-text"><span class="vrp">VRP</span><span class="go">-GO</span></span></a>
+            <button class="popup-close-btn" id="popupCloseBtn" type="button" aria-label="Đóng menu">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="nav-popup-user">
+            <div class="user-avatar">VU</div>
+            <span class="popup-name">Vũ Đức</span>
+        </div>
+
+        <div class="nav-popup-divider"></div>
+
+        <nav class="nav-popup-links">
+            <a href="index.html"><i class="fa-solid fa-house"></i><span>Trang chủ</span></a>
+            <a href="index.html#vehicles"><i class="fa-solid fa-motorcycle"></i><span>Thuê xe</span></a>
+            <a href="index.html#how-it-works"><i class="fa-solid fa-circle-question"></i><span>Cách hoạt động</span></a>
+            <a href="index.html#about"><i class="fa-solid fa-circle-info"></i><span>Về chúng tôi</span></a>
+            <a href="calendar.html"><i class="fa-solid fa-calendar-days"></i><span>Lịch thuê</span></a>
+        </nav>
+    </div>
+
+    <main class="page-container">
+        <div class="breadcrumb">
+            <a href="../index.html">Trang chủ</a>
+            <i class="fa-solid fa-chevron-right"></i>
+            <a href="account.html">Đơn thuê của tôi</a>
+            <i class="fa-solid fa-chevron-right"></i>
+            <span>Thanh toán đặt cọc</span>
+        </div>
+
+        <section class="page-heading">
+            <div>
+                <span class="eyebrow">HOÀN TẤT ĐẶT XE</span>
+                <h1>Thanh toán đặt cọc</h1>
+                <p>Kiểm tra thông tin đơn thuê và thanh toán tiền cọc để xác nhận giữ xe.</p>
+            </div>
+
+            <div class="hold-badge">
+                <i class="fa-regular fa-clock"></i>
+                <span>Giữ xe trong <strong id="countdown">29:59</strong></span>
+            </div>
+        </section>
+
+        <div class="payment-layout">
+            <section class="left-column">
+
+                <article class="panel booking-panel">
+                    <div class="panel-title">
+                        <div>
+                            <span class="step-label">THÔNG TIN ĐƠN THUÊ</span>
+                            <h2>Thông tin xe và lịch thuê</h2>
+                        </div>
+
+                        <span class="status-pill">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            Đang giữ chỗ
+                        </span>
+                    </div>
+
+                    <div class="vehicle-summary">
+                        <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=85"
+                            alt="Xe máy Honda Vision">
+
+                        <div class="vehicle-details">
+                            <span class="vehicle-category">XE MÁY · XE TAY GA</span>
+                            <h3>HONDA VISION 2024</h3>
+                            <p id="vehicleLocation">
+                                <i class="fa-solid fa-location-dot"></i> Cửa hàng Minh Thư · Đà Nẵng
+                            </p>
+                            <div class="vehicle-rating">
+                                <i class="fa-solid fa-star"></i>
+                                <span id="vehicleRatingValue">4.9</span>
+                                <span id="vehicleTripCount">(12 chuyến)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="booking-info-grid">
+                        <div class="info-item">
+                            <span><i class="fa-regular fa-calendar-check"></i> Nhận xe</span>
+                            <strong>20/11/2026 · 08:00</strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span><i class="fa-regular fa-calendar-xmark"></i> Trả xe</span>
+                            <strong>22/11/2026 · 08:00</strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span><i class="fa-solid fa-clock"></i> Thời gian thuê</span>
+                            <strong>2 ngày</strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span><i class="fa-solid fa-handshake"></i> Hình thức nhận xe</span>
+                            <strong>Nhận tại cửa hàng</strong>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel payment-panel">
+                    <div class="panel-title">
+                        <div>
+                            <span class="step-label">PHƯƠNG THỨC THANH TOÁN</span>
+                            <h2>Thanh toán qua cổng tích hợp</h2>
+                        </div>
+
+                        <i class="fa-solid fa-lock secure-icon"></i>
+                    </div>
+
+                    <p class="panel-description">
+                        Bạn sẽ thanh toán tiền cọc trực tuyến. Thông tin thẻ hoặc tài khoản thanh toán được xử lý bởi
+                        cổng thanh toán, VRP-Go không lưu thông tin này.
+                    </p>
+
+                    <label class="gateway-option selected">
+                        <input type="radio" name="gateway" value="gateway" checked>
+                        <span class="custom-radio"></span>
+
+                        <span class="gateway-icon">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </span>
+
+                        <span class="gateway-text">
+                            <strong>Cổng thanh toán nội địa</strong>
+                            <small>Thanh toán bảo mật qua đối tác tích hợp</small>
+                        </span>
+
+                        <span class="gateway-tag">Đề xuất</span>
+                    </label>
+
+                    <div class="gateway-note">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Đây là giao diện mô phỏng để kiểm thử FE. Chưa kết nối cổng thanh toán thật.</span>
+                    </div>
+                </article>
+
+                <article class="panel policy-panel">
+                    <div class="policy-heading">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <strong>Lưu ý về tiền cọc và hủy đơn</strong>
+                    </div>
+
+                    <ul>
+                        <li>Tiền cọc bằng 30% tổng tiền thuê, tối thiểu 200.000đ và tối đa 1.000.000đ/đơn.</li>
+                        <li>Thanh toán thất bại không làm mất thời gian giữ chỗ còn lại.</li>
+                        <li>Hủy trước giờ nhận xe từ 24 giờ: hoàn 100% tiền cọc; từ 6 đến dưới 24 giờ: hoàn 50%; dưới 6
+                            giờ: không hoàn cọc.</li>
+                    </ul>
+                </article>
+            </section>
+
+            <aside class="right-column">
+                <article class="panel cost-panel">
+                    <div class="panel-title">
+                        <div>
+                            <span class="step-label">CHI TIẾT THANH TOÁN</span>
+                            <h2>Tóm tắt chi phí</h2>
+                        </div>
+                    </div>
+
+                    <div class="cost-row">
+                        <span>Tiền thuê xe (2 ngày)</span>
+                        <strong id="rentalTotal">300.000đ</strong>
+                    </div>
+
+                    <div class="cost-row">
+                        <span>Phí giao nhận</span>
+                        <strong id="deliveryFee">30.000đ</strong>
+                    </div>
+
+                    <div class="cost-divider"></div>
+
+                    <div class="deposit-box">
+                        <div>
+                            <span>Tiền cọc cần thanh toán</span>
+                            <small>30% tiền thuê · áp dụng mức cọc tối thiểu</small>
+                        </div>
+                        <strong id="depositAmount">200.000đ</strong>
+                    </div>
+
+                    <div class="cost-row remaining-row">
+                        <span>Còn lại khi nhận xe</span>
+                        <strong id="remainingAmount">130.000đ</strong>
+                    </div>
+
+                    <div class="total-row">
+                        <span>Tổng chi phí đơn thuê</span>
+                        <strong id="totalAmount">330.000đ</strong>
+                    </div>
+
+                    <button class="btn btn-pay" id="payButton" type="button">
+                        <i class="fa-solid fa-lock"></i>
+                        Thanh toán <span id="payAmount">200.000đ</span>
+                    </button>
+
+                    <p class="secure-caption">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        Giao dịch được xử lý qua cổng thanh toán tích hợp
+                    </p>
+
+                    <div class="demo-actions">
+                        <span>Kiểm thử giao diện:</span>
+                        <button type="button" id="successButton">Giả lập thành công</button>
+                        <button type="button" id="failButton">Giả lập thất bại</button>
+                    </div>
+                </article>
+
+                <article class="support-card">
+                    <div class="support-icon">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+
+                    <div>
+                        <strong>Cần hỗ trợ?</strong>
+                        <p>Liên hệ VRP-Go nếu bạn gặp vấn đề khi thanh toán.</p>
+                        <a href="tel:19001234">1900 1234</a>
+                    </div>
+                </article>
+            </aside>
+        </div>
+    </main>
+
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+            <button class="modal-close" id="modalClose" type="button" aria-label="Đóng">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="result-icon" id="resultIcon">
+                <i class="fa-solid fa-check"></i>
+            </div>
+
+            <span class="step-label" id="resultLabel">KẾT QUẢ GIAO DỊCH</span>
+            <h2 id="resultTitle">Thanh toán thành công!</h2>
+            <p id="resultMessage">VRP-Go đã ghi nhận khoản tiền cọc của bạn.</p>
+
+            <div class="receipt-summary" id="receiptSummary">
+                <div>
+                    <span>Mã đơn thuê</span>
+                    <strong id="receiptOrderCode">VRP-20261120-001</strong>
+                </div>
+
+                <div>
+                    <span>Số tiền đã thanh toán</span>
+                    <strong id="receiptAmount">200.000đ</strong>
+                </div>
+
+                <div>
+                    <span>Trạng thái</span>
+                    <strong id="receiptStatus">Đã thanh toán cọc</strong>
+                </div>
+            </div>
+
+            <div class="success-actions" id="successActions">
+                <button class="btn btn-pay" id="viewReceiptButton" type="button">
+                    Xem biên nhận
+                </button>
+
+                <button class="btn btn-pay modal-main-btn" id="modalMainButton" type="button">
+                    Đơn thuê của tôi
+                </button>
+            </div>
+
+            <button class="retry-button" id="retryButton" type="button">
+                Thử thanh toán lại
+            </button>
+
+            <p class="receipt-note" id="receiptNote">
+                Biên nhận điện tử được tạo sau khi giao dịch thành công.
+            </p>
+        </div>
+    </div>
+
+    <script src="js/payment.js"></script>
+    <footer class="footer">
+        <div class="container footer-bottom">© 2026 VRP-GO · Vehicle Rental Platform</div>
+    </footer>
+    <script src="../js/effects.js"></script>
+</body>
+</html>
