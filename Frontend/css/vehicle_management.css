@@ -306,28 +306,26 @@ body {
   box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
 }
 
-/* UPLOAD 4 ẢNH GRID 2x2 */
+/* UPLOAD 1 ẢNH TOÀN DIỆN */
 .helper-text {
   font-size: 12.5px;
   color: var(--text-muted);
   margin-bottom: 16px;
 }
 
-.photo-grid-2x2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+.single-photo-box {
+  display: block;
 }
 
 .upload-label {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .drop-area {
   position: relative;
-  height: 112px;
+  height: 220px;
   border: 2px dashed #cbd5e1;
   border-radius: var(--radius-md);
   background-color: #f8fafc;
@@ -354,13 +352,21 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 12.5px;
+  text-align: center;
+  padding: 16px;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
+.drop-content small {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
 .upload-icon {
-  font-size: 22px;
+  font-size: 32px;
 }
 
 .preview-img {
@@ -371,57 +377,19 @@ body {
 
 .remove-img-btn {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 24px;
-  height: 24px;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background-color: rgba(15, 23, 42, 0.78);
   color: #ffffff;
   border: none;
-  font-size: 15px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.extra-upload-box {
-  margin-top: 14px;
-}
-
-.btn-extra-upload {
-  width: 100%;
-  padding: 12px;
-  border: 1.5px dashed #cbd5e1;
-  border-radius: var(--radius-md);
-  background-color: #f8fafc;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.btn-extra-upload:hover {
-  border-color: var(--emerald-main);
-  color: var(--emerald-main);
-  background-color: var(--emerald-soft);
-}
-
-.extra-thumbs {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-.extra-thumb-item {
-  width: 64px;
-  height: 48px;
-  border-radius: 6px;
-  object-fit: cover;
-  border: 1px solid var(--emerald-main);
 }
 
 .checkbox-row {
@@ -650,7 +618,7 @@ body {
   color: #059669;
 }
 
-/* MODAL */
+/* MODAL 1 ẢNH TOÀN DIỆN */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -700,15 +668,13 @@ body {
   margin-bottom: 16px;
 }
 
-.modal-gallery {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+.modal-gallery-single {
+  display: block;
 }
 
-.modal-gallery img {
+.modal-gallery-single img {
   width: 100%;
-  height: 150px;
+  height: 300px;
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -756,4 +722,43 @@ body {
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
+}
+
+/* RESPONSIVE TABLET & MOBILE */
+@media (max-width: 1024px) {
+  .register-grid {
+    grid-template-columns: 1fr;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .app-header {
+    height: auto;
+    padding: 10px 0;
+  }
+  .header-container,
+  .page-header,
+  .filter-bar,
+  .footer-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .main-nav {
+    margin-left: 0;
+    overflow-x: auto;
+  }
+  .form-grid-2,
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .full-span {
+    grid-column: span 1;
+  }
+  .data-table {
+    min-width: 720px;
+  }
 }
