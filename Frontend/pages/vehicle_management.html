@@ -33,13 +33,13 @@
 
   <!-- NỘI DUNG CHÍNH -->
   <main class="main-wrapper">
-    <!-- TAB 1: FORM THÔNG TIN XE & TẢI TỐI THIỂU 4 ẢNH CÓ XEM TRƯỚC -->
+    <!-- TAB 1: FORM THÔNG TIN XE & TẢI 1 ẢNH TOÀN DIỆN CÓ XEM TRƯỚC -->
     <section id="tab-add-vehicle" class="tab-panel active">
       <div class="page-header">
         <div>
           <p class="breadcrumb">VRP Go - Chi nhánh Tây Hồ &rsaquo; Thêm phương tiện mới</p>
           <h1 class="page-title">Thêm xe mới vào cửa hàng</h1>
-          <p class="page-subtitle">Nhập thông tin kỹ thuật, giá thuê và tải lên tối thiểu 4 góc ảnh thực tế của xe.</p>
+          <p class="page-subtitle">Nhập thông tin kỹ thuật, giá thuê và tải lên 1 ảnh toàn diện rõ nét của xe.</p>
         </div>
         <button type="button" class="btn-outline-dark" id="viewListBtn">📋 Xem danh sách xe</button>
       </div>
@@ -117,81 +117,29 @@
           </div>
         </div>
 
-        <!-- CỘT PHẢI (35%): HÌNH ẢNH XE (TỐI THIỂU 4 ẢNH CÓ XEM TRƯỚC) -->
+        <!-- CỘT PHẢI (35%): 1 ẢNH TOÀN DIỆN CỦA XE -->
         <div class="col-side">
           <div class="card">
             <div class="card-header">
               <span class="step-badge">3</span>
-              <h2>Hình ảnh xe (Tối thiểu 4 ảnh)</h2>
+              <h2>Hình ảnh xe (1 ảnh toàn diện)</h2>
             </div>
-            <p class="helper-text" id="photoCounterText">Đã tải lên <strong>0/4</strong> ảnh bắt buộc (PNG, JPG tối đa 5MB/ảnh).</p>
+            <p class="helper-text" id="photoCounterText">Đã tải lên <strong>0/1</strong> ảnh toàn diện bắt buộc (PNG, JPG tối đa 5MB).</p>
 
-            <!-- Grid 2x2 cho 4 góc ảnh bắt buộc -->
-            <div class="photo-grid-2x2">
-              <!-- Ảnh 1 -->
-              <div class="upload-item" data-doc="frontView">
-                <div class="upload-label">1. Góc chính diện <span class="req">*</span></div>
-                <div class="drop-area">
+            <div class="single-photo-box">
+              <div class="upload-item" data-doc="fullView">
+                <div class="upload-label">Ảnh toàn diện xe (rõ dáng xe &amp; biển số) <span class="req">*</span></div>
+                <div class="drop-area drop-area-single">
                   <input type="file" accept="image/*" hidden />
                   <div class="drop-content">
                     <span class="upload-icon">🛵</span>
-                    <span>Chọn ảnh</span>
+                    <span>Nhấn để chọn ảnh hoặc kéo thả vào đây</span>
+                    <small>Khuyến nghị góc nghiêng 45° thấy toàn bộ thân xe</small>
                   </div>
-                  <img class="preview-img" alt="Góc chính diện" hidden />
+                  <img class="preview-img" alt="Ảnh toàn diện của xe" hidden />
                   <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
                 </div>
               </div>
-
-              <!-- Ảnh 2 -->
-              <div class="upload-item" data-doc="sideView">
-                <div class="upload-label">2. Ngang thân xe <span class="req">*</span></div>
-                <div class="drop-area">
-                  <input type="file" accept="image/*" hidden />
-                  <div class="drop-content">
-                    <span class="upload-icon">🏍️</span>
-                    <span>Chọn ảnh</span>
-                  </div>
-                  <img class="preview-img" alt="Ngang thân xe" hidden />
-                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
-                </div>
-              </div>
-
-              <!-- Ảnh 3 -->
-              <div class="upload-item" data-doc="rearPlate">
-                <div class="upload-label">3. Đuôi &amp; Biển số <span class="req">*</span></div>
-                <div class="drop-area">
-                  <input type="file" accept="image/*" hidden />
-                  <div class="drop-content">
-                    <span class="upload-icon">🔢</span>
-                    <span>Chọn ảnh</span>
-                  </div>
-                  <img class="preview-img" alt="Đuôi và biển số" hidden />
-                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
-                </div>
-              </div>
-
-              <!-- Ảnh 4 -->
-              <div class="upload-item" data-doc="odoTrunk">
-                <div class="upload-label">4. ODO &amp; Cốp xe <span class="req">*</span></div>
-                <div class="drop-area">
-                  <input type="file" accept="image/*" hidden />
-                  <div class="drop-content">
-                    <span class="upload-icon">⏱️</span>
-                    <span>Chọn ảnh</span>
-                  </div>
-                  <img class="preview-img" alt="ODO và cốp xe" hidden />
-                  <button type="button" class="remove-img-btn" title="Xóa ảnh" hidden>&times;</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Khu vực tải thêm ảnh chi tiết phụ (tùy chọn) -->
-            <div class="extra-upload-box">
-              <input type="file" id="extraPhotosInput" accept="image/*" multiple hidden />
-              <button type="button" class="btn-extra-upload" id="addExtraPhotosBtn">
-                ➕ Tải thêm ảnh chi tiết khác (<span id="extraCount">0</span>/4 ảnh phụ)
-              </button>
-              <div class="extra-thumbs" id="extraThumbsContainer"></div>
             </div>
 
             <label class="checkbox-row">
@@ -304,7 +252,7 @@
         <button type="button" class="close-modal-btn" id="closeModalBtn">&times;</button>
       </div>
       <p class="modal-desc" id="modalDesc"></p>
-      <div class="modal-gallery" id="modalGallery"></div>
+      <div class="modal-gallery modal-gallery-single" id="modalGallery"></div>
     </div>
   </div>
 
