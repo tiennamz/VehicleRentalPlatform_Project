@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Honda Vision 2024 · Chi tiết xe · VRP-GO</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="apple-touch-icon" href="../assets/favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .detail-layout { display: grid; grid-template-columns: 1fr 350px; gap: 28px; align-items: start; }
+    .gallery-main { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 16/10; background: #e8f0ec; }
+    .gallery-main img { width: 100%; height: 100%; object-fit: cover; transition: opacity .2s ease; }
+    .gallery-caption {
+      position: absolute; bottom: 12px; left: 12px;
+      background: rgba(15, 23, 42, 0.72); color: #fff;
+      font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 999px;
+    }
+    .gallery-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+    .thumb-btn {
+      padding: 0; border: 2px solid transparent; border-radius: 12px;
+      overflow: hidden; aspect-ratio: 16/10; background: #e8f0ec; cursor: pointer;
+      transition: border-color .2s ease, transform .15s ease;
+    }
+    .thumb-btn:hover { transform: translateY(-2px); }
+    .thumb-btn.active { border-color: var(--primary); box-shadow: 0 4px 12px rgba(7, 155, 112, 0.22); }
+    .thumb-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .specs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+    .spec { background: #f8fbf9; border-radius: 10px; padding: 12px; border: 1px solid #e6f0ec; }
+    .spec span { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .spec strong { font-size: 14px; }
+    .policy-item { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid #f0f4f2; }
+    .policy-item:last-child { border-bottom: 0; }
+    .detail-reviews { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    .detail-review-item { background: #f8fbf9; border: 1px solid #e6f0ec; border-radius: 12px; padding: 14px; }
+    .detail-review-item p { font-size: 13.5px; color: #334155; line-height: 1.55; margin: 6px 0 10px; }
+    .booking-side { position: sticky; top: 84px; }
+    .price-big { font-size: 26px; font-weight: 800; }
+    .cost-line { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13.5px; color: var(--muted); }
+    .cost-line strong { color: var(--text); }
+    .cost-total { display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px dashed #d1e5dc; margin-top: 10px; font-weight: 700; }
+    .cost-total strong { color: var(--primary); font-size: 18px; }
+    .date-error { display: none; color: var(--danger); font-size: 12px; margin-top: 6px; font-weight: 500; }
+    @media (max-width: 900px) {
+      .detail-layout { grid-template-columns: 1fr; }
+      .booking-side { position: static; order: -1; }
+      .specs { grid-template-columns: 1fr 1fr; }
+      .detail-reviews { grid-template-columns: 1fr; }
+    }
+  </style>
+  <style>html,body{opacity:1!important;visibility:visible!important;background:#f4f7f5;}</style>
+</head>
+<body>
+<header class="header">
+  <div class="container header-container">
+    <a href="../index.html" class="logo"><span class="logo-mark" aria-hidden="true"><img src="../assets/logo-vrp.png" alt=""></span><span class="logo-text"><span class="vrp">VRP</span><span class="go">-GO</span></span></a>
+    <nav class="navbar">
+      <ul class="nav-list">
+        <li><a href="../index.html">Trang chủ</a></li>
+        <li><a href="../pages/vehicles.html" class="active">Thuê xe</a></li>
+        <li><a href="../pages/how-it-works.html">Cách hoạt động</a></li>
+        <li><a href="../pages/my-orders.html">Đơn của tôi</a></li>
+      </ul>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="btn btn-login">Đăng nhập</a>
+      <a href="register.html" class="btn btn-register">Đăng ký</a>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container detail-layout">
+    <div>
+      <p class="breadcrumb"><a href="../index.html">Trang chủ</a> / <a href="vehicles.html">Thuê xe</a> / <span id="vehicle-breadcrumb">Honda Vision 2024</span></p>
+
+      <!-- 1. Thư viện ảnh xe -->
+      <div class="gallery-main">
+        <img id="gallery-main-img" src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=85" alt="Honda Vision 2024">
+        <span class="gallery-caption" id="gallery-caption">1/4 · Góc chính diện</span>
+      </div>
+      <div class="gallery-thumbs" role="group" aria-label="Thư viện ảnh xe">
+        <button type="button" class="thumb-btn active" data-src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=85" data-caption="1/4 · Góc chính diện">
+          <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=400&q=75" alt="Góc chính diện">
+        </button>
+        <button type="button" class="thumb-btn" data-src="https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1200&q=85" data-caption="2/4 · Thân xe & khung sườn">
+          <img src="https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=400&q=75" alt="Thân xe">
+        </button>
+        <button type="button" class="thumb-btn" data-src="https://images.unsplash.com/photo-1609630875171-b1321377ee65?auto=format&fit=crop&w=1200&q=85" data-caption="3/4 · Đầu xe & cụm đèn">
+          <img src="https://images.unsplash.com/photo-1609630875171-b1321377ee65?auto=format&fit=crop&w=400&q=75" alt="Đầu xe">
+        </button>
+        <button type="button" class="thumb-btn" data-src="https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?auto=format&fit=crop&w=1200&q=85" data-caption="4/4 · Phanh & lốp kiểm định">
+          <img src="https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?auto=format&fit=crop&w=400&q=75" alt="Phanh và lốp">
+        </button>
+      </div>
+
+      <div style="margin-top:22px">
+        <p class="section-label" id="vehicle-category">XE MÁY · TAY GA</p>
+        <h1 id="vehicle-title" style="font-size:28px;font-weight:800;margin:6px 0 10px">Honda Vision 2024</h1>
+        <p style="color:var(--muted)">★ <strong style="color:var(--text)">4.9</strong> (128 đánh giá) · 📍 Hải Châu, Đà Nẵng · <span style="color:var(--primary);font-weight:600">Còn xe</span></p>
+      </div>
+
+      <!-- 2. Thông số kỹ thuật -->
+      <div class="card" style="margin-top:20px">
+        <h3 style="margin-bottom:4px">Thông số kỹ thuật</h3>
+        <p style="font-size:13px;color:var(--muted)">Xe được kiểm tra kỹ thuật và bảo dưỡng định kỳ trước mỗi lượt giao</p>
+        <div class="specs">
+          <div class="spec"><span>Loại xe</span><strong id="spec-type">Tay ga</strong></div>
+          <div class="spec"><span>Dung tích</span><strong id="spec-engine">110cc · Phun xăng FI</strong></div>
+          <div class="spec"><span>Năm sản xuất</span><strong id="spec-year">2024</strong></div>
+          <div class="spec"><span>Biển số</span><strong id="spec-plate">43A1-123.45</strong></div>
+          <div class="spec"><span>Nhiên liệu</span><strong>Xăng (~1.8L/100km)</strong></div>
+          <div class="spec"><span>Truyền động</span><strong>Tự động vô cấp</strong></div>
+          <div class="spec"><span>Trang bị kèm</span><strong>2 mũ BH + áo mưa</strong></div>
+          <div class="spec"><span>Giấy tờ yêu cầu</span><strong>CCCD + GPLX hạng A1</strong></div>
+        </div>
+      </div>
+
+      <!-- 3. Chính sách hủy -->
+      <div class="card" style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">
+          <h3>Chính sách hủy & hoàn cọc</h3>
+          <a href="rental-policy.html#huy" style="font-size:13px;color:var(--primary);font-weight:600">Chi tiết chính sách →</a>
+        </div>
+        <div class="policy-item">
+          <div style="font-weight:600">Hủy trước giờ nhận ≥ 24 giờ</div>
+          <div><strong style="color:var(--primary)">Hoàn 100% tiền cọc</strong></div>
+        </div>
+        <div class="policy-item">
+          <div style="font-weight:600">Hủy trước 6 – 24 giờ</div>
+          <div><strong style="color:#c05621">Hoàn 50% tiền cọc</strong></div>
+        </div>
+        <div class="policy-item">
+          <div style="font-weight:600">Hủy dưới 6 giờ hoặc không nhận xe</div>
+          <div><strong style="color:var(--danger)">Không hoàn cọc</strong></div>
+        </div>
+      </div>
+
+      <!-- 4. Đánh giá khách hàng -->
+      <div class="card" style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <h3>Đánh giá từ khách đã thuê</h3>
+            <p style="font-size:13px;color:var(--muted);margin-top:2px">Điểm trung bình <strong style="color:var(--primary)">4.9/5</strong> · 98% khách hài lòng</p>
+          </div>
+          <a href="reviews.html" style="font-size:13px;color:var(--primary);font-weight:600">Xem tất cả (128) →</a>
+        </div>
+        <div class="detail-reviews">
+          <div class="detail-review-item">
+            <div class="stars" style="margin-bottom:4px;font-size:14px">★★★★★</div>
+            <p>Xe đời mới chạy rất êm và tiết kiệm xăng. Cửa hàng giao đúng giờ, mũ bảo hiểm sạch sẽ.</p>
+            <div class="reviewer" style="margin-top:8px">
+              <div class="av" style="width:30px;height:30px;font-size:11px">LM</div>
+              <div><strong style="font-size:13px">Lê Minh</strong><div style="font-size:11.5px;color:var(--muted)">Đã thuê 3 ngày · Đà Nẵng</div></div>
+            </div>
+          </div>
+          <div class="detail-review-item">
+            <div class="stars" style="margin-bottom:4px;font-size:14px">★★★★★</div>
+            <p>Thủ tục nhận xe nhanh gọn, kiểm tra 6 góc ảnh minh bạch nên lúc trả xe rất yên tâm.</p>
+            <div class="reviewer" style="margin-top:8px">
+              <div class="av" style="width:30px;height:30px;font-size:11px">NA</div>
+              <div><strong style="font-size:13px">Nguyễn An</strong><div style="font-size:11.5px;color:var(--muted)">Đã thuê 2 ngày · Đà Nẵng</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Chi phí dự kiến & Đặt xe -->
+    <aside class="booking-side">
+      <div class="card">
+        <div style="margin-bottom:16px">
+          <span class="price-big" id="unit-price">150.000đ</span>
+          <span style="color:var(--muted)"> / ngày</span>
+        </div>
+        <div class="form-row" style="margin-bottom:12px">
+          <label for="pickup-input" style="font-size:12px;font-weight:600;color:var(--muted)">Ngày giờ nhận xe</label>
+          <input id="pickup-input" type="datetime-local" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;margin-top:4px">
+        </div>
+        <div class="form-row" style="margin-bottom:14px">
+          <label for="return-input" style="font-size:12px;font-weight:600;color:var(--muted)">Ngày giờ trả xe</label>
+          <input id="return-input" type="datetime-local" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;margin-top:4px">
+          <p class="date-error" id="date-error">Ngày giờ trả phải sau ngày giờ nhận xe.</p>
+        </div>
+        <div style="background:#f8fbf9;border:1px solid #e6f0ec;border-radius:12px;padding:14px;margin-bottom:16px">
+          <div class="cost-line"><span id="rent-days-label">Giá thuê (2 ngày)</span><strong id="rent-subtotal">300.000đ</strong></div>
+          <div class="cost-line"><span>Phí dịch vụ (5%)</span><strong id="service-fee">15.000đ</strong></div>
+          <div class="cost-line"><span>Bảo hiểm chuyến đi</span><strong id="insurance-fee">30.000đ</strong></div>
+          <div class="cost-line"><span>Tiền cọc giữ chỗ (30%)</span><strong id="deposit-fee">103.500đ</strong></div>
+          <div class="cost-total"><span>Tổng chi phí dự kiến</span><strong id="total-cost">345.000đ</strong></div>
+        </div>
+        <a href="booking.html" id="book-now-btn" class="btn btn-primary btn-block">Đặt xe · Giữ chỗ 30p</a>
+        <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:12px">Cần GPLX đã duyệt để hoàn tất đơn</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer class="footer"><div class="container footer-bottom">© 2026 VRP-GO</div></footer>
+<script src="../js/effects.js"></script>
+<script>
+/* FR-14: Thư viện ảnh & tính chi phí dự kiến theo thời gian thuê */
+(function () {
+  const mainImg = document.getElementById("gallery-main-img");
+  const caption = document.getElementById("gallery-caption");
+  const thumbBtns = document.querySelectorAll(".thumb-btn");
+
+  thumbBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      thumbBtns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      if (mainImg && btn.dataset.src) mainImg.src = btn.dataset.src;
+      if (caption && btn.dataset.caption) caption.textContent = btn.dataset.caption;
+    });
+  });
+
+  // Đồng bộ thông tin xe nếu người dùng đi từ trang chủ / danh sách xe
+  const savedName = sessionStorage.getItem("selectedVehicleName");
+  const savedPriceRaw = sessionStorage.getItem("selectedVehiclePrice");
+  const savedImage = sessionStorage.getItem("selectedVehicleImage");
+  let dailyRate = 150000;
+
+  if (savedName) {
+    const titleEl = document.getElementById("vehicle-title");
+    const crumbEl = document.getElementById("vehicle-breadcrumb");
+    if (titleEl) titleEl.textContent = savedName;
+    if (crumbEl) crumbEl.textContent = savedName;
+    document.title = savedName + " · Chi tiết xe · VRP-GO";
+  }
+  if (savedPriceRaw) {
+    const parsed = parseInt(savedPriceRaw.replace(/\D/g, ""), 10);
+    if (!Number.isNaN(parsed) && parsed > 0) dailyRate = parsed;
+  }
+  if (savedImage && mainImg) {
+    mainImg.src = savedImage;
+    if (thumbBtns[0]) {
+      thumbBtns[0].dataset.src = savedImage;
+      const firstThumbImg = thumbBtns[0].querySelector("img");
+      if (firstThumbImg) firstThumbImg.src = savedImage;
+    }
+  }
+
+  const formatVND = n => Math.round(n).toLocaleString("vi-VN") + "đ";
+  const unitPriceEl = document.getElementById("unit-price");
+  if (unitPriceEl) unitPriceEl.textContent = formatVND(dailyRate);
+
+  const pickupInput = document.getElementById("pickup-input");
+  const returnInput = document.getElementById("return-input");
+  const dateError = document.getElementById("date-error");
+  const bookBtn = document.getElementById("book-now-btn");
+
+  const toLocalInput = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  const now = new Date();
+  const defaultPickup = new Date(now.getTime() + 2 * 3600 * 1000);
+  const defaultReturn = new Date(defaultPickup.getTime() + 48 * 3600 * 1000);
+
+  if (pickupInput && returnInput) {
+    pickupInput.min = toLocalInput(now);
+    returnInput.min = toLocalInput(now);
+    pickupInput.value = toLocalInput(defaultPickup);
+    returnInput.value = toLocalInput(defaultReturn);
+  }
+
+  function updateEstimate() {
+    if (!pickupInput || !returnInput) return;
+    const start = new Date(pickupInput.value);
+    const end = new Date(returnInput.value);
+    const valid = !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end > start;
+
+    if (!valid) {
+      if (dateError) dateError.style.display = "block";
+      if (bookBtn) {
+        bookBtn.style.opacity = "0.55";
+        bookBtn.style.pointerEvents = "none";
+      }
+      return;
+    }
+
+    if (dateError) dateError.style.display = "none";
+    if (bookBtn) {
+      bookBtn.style.opacity = "1";
+      bookBtn.style.pointerEvents = "auto";
+    }
+
+    const diffHours = (end - start) / (1000 * 3600);
+    const days = Math.max(1, Math.ceil(diffHours / 24));
+    const rentSubtotal = dailyRate * days;
+    const serviceFee = Math.round(rentSubtotal * 0.05);
+    const insuranceFee = 15000 * days;
+    const total = rentSubtotal + serviceFee + insuranceFee;
+    const deposit = Math.round(total * 0.3);
+
+    document.getElementById("rent-days-label").textContent = "Giá thuê (" + days + " ngày)";
+    document.getElementById("rent-subtotal").textContent = formatVND(rentSubtotal);
+    document.getElementById("service-fee").textContent = formatVND(serviceFee);
+    document.getElementById("insurance-fee").textContent = formatVND(insuranceFee);
+    document.getElementById("deposit-fee").textContent = formatVND(deposit);
+    document.getElementById("total-cost").textContent = formatVND(total);
+  }
+
+  if (pickupInput) pickupInput.addEventListener("change", updateEstimate);
+  if (returnInput) returnInput.addEventListener("change", updateEstimate);
+  updateEstimate();
+})();
+</script>
+</body>
+</html>
