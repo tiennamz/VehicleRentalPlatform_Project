@@ -8,6 +8,7 @@ from app.routers.booking_eligibility_routers import router as booking_eligibilit
 from sqlalchemy.orm import Session
 from app.utils.response import handle_exception, create_response
 from sqlalchemy import text
+from app.routers.store import router as store_router
 
 app = FastAPI(
     title='Vehicle Rental Platfrom',
@@ -51,3 +52,4 @@ app.include_router(auth_routers)
 app.include_router(verification_routers)
 app.include_router(audit_routers)
 app.include_router(booking_eligibility_routers)
+app.include_router(store_router)

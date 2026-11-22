@@ -1,9 +1,11 @@
+
 from sqlalchemy import Column, BigInteger, Integer, String, DateTime, Date, Text
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
+
     user_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     fullname = Column(String(255))
     email = Column(String(255), unique=True)
