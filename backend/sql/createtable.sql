@@ -255,3 +255,8 @@ CREATE TABLE personal_data_access_logs (
     CONSTRAINT fk_audit_target_user FOREIGN KEY (target_user_id) REFERENCES users(user_id)
 );
 
+ALTER TABLE stores
+ADD COLUMN business_license VARCHAR(255) NULL,
+ADD COLUMN bank_account_number VARCHAR(50) NULL,
+ADD COLUMN bank_name VARCHAR(100) NULL,
+ADD COLUMN account_holder VARCHAR(150) NULL;
