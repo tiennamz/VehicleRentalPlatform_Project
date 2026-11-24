@@ -3,6 +3,12 @@ from pathlib import Path
 from uuid import uuid4
 from fastapi import (APIRouter, Depends, File, Form, HTTPException, UploadFile, status)
 from sqlalchemy.orm import Session
+from datetime import date, datetime, time, timedelta
+from typing import Optional
+from fastapi import Query
+from app.models.store import Store
+from app.models.vehicle import Vehicle
+from app.models.order import Order
 
 from app.database.database import get_db
 from dependencies.middleware import get_current_user
@@ -12,6 +18,60 @@ from app.services.store import ( register_store, get_my_store, get_pending_store
 
 router = APIRouter(prefix="/stores",tags=["Stores"])
 
+@router.get("/bookings/calendar", status_code=status.HTTP_200_OK)
+def get_store_booking_calendar(
+    week_start: Optional[date] = Query(None,description="Ngày bất kỳ trong tuần cần xem. Hệ thống tự tính từ thứ Hai."),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    store = db.query(Store).filter(Store.owner_id == current_user.user_id).first()
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bạn chưa có cửa hàng."
+        )
+    requested_date = week_start or date.today()
+    monday = requested_date - timedelta(days=requested_date.weekday())
+    next_monday = monday + timedelta(days=7)
+    start_datetime = datetime.combine(monday, time.min)
+    end_datetime = datetime.combine(next_monday, time.min)
+
+    vehicles = db.query(Vehicle).filter(Vehicle.store_id == store.store_id).order_by(Vehicle.vehicle_id.asc()).all()
+    vehicle_ids = [vehicle.vehicle_id for vehicle in vehicles]
+    orders = []
+    if vehicle_ids:
+        orders = db.query(Order).filter(
+            Order.vehicle_id.in_(vehicle_ids),
+            Order.start_time < end_datetime,
+            Order.end_time > start_datetime
+        ).order_by(Order.start_time.asc()).all()
+
+    bookings_by_vehicle = {}
+    for order in orders:
+        bookings_by_vehicle.setdefault(order.vehicle_id, []).append({
+            "order_id": order.order_id,
+            "start_time": order.start_time.isoformat(),
+            "end_time": order.end_time.isoformat(),
+            "order_status": order.order_status
+        })
+    vehicle_data = []
+    for vehicle in vehicles:
+        vehicle_data.append({
+            "vehicle_id": vehicle.vehicle_id,
+            "brand": vehicle.brand,
+            "model": vehicle.model,
+            "license_plate": vehicle.license_plate,
+            "type": vehicle.type,
+            "status": vehicle.status,
+            "bookings": bookings_by_vehicle.get(vehicle.vehicle_id, [])
+        })
+    return {
+        "store_id": store.store_id,
+        "store_name": store.store_name,
+        "week_start": monday.isoformat(),
+        "week_end": next_monday.isoformat(),
+        "vehicles": vehicle_data
+    }
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 UPLOAD_DIR = BACKEND_DIR / "uploads" / "business_licenses"
