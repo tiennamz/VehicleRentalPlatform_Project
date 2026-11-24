@@ -6,25 +6,33 @@ import { getAuth,
     signOut,
     onAuthStateChanged,
     sendEmailVerification
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-const loadFirebase = async()=>{
-    const res = await fetch("http://127.0.0.1:8000/firebase")
-
-    if (!res.ok) 
-        throw Error("Not found Firebase'config")
-    const firebaseConfig = await res.json()
-    const app = initializeApp(firebaseConfig)
-    return getAuth(app)
-}
-
-const auth = await loadFirebase()
-
-
-
+// =================================================
+// UI NAVIGATION & SWITCH MODE (Chạy ngay lập tức)
+// =================================================
 const container = document.getElementById("auth");
 
+function switchMode() {
+    const authContainer = container || document.getElementById("auth");
+    if (authContainer) {
+        authContainer.classList.toggle("register-mode");
+    }
+    const loginMsg = document.getElementById("loginMessage");
+    if (loginMsg) loginMsg.textContent = "";
+    const registerMsg = document.getElementById("registerMessage");
+    if (registerMsg) registerMsg.textContent = "";
+}
+
+window.switchMode = switchMode;
+
+document.querySelectorAll(".switch-panel button").forEach(btn => {
+    btn.addEventListener("click", switchMode);
+});
+
+// =================================================
+// COOKIE HELPERS
+// =================================================
 function setCookie(name, value, days = 7) {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
@@ -45,13 +53,33 @@ window.setCookie = setCookie;
 window.getCookie = getCookie;
 window.deleteCookie = deleteCookie;
 
-function switchMode() {
-    container.classList.toggle("register-mode");
-    document.getElementById("loginMessage").textContent = "";
-    document.getElementById("registerMessage").textContent = "";
+// =================================================
+// FIREBASE INITIALIZATION (Không block UI)
+// =================================================
+let authInstance = null;
+let firebasePromise = null;
+
+async function getAuthInstance() {
+    if (authInstance) return authInstance;
+    if (!firebasePromise) {
+        firebasePromise = fetch("http://127.0.0.1:8000/firebase")
+            .then(async (res) => {
+                if (!res.ok) throw new Error("Không thể tải cấu hình Firebase từ máy chủ");
+                const firebaseConfig = await res.json();
+                const app = initializeApp(firebaseConfig);
+                authInstance = getAuth(app);
+                return authInstance;
+            })
+            .catch((err) => {
+                firebasePromise = null;
+                throw err;
+            });
+    }
+    return await firebasePromise;
 }
 
-window.switchMode = switchMode;
+// Bắt đầu nạp Firebase ngầm
+getAuthInstance().catch(err => console.warn("Đang chờ backend sẵn sàng:", err.message));
 
 
 document.querySelectorAll(".toggle-password").forEach(button => {
@@ -146,6 +174,7 @@ if (forgotForm) {
         forgotMessage.textContent = "";
 
         try {
+            const auth = await getAuthInstance();
             await sendPasswordResetEmail(auth, email);
             forgotMessage.className = "modal-message success";
             forgotMessage.textContent = `Đã gửi liên kết đặt lại mật khẩu đến ${email}. Hãy kiểm tra hộp thư (hoặc mục Spam)!`;
@@ -187,6 +216,7 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     submitBtn.style.cursor = "not-allowed";
 
     try {
+        const auth = await getAuthInstance();
         const { user } = await signInWithEmailAndPassword(auth, email_login, password_login);
 
         if (!user.emailVerified) {
@@ -265,6 +295,7 @@ document.getElementById("registerForm").addEventListener("submit", async functio
     submitBtn.style.cursor = "not-allowed";
 
     try {
+        const auth = await getAuthInstance();
         // 1. Tạo tài khoản trên Firebase
         const userCredential = await createUserWithEmailAndPassword(auth, email_register, confirmPassword);
         const user = userCredential.user;

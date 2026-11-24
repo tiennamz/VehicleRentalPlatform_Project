@@ -88,7 +88,7 @@
 
                 <p>Bạn chưa có tài khoản?</p>
 
-                <button type="button" onclick="switchMode()">
+                <button type="button" id="switchToRegisterBtn" onclick="switchMode()">
                     Đăng ký
                 </button>
 
@@ -101,7 +101,7 @@
 
                 <p>Bạn đã có tài khoản rồi?</p>
 
-                <button type="button" onclick="switchMode()">
+                <button type="button" id="switchToLoginBtn" onclick="switchMode()">
                     Đăng nhập
                 </button>
 
@@ -129,8 +129,37 @@
         </div>
     </div>
 
+    <script>
+        function switchMode() {
+            var auth = document.getElementById("auth");
+            if (auth) {
+                auth.classList.toggle("register-mode");
+            }
+            var lm = document.getElementById("loginMessage");
+            if (lm) lm.textContent = "";
+            var rm = document.getElementById("registerMessage");
+            if (rm) rm.textContent = "";
+        }
+
+        window.addEventListener("DOMContentLoaded", function () {
+            var regBtn = document.getElementById("switchToRegisterBtn");
+            if (regBtn) {
+                regBtn.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    switchMode();
+                });
+            }
+            var logBtn = document.getElementById("switchToLoginBtn");
+            if (logBtn) {
+                logBtn.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    switchMode();
+                });
+            }
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script type="module" src="../js/login-register.js"></script>
+    <script type="module" src="../js/login-register.js?v=2"></script>
 </body>
 
 </html>
