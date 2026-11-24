@@ -171,125 +171,155 @@ if (forgotForm) {
     });
 }
 
-document.getElementById("loginForm").addEventListener("submit", function (e) {
+document.getElementById("loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-        e.preventDefault();
+    const submitBtn = this.querySelector("button[type='submit']");
+    const email_login = document.getElementById("email_login").value.trim();
+    const password_login = document.getElementById("password_login").value.trim();
+    const login_message = document.getElementById("loginMessage");
+    login_message.textContent = "";
 
-        const email_login = document.getElementById("email_login").value.trim()
-        const password_login = document.getElementById("password_login").value.trim()
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Đang đăng nhập...";
+    submitBtn.style.opacity = "0.7";
+    submitBtn.style.cursor = "not-allowed";
 
-        signInWithEmailAndPassword(auth, email_login, password_login)
-            .then(async ({ user })=>{
-                if (!user.emailVerified) {
-                    try {
-                        await sendEmailVerification(user);
-                    } catch (err) {
-                        console.error("Lỗi gửi email xác thực:", err);
-                    }
-                    await signOut(auth);
-                    throw new Error("Email chưa được xác thực! Đã gửi lại email xác nhận đến hộp thư của bạn. Vui lòng kiểm tra và xác nhận trước khi đăng nhập.");
-                }
+    try {
+        const { user } = await signInWithEmailAndPassword(auth, email_login, password_login);
 
-                const firebaseIdToken = await user.getIdToken();
-                const response = await fetch("http://127.0.0.1:8000/auth/login", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${firebaseIdToken}`
-                    }
-                });
-                const result = await response.json();
-                if (!response.ok) {
-                    throw new Error(typeof result.error === "string"
-                        ? result.error
-                        : "Không thể cấp access token");
-                }
-
-                setCookie("access_token", result.data.access_token, 7);
-                Swal.fire({
-                    title: "Đăng nhập thành công!",
-                    icon: "success",
-                    timer: 2000,
-                    draggable: true
-                });
-            })
-            .catch((error)=>{
-                const login_message = document.getElementById("loginMessage")
-                login_message.style.color='red'
-                if (error.code?.startsWith("auth/")) {
-                    login_message.textContent = "Email hoặc mật khẩu không chính xác";
-                } else {
-                    login_message.textContent = error.message || "Không thể đăng nhập";
-                }
-                document.getElementById("email_login").value = "";
-                document.getElementById("password_login").value = "";
-            })
-    })
-
-
-    document.getElementById("registerForm").addEventListener("submit",  function (e) {
-
-        e.preventDefault();
-
-        const inputs = this.querySelectorAll("input");
-
-        const name_register = inputs[0].value.trim()
-        const email_register = inputs[1].value.trim()
-        const password = inputs[2].value.trim();
-        const confirmPassword = inputs[3].value.trim();
-
-        const message = document.getElementById("registerMessage");
-
-        if (password !== confirmPassword) {
-
-            message.style.color = "#d33";
-            message.textContent = "Mật khẩu xác nhận không khớp!";
-
-            return;
+        if (!user.emailVerified) {
+            try {
+                await sendEmailVerification(user);
+            } catch (err) {
+                console.error("Lỗi gửi email xác thực:", err);
+            }
+            await signOut(auth);
+            throw new Error("Email chưa được xác thực! Đã gửi lại email xác nhận đến hộp thư của bạn. Vui lòng kiểm tra và xác nhận trước khi đăng nhập.");
         }
 
-        createUserWithEmailAndPassword(auth, email_register, confirmPassword)
-            .then(async (userCredential)=>{
-                const user = userCredential.user;
+        const firebaseIdToken = await user.getIdToken();
+        const response = await fetch("http://127.0.0.1:8000/auth/login", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${firebaseIdToken}`
+            }
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(typeof result.error === "string"
+                ? result.error
+                : (result.detail || "Không thể cấp access token"));
+        }
 
-                // Gửi email xác thực từ Firebase
-                await sendEmailVerification(user);
+        setCookie("access_token", result.data.access_token, 7);
+        Swal.fire({
+            title: "Đăng nhập thành công!",
+            icon: "success",
+            timer: 2000,
+            draggable: true
+        });
+    } catch (error) {
+        login_message.style.color = 'red';
+        if (error.code?.startsWith("auth/")) {
+            login_message.textContent = "Email hoặc mật khẩu không chính xác";
+        } else {
+            login_message.textContent = error.message || "Không thể đăng nhập";
+        }
+        document.getElementById("email_login").value = "";
+        document.getElementById("password_login").value = "";
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+        submitBtn.style.opacity = "1";
+        submitBtn.style.cursor = "pointer";
+    }
+});
 
-                // Lưu user vào cơ sở dữ liệu backend
-                await fetch("http://127.0.0.1:8000/auth/register", {
-                    method: "POST",
-                    headers:{
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        fullname: name_register,
-                        email: email_register
-                    })
-                });
 
-                // Đăng xuất tạm thời để user bấm link trong email xác thực
-                await signOut(auth);
+document.getElementById("registerForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-                Swal.fire({
-                    title: "Đăng ký thành công!",
-                    text: "Một email xác thực đã được gửi đến hộp thư của bạn. Vui lòng kiểm tra email (cả thư rác/spam) và bấm vào liên kết để kích hoạt tài khoản trước khi đăng nhập.",
-                    icon: "success",
-                    confirmButtonText: "Đã hiểu"
-                });
+    const submitBtn = this.querySelector("button[type='submit']");
+    const inputs = this.querySelectorAll("input");
 
-                document.querySelectorAll("input").forEach((input)=>{
-                    input.value= ""
-                });
-                switchMode();
+    const name_register = inputs[0].value.trim();
+    const email_register = inputs[1].value.trim();
+    const password = inputs[2].value.trim();
+    const confirmPassword = inputs[3].value.trim();
+
+    const message = document.getElementById("registerMessage");
+    message.textContent = "";
+
+    if (password !== confirmPassword) {
+        message.style.color = "#d33";
+        message.textContent = "Mật khẩu xác nhận không khớp!";
+        return;
+    }
+
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Đang xử lý...";
+    submitBtn.style.opacity = "0.7";
+    submitBtn.style.cursor = "not-allowed";
+
+    try {
+        // 1. Tạo tài khoản trên Firebase
+        const userCredential = await createUserWithEmailAndPassword(auth, email_register, confirmPassword);
+        const user = userCredential.user;
+
+        // 2. Chạy SONG SONG: gửi email xác thực và lưu vào cơ sở dữ liệu backend
+        const sendEmailTask = sendEmailVerification(user).catch(err => {
+            console.warn("Lỗi gửi email xác thực:", err);
+        });
+
+        const saveDbTask = fetch("http://127.0.0.1:8000/auth/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                fullname: name_register,
+                email: email_register
             })
-            .catch((error) => {
-                message.style.color = "#d33";
-                if (error.code === "auth/email-already-in-use") {
-                    message.textContent = "Email này đã được sử dụng!";
-                } else if (error.code === "auth/weak-password") {
-                    message.textContent = "Mật khẩu phải có tối thiểu 6 ký tự!";
-                } else {
-                    message.textContent = error.message;
-                }
-            }); 
+        }).then(async (res) => {
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || "Không thể lưu thông tin vào hệ thống");
+            }
+        });
 
-    }); 
+        await Promise.all([sendEmailTask, saveDbTask]);
+
+        // 3. Đăng xuất phiên tạm của Firebase (chạy nền, không đợi làm chậm UI)
+        signOut(auth).catch(() => {});
+
+        // 4. Hiển thị thông báo thành công
+        Swal.fire({
+            title: "Đăng ký thành công!",
+            text: "Một email xác thực đã được gửi đến hộp thư của bạn. Vui lòng kiểm tra email (cả thư rác/spam) và bấm vào liên kết để kích hoạt tài khoản trước khi đăng nhập.",
+            icon: "success",
+            confirmButtonText: "Đã hiểu"
+        });
+
+        inputs.forEach((input) => {
+            input.value = "";
+        });
+        switchMode();
+    } catch (error) {
+        message.style.color = "#d33";
+        if (error.code === "auth/email-already-in-use") {
+            message.textContent = "Email này đã được sử dụng!";
+        } else if (error.code === "auth/weak-password") {
+            message.textContent = "Mật khẩu phải có tối thiểu 6 ký tự!";
+        } else {
+            message.textContent = error.message || "Đăng ký thất bại, vui lòng thử lại!";
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+        submitBtn.style.opacity = "1";
+        submitBtn.style.cursor = "pointer";
+    }
+}); 
