@@ -1,13 +1,13 @@
 (function () {
-  var PAGE = "pages/user-info.html";
+  var PAGE = "customer-info.html";
   var QUERY = window.location.search;
-  var KEYS = ["index.html","docs/bien-ban-sprint-review.html","khach-hang/account.html","khach-hang/calendar.html","khach-hang/index.html","khach-hang/payment.html","khach-hang/receipt.html","operator/complaints.html","pages/booking.html","pages/faq.html","pages/help-center.html","pages/how-it-works.html","pages/login.html","pages/my-orders.html","pages/register.html","pages/rental-policy.html","pages/reviews.html","pages/vehicle-detail.html","pages/vehicles.html","store/dashboard.html","store/index.html","store/inventory.html","store/orders.html","store/revenue.html","store/rental_calendar.html","store/vehicle_management.html","store/store_operations.html","store/layout.html","store/login_register.html","store/regis_for_delivery.html","store/ui_kit.html","pages/user-info.html"];
+  var KEYS = ["homepage.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
   window.__VRP_PAGE = PAGE;
   window.__VRP_QUERY = QUERY;
 
   function norm(path) {
-    if (!path) return "index.html";
-    if (path.slice(-1) === "/") path += "index.html";
+    if (!path) return "homepage.html";
+    if (path.slice(-1) === "/") path += "homepage.html";
     return path.replace(/^\/+/, "");
   }
 
@@ -30,6 +30,20 @@
 
   window.__vrpGo = function (href, withLoader) {
     if (href == null) return;
+    /* Standalone mode (no parent frame): navigate for real so the page loader
+       never gets stuck. Keep the animation, just finish the navigation. */
+    if (window.parent === window) {
+      var __t = String(href), __b = __t.split(/[?#]/)[0];
+      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
+      else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
+      else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
+      else if (__b === "vehicles.html") __t = "vehicle-search.html" + __t.slice(__b.length);
+      else if (__b === "dashboard.html") __t = "store-dashboard.html" + __t.slice(__b.length);
+      else if (__b === "inventory.html") __t = "vehicle-inventory.html" + __t.slice(__b.length);
+      window.location.href = __t;
+      return;
+    }
     var r = resolve(String(href));
     if (!r || r.external) return;
     parent.postMessage({ vrp: "nav", page: r.key, search: r.search, hash: r.hash }, "*");
@@ -49,6 +63,7 @@
     if (KEYS.indexOf(r.key) === -1) return;
     e.preventDefault();
     e.stopImmediatePropagation();
+    if (window.parent === window) { window.__vrpGo(r.key + (r.search || "") + (r.hash || "")); return; }
     parent.postMessage({ vrp: "nav", page: r.key, search: r.search, hash: r.hash }, "*");
   }, true);
 
@@ -64,10 +79,12 @@
     new FormData(f).forEach(function (value, key) {
       if (value !== "") qs.push(encodeURIComponent(key) + "=" + encodeURIComponent(value));
     });
+    var __search = qs.length ? "?" + qs.join("&") : "";
+    if (window.parent === window) { window.__vrpGo(r.key + __search + (r.hash || "")); return; }
     parent.postMessage({
       vrp: "nav",
       page: r.key,
-      search: qs.length ? "?" + qs.join("&") : "",
+      search: __search,
       hash: r.hash
     }, "*");
   }, true);
@@ -85,7 +102,7 @@
 (function () {
   var KEY = 'vrp_logged_in';
   function logged() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
-  function openProfile() { var p='../pages/user-info.html'; window.__vrpGo ? window.__vrpGo(p+'?view=profile') : parent.postMessage({vrp:'nav',page:p,search:'?view=profile'},'*'); }
+  function openProfile() { var p='customer-info.html'; window.location.href = p+'?view=profile'; }
   function apply() {
     var actions = document.querySelector('.header-actions');
     if (actions && logged() && !actions.querySelector('.user-profile')) {
@@ -738,45 +755,45 @@ window.onload = function () {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "index.html": "../Giao diện trang chủ/index.html",
-        "docs/bien-ban-sprint-review.html": "../Giao diện biên bản sprint review/index.html",
-        "khach-hang/account.html": "../Giao diện tài khoản khách hàng/index.html",
-        "khach-hang/calendar.html": "../Giao diện lịch xe theo tuần/index.html",
-        "khach-hang/index.html": "../Giao diện khách hàng trang chủ/index.html",
-        "khach-hang/payment.html": "../Giao diện thanh toán đặt cọc/index.html",
-        "khach-hang/receipt.html": "../Giao diện biên nhận điện tử/index.html",
-        "operator/complaints.html": "../Giao diện xử lý khiếu nại/index.html",
-        "pages/booking.html": "../Giao diện tạo đơn thuê/index.html",
-        "pages/faq.html": "../Giao diện câu hỏi thường gặp/index.html",
-        "pages/help-center.html": "../Giao diện trung tâm trợ giúp/index.html",
-        "pages/how-it-works.html": "../Giao diện cách hoạt động/index.html",
-        "pages/login.html": "../Giao diện đăng ký, đăng nhập/index.html",
-        "pages/my-orders.html": "../Giao diện đơn của tôi/index.html",
-        "pages/register.html": "../Giao diện đăng ký, đăng nhập/index.html",
-        "pages/rental-policy.html": "../Giao diện chính sách thuê xe/index.html",
-        "pages/reviews.html": "../Giao diện đánh giá khách hàng/index.html",
-        "pages/vehicle-detail.html": "../Giao diện chi tiết xe/index.html",
-        "pages/vehicles.html": "../Giao diện tìm xe/index.html",
-        "store/dashboard.html": "../Giao diện dashboard cửa hàng/index.html",
-        "store/index.html": "../Giao diện cửa hàng trang chủ/index.html",
-        "store/inventory.html": "../Giao diện kho xe/index.html",
-        "store/orders.html": "../Giao diện đơn thuê cửa hàng/index.html",
-        "store/revenue.html": "../Giao diện doanh thu/index.html",
-        "store/rental_calendar.html": "../Giao diện lịch thuê cửa hàng/index.html",
-        "store/vehicle_management.html": "../Giao diện quản lý đội xe/index.html",
-        "store/store_operations.html": "../Giao diện vận hành cửa hàng/index.html",
-        "store/layout.html": "../Giao diện layout và điều hướng/index.html",
-        "store/login_register.html": "../Giao diện đăng nhập đăng ký cửa hàng/index.html",
-        "store/regis_for_delivery.html": "../Giao diện đăng ký gian hàng/index.html",
-        "store/ui_kit.html": "../Giao diện UI Kit/index.html",
-        "pages/user-info.html": "../Giao diện thông tin khách hàng/index.html"
+        "homepage.html": "homepage.html",
+        "sprint-review-report.html": "sprint-review-report.html",
+        "customer-account.html": "customer-account.html",
+        "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
+        "customer-homepage.html": "customer-homepage.html",
+        "deposit-payment.html": "deposit-payment.html",
+        "electronic-receipt.html": "electronic-receipt.html",
+        "complaint-handling.html": "complaint-handling.html",
+        "create-rental-order.html": "create-rental-order.html",
+        "faq.html": "faq.html",
+        "help-center.html": "help-center.html",
+        "how-it-works.html": "how-it-works.html",
+        "login-register.html": "login-register.html",
+        "my-orders.html": "my-orders.html",
+        "login-register.html": "login-register.html",
+        "rental-policy.html": "rental-policy.html",
+        "customer-review.html": "customer-review.html",
+        "vehicle-detail.html": "vehicle-detail.html",
+        "vehicle-search.html": "vehicle-search.html",
+        "store-dashboard.html": "store-dashboard.html",
+        "store-homepage.html": "store-homepage.html",
+        "vehicle-inventory.html": "vehicle-inventory.html",
+        "store-rental-orders.html": "store-rental-orders.html",
+        "revenue.html": "revenue.html",
+        "store-rental-schedule.html": "store-rental-schedule.html",
+        "fleet-management.html": "fleet-management.html",
+        "store-operations.html": "store-operations.html",
+        "layout-navigation.html": "layout-navigation.html",
+        "brand-login-register.html": "brand-login-register.html",
+        "store-registration.html": "store-registration.html",
+        "ui-kit.html": "ui-kit.html",
+        "customer-info.html": "customer-info.html"
     };
     var ALIAS = {
-    "store/store_owner_index.html": "store/index.html",
-    "pages/index.html": "index.html",
-    "pages/pages/how-it-works.html": "pages/how-it-works.html"
+    "store-homepage.html": "store-homepage.html",
+    "homepage.html": "homepage.html",
+    "how-it-works.html": "how-it-works.html"
 };
-    var PAGE = "pages/user-info.html";
+    var PAGE = "customer-info.html";
 
     function go(key, search, hash) {
         var target = MAP[key];
@@ -792,8 +809,8 @@ window.onload = function () {
     });
 
     function norm(path) {
-        if (!path) return "index.html";
-        if (path.slice(-1) === "/") path += "index.html";
+        if (!path) return "homepage.html";
+        if (path.slice(-1) === "/") path += "homepage.html";
         return path.replace(/^\/+/, "");
     }
 
