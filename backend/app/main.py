@@ -65,7 +65,7 @@ def get_firebase_config():
         "authDomain": AUTH_DOMAIN,
         "projectId": PROJECT_ID,
         "storageBucket": STORAGE_BUCKET,
-        "messagingSenderId": MEASUREMENT_ID,
+        "messagingSenderId": MESSAGING_SENDER_ID,
         "appId": APP_ID,
         "measurementId": MEASUREMENT_ID
     }
