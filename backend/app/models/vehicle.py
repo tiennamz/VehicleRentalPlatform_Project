@@ -2,6 +2,8 @@ from sqlalchemy import Column, BigInteger, Integer, String, Enum, ForeignKey, Te
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
+
+
 class Vehicle(Base):
     __tablename__ = "vehicles"
     vehicle_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
@@ -21,7 +23,14 @@ class Vehicle(Base):
             "Ô tô 16 chỗ"
         )
     )
-    status = Column(String(255))
+    status = Column(
+        Enum(
+            "Sẵn sàng",
+            "Đang thuê",
+            "Bảo trì",
+            "Đã xóa"
+        )
+    )
 
     store = relationship("Store", back_populates="vehicles")
     price_tables = relationship("PriceTable", back_populates="vehicle")

@@ -5,11 +5,11 @@ from uuid import uuid4
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from dependencies.middleware import get_current_user
+from dependencies.middleware import get_current_user, check_store_owner
 from app.models.user import User
 from app.models.image import Image
 from app.schemas.vehicle import ( VehicleCreate, VehicleUpdate,VehicleResponse)
-from app.services.vehicle import ( create_vehicle, update_vehicle, delete_vehicle, get_vehicles)
+from app.services.vehicle import ( create_vehicle, update_vehicle, delete_vehicle, get_vehicles, pause_vehicle_service)
 
 router = APIRouter(prefix="/vehicles",tags=["Vehicles"])
 
@@ -140,3 +140,7 @@ def update_vehicle_api(vehicle_id: int,data: VehicleUpdate,db: Session = Depends
 @router.delete("/{vehicle_id}")
 def delete_vehicle_api(vehicle_id: int,db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
     return delete_vehicle(db=db,user_id=current_user.user_id,vehicle_id=vehicle_id)
+
+@router.patch("/{vehicle_id}/pause")
+def pause_vehicle(vehicle_id: int, db: Session =  Depends(get_db), user: User =  Depends(check_store_owner)):
+    return pause_vehicle_service(vehicle_id, db)

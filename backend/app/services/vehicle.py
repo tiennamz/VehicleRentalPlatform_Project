@@ -1,11 +1,10 @@
-
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.models.vehicle import Vehicle
 from app.models.store import Store
 from app.models.image import Image
-
+from app.models.user import User
 
 def get_owner_store(db: Session, user_id: int):
     store = db.query(Store).filter(Store.owner_id == user_id).first()
@@ -80,3 +79,19 @@ def delete_vehicle(db: Session, user_id: int, vehicle_id: int):
 def get_vehicles(db: Session, user_id: int):
     store = get_owner_store(db, user_id)
     return db.query(Vehicle).filter(Vehicle.store_id == store.store_id,Vehicle.status != "Đã xóa").all()
+
+
+# FR-08 API tạm ngưng cho thuê
+def pause_vehicle_service(vehicle_id: int, db: Session):
+    vehicle = db.query(Vehicle).filter(Vehicle.vehicle_id == vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy xe có id {vehicle_id}"
+        )
+    
+    vehicle.status = "Bảo trì"
+    db.commit()
+    db.refresh(vehicle)
+
+    return vehicle
