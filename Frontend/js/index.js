@@ -19,15 +19,15 @@
 })();
 
 (function () {
-  var PAGE = "homepage.html";
+  var PAGE = "index.html";
   var QUERY = window.location.search;
-  var KEYS = ["homepage.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
+  var KEYS = ["index.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
   window.__VRP_PAGE = PAGE;
   window.__VRP_QUERY = QUERY;
 
   function norm(path) {
-    if (!path) return "homepage.html";
-    if (path.slice(-1) === "/") path += "homepage.html";
+    if (!path) return "index.html";
+    if (path.slice(-1) === "/") path += "index.html";
     return path.replace(/^\/+/, "");
   }
 
@@ -54,7 +54,7 @@
        never gets stuck. Keep the animation, just finish the navigation. */
     if (window.parent === window) {
       var __t = String(href), __b = __t.split(/[?#]/)[0];
-      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      if (__b === "homepage.html") __t = "index.html" + __t.slice(__b.length);
       else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
       else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
       else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
@@ -525,8 +525,8 @@ window.showToast = function (msg) {
 
   // "Cửa hàng" đã bị bỏ khỏi HTML của trang khách; chỉ chèn lại khi có quyền.
   const navList = document.querySelector(".nav-list");
-  if (canStore && navList && !navList.querySelector('a[href*="store/"]')) {
-    const homeLink = navList.querySelector('a[href$="homepage.html"]');
+  if (canStore && navList && !navList.querySelector('a[href*="store-dashboard"], a[href*="store-homepage"], a[href*="store/"]')) {
+    const homeLink = navList.querySelector('a[href$="index.html"]');
     const prefix = homeLink ? homeLink.getAttribute("href").replace(/index\.html$/, "") : "";
     const li = document.createElement("li");
     li.innerHTML = '<a href="' + prefix + 'store-dashboard.html">Cửa hàng</a>';
@@ -778,7 +778,7 @@ document.querySelectorAll(".btn-rent-vrp").forEach(function (btn) {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "homepage.html": "homepage.html",
+        "index.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -813,10 +813,11 @@ document.querySelectorAll(".btn-rent-vrp").forEach(function (btn) {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "homepage.html": "homepage.html",
+    "index.html": "index.html",
+    "homepage.html": "index.html",
     "how-it-works.html": "how-it-works.html"
 };
-    var PAGE = "homepage.html";
+    var PAGE = "index.html";
 
     function go(key, search, hash) {
         var target = MAP[key];
@@ -832,8 +833,8 @@ document.querySelectorAll(".btn-rent-vrp").forEach(function (btn) {
     });
 
     function norm(path) {
-        if (!path) return "homepage.html";
-        if (path.slice(-1) === "/") path += "homepage.html";
+        if (!path) return "index.html";
+        if (path.slice(-1) === "/") path += "index.html";
         return path.replace(/^\/+/, "");
     }
 
@@ -899,19 +900,113 @@ document.querySelectorAll(".btn-rent-vrp").forEach(function (btn) {
     } catch (e) { return null; }
   }
 
-  if (PAGE === "homepage.html") {
+  function openVehiclePreviewModal(car) {
+    if (!car) return;
+    var existing = document.getElementById("vrpVehiclePreviewModal");
+    if (existing) existing.remove();
+
+    if (!document.getElementById("vrpVehiclePreviewStyle")) {
+      var st = document.createElement("style");
+      st.id = "vrpVehiclePreviewStyle";
+      st.textContent =
+        ".vrp-vp-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;animation:vrpFadeIn .18s ease}" +
+        "@keyframes vrpFadeIn{from{opacity:0}to{opacity:1}}" +
+        ".vrp-vp-dialog{background:#fff;border-radius:18px;max-width:560px;width:100%;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,.28);position:relative;font-family:inherit}" +
+        ".vrp-vp-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(15,23,42,.65);color:#fff;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}" +
+        ".vrp-vp-img{width:100%;height:240px;object-fit:cover;display:block;background:#f1f5f9}" +
+        ".vrp-vp-body{padding:20px 22px 22px}" +
+        ".vrp-vp-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#079b70;background:#e6f7f1;padding:4px 10px;border-radius:999px;margin-bottom:8px}" +
+        ".vrp-vp-title{margin:0 0 6px;font-size:22px;font-weight:800;color:#0f172a}" +
+        ".vrp-vp-meta{font-size:14px;color:#475569;margin-bottom:14px}" +
+        ".vrp-vp-specs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:18px}" +
+        ".vrp-vp-spec{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;color:#64748b}" +
+        ".vrp-vp-spec strong{display:block;color:#0f172a;font-size:14px;margin-top:2px}" +
+        ".vrp-vp-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;border-top:1px solid #e2e8f0}" +
+        ".vrp-vp-price{font-size:22px;font-weight:800;color:#079b70}" +
+        ".vrp-vp-price small{font-size:13px;font-weight:500;color:#64748b}" +
+        ".vrp-vp-actions{display:flex;gap:8px}";
+      document.head.appendChild(st);
+    }
+
+    var rentHref = "weekly-vehicle-schedule.html?xe=" + encodeURIComponent(car.name || "");
+    var backdrop = document.createElement("div");
+    backdrop.id = "vrpVehiclePreviewModal";
+    backdrop.className = "vrp-vp-backdrop";
+    backdrop.innerHTML =
+      '<div class="vrp-vp-dialog" role="dialog" aria-modal="true">' +
+        '<button type="button" class="vrp-vp-close" aria-label="Đóng">&times;</button>' +
+        '<img class="vrp-vp-img" src="' + (car.image || "") + '" alt="' + (car.name || "Xe") + '">' +
+        '<div class="vrp-vp-body">' +
+          '<span class="vrp-vp-badge">' + (car.label || car.type || "XE MÁY") + '</span>' +
+          '<h3 class="vrp-vp-title">' + (car.name || "") + '</h3>' +
+          '<div class="vrp-vp-meta">★ ' + (car.rating || "4.9") + (car.reviews ? " (" + car.reviews + " đánh giá)" : "") + " · 📍 " + (car.location || "Đà Nẵng") + ' · <strong style="color:#079b70">Còn xe</strong></div>' +
+          '<div class="vrp-vp-specs">' +
+            '<div class="vrp-vp-spec">Loại xe<strong>' + (car.specType || car.type || "Xe máy") + '</strong></div>' +
+            '<div class="vrp-vp-spec">Động cơ / Phân khối<strong>' + (car.cc || "125cc") + '</strong></div>' +
+            '<div class="vrp-vp-spec">Đời xe<strong>' + (car.year || "2024") + '</strong></div>' +
+            '<div class="vrp-vp-spec">Biển số tham chiếu<strong>' + (car.plate || "43-C1") + '</strong></div>' +
+          '</div>' +
+          '<div class="vrp-vp-foot">' +
+            '<div class="vrp-vp-price">' + (car.price || "150.000đ") + ' <small>/ ngày</small></div>' +
+            '<div class="vrp-vp-actions">' +
+              '<button type="button" class="btn btn-outline btn-sm vrp-vp-cancel">Đóng</button>' +
+              '<a href="' + rentHref + '" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    function closeModal() {
+      backdrop.remove();
+      document.removeEventListener("keydown", onEsc);
+    }
+    function onEsc(ev) {
+      if (ev.key === "Escape") closeModal();
+    }
+
+    backdrop.addEventListener("click", function (ev) {
+      if (ev.target === backdrop) closeModal();
+    });
+    backdrop.querySelector(".vrp-vp-close").addEventListener("click", closeModal);
+    backdrop.querySelector(".vrp-vp-cancel").addEventListener("click", closeModal);
+    var modalRentBtn = backdrop.querySelector(".btn-rent-vrp");
+    if (modalRentBtn) {
+      modalRentBtn.addEventListener("click", function () {
+        save(car);
+      });
+    }
+    document.addEventListener("keydown", onEsc);
+    document.body.appendChild(backdrop);
+  }
+
+  if (PAGE === "index.html") {
     document.querySelectorAll(".vehicles-grid .vehicle-card").forEach(function (card) {
       var h = card.querySelector("h3");
       if (!h) return;
       var name = h.textContent.trim();
-      var c = findCar(name);
+      var fallbackCar = {
+        name: name,
+        type: card.querySelector(".type") ? card.querySelector(".type").textContent.trim() : "Xe máy",
+        price: card.querySelector(".price") ? card.querySelector(".price").childNodes[0].textContent.trim() : "150.000đ",
+        image: card.querySelector("img") ? card.querySelector("img").src : "",
+        location: "Đà Nẵng",
+        rating: "4.8"
+      };
+      var c = findCar(name) || fallbackCar;
       var detail = card.querySelector('a[href="vehicle-detail.html"]');
       var rent = card.querySelector(".btn-rent-vrp");
-      if (detail) detail.setAttribute("href", "vehicle-detail.html?xe=" + encodeURIComponent(name));
-      if (rent) rent.setAttribute("href", "weekly-vehicle-schedule.html?xe=" + encodeURIComponent(name));
-      [detail, rent].forEach(function (a) {
-        if (a) a.addEventListener("click", function () { save(c || { name: name }); });
-      });
+      if (detail) {
+        detail.setAttribute("href", "#chi-tiet-xe");
+        detail.addEventListener("click", function (e) {
+          e.preventDefault();
+          save(c);
+          openVehiclePreviewModal(c);
+        });
+      }
+      if (rent) {
+        rent.setAttribute("href", "weekly-vehicle-schedule.html?xe=" + encodeURIComponent(name));
+        rent.addEventListener("click", function () { save(c); });
+      }
     });
   }
 

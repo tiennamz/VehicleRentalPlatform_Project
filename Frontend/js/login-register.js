@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth,
+import {
+    getAuth,
     sendPasswordResetEmail,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -26,10 +27,6 @@ function switchMode() {
 
 window.switchMode = switchMode;
 
-document.querySelectorAll(".switch-panel button").forEach(btn => {
-    btn.addEventListener("click", switchMode);
-});
-
 // =================================================
 // COOKIE HELPERS
 // =================================================
@@ -47,6 +44,23 @@ function getCookie(name) {
 
 function deleteCookie(name) {
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+}
+
+function parseJwt(token) {
+    try {
+        const parts = String(token || "").split(".");
+        if (parts.length !== 3) return null;
+        let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        while (base64.length % 4) base64 += "=";
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return JSON.parse(new TextDecoder("utf-8").decode(bytes));
+    } catch (e) {
+        return null;
+    }
 }
 
 window.setCookie = setCookie;
@@ -243,13 +257,37 @@ document.getElementById("loginForm").addEventListener("submit", async function (
                 : (result.detail || "Không thể cấp access token"));
         }
 
-        setCookie("access_token", result.data.access_token, 7);
-        Swal.fire({
-            title: "Đăng nhập thành công!",
-            icon: "success",
-            timer: 2000,
-            draggable: true
-        });
+        const accessToken = result.data.access_token;
+        setCookie("access_token", accessToken, 7);
+
+        const payload = parseJwt(accessToken) || {};
+        const rawRoles = payload.role_id || payload.role || [2];
+        const roleIds = (Array.isArray(rawRoles) ? rawRoles : [rawRoles]).map(Number);
+
+        // Phân quyền điều hướng theo role_id:
+        // 1: Admin, 2: Khách hàng, 3: Nhân viên cửa hàng, 4: Chủ cửa hàng
+        let vrpRole = "customer";
+        let targetPage = "index.html";
+        if (roleIds.includes(1)) {
+            vrpRole = "admin";
+            targetPage = "store-dashboard.html";
+        } else if (roleIds.includes(4) || roleIds.includes(3)) {
+            vrpRole = "store";
+            targetPage = "store-dashboard.html";
+        }
+
+        const displayName = payload.name || email_login.split("@")[0];
+        setCookie("vrp_logged_in", "1", 7);
+        setCookie("vrp_role", vrpRole, 7);
+        setCookie("vrp_user_name", displayName, 7);
+        try {
+            localStorage.setItem("vrp_logged_in", "1");
+            localStorage.setItem("vrp_role", vrpRole);
+            localStorage.setItem("vrp_user_name", displayName);
+            localStorage.setItem("vrp_user_email", payload.email || email_login);
+        } catch (err) {}
+
+        window.location.href = targetPage;
     } catch (error) {
         login_message.style.color = 'red';
         if (error.code?.startsWith("auth/")) {
@@ -324,7 +362,7 @@ document.getElementById("registerForm").addEventListener("submit", async functio
         await Promise.all([sendEmailTask, saveDbTask]);
 
         // 3. Đăng xuất phiên tạm của Firebase (chạy nền, không đợi làm chậm UI)
-        signOut(auth).catch(() => {});
+        signOut(auth).catch(() => { });
 
         // 4. Hiển thị thông báo thành công
         Swal.fire({

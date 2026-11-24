@@ -1,13 +1,13 @@
 (function () {
   var PAGE = "customer-info.html";
   var QUERY = window.location.search;
-  var KEYS = ["homepage.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
+  var KEYS = ["index.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
   window.__VRP_PAGE = PAGE;
   window.__VRP_QUERY = QUERY;
 
   function norm(path) {
-    if (!path) return "homepage.html";
-    if (path.slice(-1) === "/") path += "homepage.html";
+    if (!path) return "index.html";
+    if (path.slice(-1) === "/") path += "index.html";
     return path.replace(/^\/+/, "");
   }
 
@@ -34,7 +34,7 @@
        never gets stuck. Keep the animation, just finish the navigation. */
     if (window.parent === window) {
       var __t = String(href), __b = __t.split(/[?#]/)[0];
-      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      if (__b === "homepage.html") __t = "index.html" + __t.slice(__b.length);
       else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
       else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
       else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
@@ -357,18 +357,230 @@ function switchAccountView(itemName) {
     closeAccountDropdown();
 }
 
-// Lưu thông tin hồ sơ
-function saveProfile(event) {
+// Khởi tạo & đồng bộ dữ liệu Hồ sơ của tôi + Giấy phép lái xe
+function getProfileStorageKey() {
+    const email = (window.VRPAuth && window.VRPAuth.userEmail) || 'guest';
+    return 'vrp_profile_data_' + email.toLowerCase();
+}
+
+function getAvatarInitials(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'TK';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function renderLicenseBadge(licenseNumber, licenseClass, status) {
+    const badge = document.getElementById('licenseStatusBadge');
+    const textEl = document.getElementById('licenseStatusText');
+    if (!badge || !textEl) return;
+
+    const icon = badge.querySelector('i');
+    badge.classList.remove('is-empty', 'is-pending', 'is-rejected');
+
+    if (!licenseNumber) {
+        badge.classList.add('is-empty');
+        if (icon) icon.className = 'fa-solid fa-id-card';
+        textEl.textContent = 'Chưa cập nhật số giấy phép lái xe';
+        return;
+    }
+
+    const cls = licenseClass || 'A1';
+    if (status === 'Đã xác thực') {
+        if (icon) icon.className = 'fa-solid fa-circle-check';
+        textEl.textContent = `Đã xác thực GPLX: ${licenseNumber} (Hạng ${cls})`;
+    } else if (status === 'Bị từ chối' || status === 'Đã hết hạn') {
+        badge.classList.add('is-rejected');
+        if (icon) icon.className = 'fa-solid fa-circle-xmark';
+        textEl.textContent = `${status}: ${licenseNumber} (Hạng ${cls})`;
+    } else {
+        badge.classList.add('is-pending');
+        if (icon) icon.className = 'fa-solid fa-clock';
+        textEl.textContent = `GPLX: ${licenseNumber} (Hạng ${cls}) · ${status || 'Chờ xác thực'}`;
+    }
+}
+
+async function initProfileForm() {
+    const auth = window.VRPAuth || {};
+    const nameInput = document.getElementById('profileNameInput');
+    const phoneInput = document.getElementById('profilePhoneInput');
+    const emailInput = document.getElementById('profileEmailInput');
+    const dobInput = document.getElementById('profileDobInput');
+    const licInput = document.getElementById('licenseNumberInput');
+    const licClass = document.getElementById('licenseClassSelect');
+
+    let saved = {};
+    try {
+        saved = JSON.parse(localStorage.getItem(getProfileStorageKey()) || '{}') || {};
+    } catch (e) {}
+
+    const effectiveName = saved.fullname || auth.userName || (nameInput ? nameInput.value : '');
+    const effectiveEmail = auth.userEmail || saved.email || (emailInput ? emailInput.value : '');
+
+    if (nameInput && effectiveName) nameInput.value = effectiveName;
+    if (emailInput && effectiveEmail) emailInput.value = effectiveEmail;
+    if (phoneInput) phoneInput.value = saved.phone_number !== undefined ? saved.phone_number : (auth.isLoggedIn ? '' : phoneInput.value);
+    if (dobInput && saved.date_of_birth) dobInput.value = saved.date_of_birth;
+    if (licInput && saved.license_number) licInput.value = saved.license_number;
+    if (licClass && saved.license_class) licClass.value = saved.license_class;
+
+    if (effectiveName) {
+        const initials = getAvatarInitials(effectiveName);
+        document.querySelectorAll('.profile-big-avatar, .user-avatar').forEach(el => { el.textContent = initials; });
+        document.querySelectorAll('.user-name, .popup-name').forEach(el => { el.textContent = effectiveName; });
+    }
+
+    renderLicenseBadge(saved.license_number || '', saved.license_class || 'A1', saved.verification_status || '');
+
+    if (auth.userId) {
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/users/${auth.userId}/profile`);
+            if (res.ok) {
+                const json = await res.json();
+                const d = json.data || {};
+                if (nameInput && d.fullname) nameInput.value = d.fullname;
+                if (emailInput && d.email) emailInput.value = d.email;
+                if (phoneInput && d.phone_number != null) phoneInput.value = d.phone_number;
+                if (dobInput && d.date_of_birth) dobInput.value = d.date_of_birth;
+                if (d.driver_license) {
+                    if (licInput && d.driver_license.license_number) licInput.value = d.driver_license.license_number;
+                    if (licClass && d.driver_license.license_class) licClass.value = d.driver_license.license_class;
+                    renderLicenseBadge(
+                        d.driver_license.license_number,
+                        d.driver_license.license_class,
+                        d.driver_license.verification_status
+                    );
+                }
+            }
+        } catch (err) {
+            // Backend chưa bật vẫn dùng dữ liệu cục bộ bình thường
+        }
+    }
+}
+
+// Lưu thông tin hồ sơ & giấy phép lái xe
+async function saveProfile(event) {
     if (event) event.preventDefault();
 
     const nameInput = document.getElementById('profileNameInput');
+    const phoneInput = document.getElementById('profilePhoneInput');
+    const emailInput = document.getElementById('profileEmailInput');
+    const dobInput = document.getElementById('profileDobInput');
+    const licInput = document.getElementById('licenseNumberInput');
+    const licClassSelect = document.getElementById('licenseClassSelect');
+    const saveBtn = document.getElementById('saveProfileBtn');
+    const msgEl = document.getElementById('profileSaveMessage');
 
-    if (nameInput && nameInput.value.trim()) {
-        const newName = nameInput.value.trim();
+    if (msgEl) {
+        msgEl.textContent = '';
+        msgEl.className = 'profile-save-msg';
+    }
 
-        document.querySelectorAll('.user-name, .popup-name').forEach(el => {
-            el.innerText = newName;
-        });
+    const fullname = nameInput ? nameInput.value.trim() : '';
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const dob = dobInput ? dobInput.value : '';
+    const licenseNumber = licInput ? licInput.value.replace(/\s+/g, '').trim() : '';
+    const licenseClass = licClassSelect ? licClassSelect.value : 'A1';
+
+    if (!fullname) {
+        if (msgEl) {
+            msgEl.className = 'profile-save-msg error';
+            msgEl.textContent = 'Vui lòng nhập họ và tên.';
+        }
+        return;
+    }
+
+    if (licenseNumber && !/^[A-Za-z0-9]{6,20}$/.test(licenseNumber)) {
+        if (msgEl) {
+            msgEl.className = 'profile-save-msg error';
+            msgEl.textContent = 'Số giấy phép lái xe gồm 6–20 ký tự chữ hoặc số (VD: 079098001234).';
+        }
+        return;
+    }
+
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Đang lưu...';
+    }
+
+    let verificationStatus = licenseNumber ? 'Đang chờ' : '';
+    const auth = window.VRPAuth || {};
+
+    try {
+        if (auth.userId) {
+            const profRes = await fetch(`http://127.0.0.1:8000/users/${auth.userId}/profile`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullname: fullname,
+                    date_of_birth: dob || '1998-08-15',
+                    address: 'Đà Nẵng',
+                    phone_number: phone || null
+                })
+            });
+            if (!profRes.ok) {
+                const errJson = await profRes.json().catch(() => ({}));
+                throw new Error(errJson.detail || errJson.error || 'Không thể cập nhật thông tin cá nhân');
+            }
+
+            if (licenseNumber) {
+                const licRes = await fetch(`http://127.0.0.1:8000/users/${auth.userId}/licenses`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        license_number: licenseNumber,
+                        license_class: licenseClass,
+                        issue_date: '2022-01-01T00:00:00',
+                        expiry_date: '2032-01-01T00:00:00'
+                    })
+                });
+                if (!licRes.ok) {
+                    const errJson = await licRes.json().catch(() => ({}));
+                    throw new Error(errJson.detail || errJson.error || 'Không thể lưu số giấy phép lái xe');
+                }
+                const licJson = await licRes.json().catch(() => ({}));
+                if (licJson.data && licJson.data.verification_status) {
+                    verificationStatus = licJson.data.verification_status;
+                }
+            }
+        }
+
+        const profileObj = {
+            fullname: fullname,
+            email: emailInput ? emailInput.value.trim() : '',
+            phone_number: phone,
+            date_of_birth: dob,
+            license_number: licenseNumber,
+            license_class: licenseClass,
+            verification_status: verificationStatus
+        };
+        try {
+            localStorage.setItem(getProfileStorageKey(), JSON.stringify(profileObj));
+            localStorage.setItem('vrp_user_name', fullname);
+        } catch (e) {}
+
+        const initials = getAvatarInitials(fullname);
+        document.querySelectorAll('.user-name, .popup-name').forEach(el => { el.innerText = fullname; });
+        document.querySelectorAll('.profile-big-avatar, .user-avatar').forEach(el => { el.innerText = initials; });
+        if (licInput) licInput.value = licenseNumber;
+        renderLicenseBadge(licenseNumber, licenseClass, verificationStatus);
+
+        if (msgEl) {
+            msgEl.className = 'profile-save-msg';
+            msgEl.textContent = licenseNumber
+                ? 'Đã lưu hồ sơ và số giấy phép lái xe thành công!'
+                : 'Đã lưu thông tin hồ sơ thành công!';
+        }
+    } catch (error) {
+        if (msgEl) {
+            msgEl.className = 'profile-save-msg error';
+            msgEl.textContent = error.message || 'Không thể lưu thay đổi, vui lòng thử lại.';
+        }
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Lưu thay đổi';
+        }
     }
 }
 
@@ -723,6 +935,7 @@ window.onload = function () {
     renderCars();
     initNavigationEvents();
     updateOrderCounts();
+    initProfileForm();
 
     // Tự động mở Đơn thuê của tôi khi chuyển từ thanh toán sang
     if (sessionStorage.getItem('openProfileTab') === 'orders') {
@@ -755,7 +968,7 @@ window.onload = function () {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "homepage.html": "homepage.html",
+        "index.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -790,7 +1003,8 @@ window.onload = function () {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "homepage.html": "homepage.html",
+    "index.html": "index.html",
+    "homepage.html": "index.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "customer-info.html";
@@ -809,8 +1023,8 @@ window.onload = function () {
     });
 
     function norm(path) {
-        if (!path) return "homepage.html";
-        if (path.slice(-1) === "/") path += "homepage.html";
+        if (!path) return "index.html";
+        if (path.slice(-1) === "/") path += "index.html";
         return path.replace(/^\/+/, "");
     }
 

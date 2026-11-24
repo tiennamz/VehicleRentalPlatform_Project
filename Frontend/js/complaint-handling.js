@@ -54,7 +54,7 @@
        never gets stuck. Keep the animation, just finish the navigation. */
     if (window.parent === window) {
       var __t = String(href), __b = __t.split(/[?#]/)[0];
-      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      if (__b === "homepage.html") __t = "index.html" + __t.slice(__b.length);
       else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
       else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
       else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
@@ -525,7 +525,7 @@ window.showToast = function (msg) {
 
   // "Cửa hàng" đã bị bỏ khỏi HTML của trang khách; chỉ chèn lại khi có quyền.
   const navList = document.querySelector(".nav-list");
-  if (canStore && navList && !navList.querySelector('a[href*="store/"]')) {
+  if (canStore && navList && !navList.querySelector('a[href*="store-dashboard"], a[href*="store-homepage"], a[href*="store/"]')) {
     const homeLink = navList.querySelector('a[href$="store-dashboard.html"]');
     const prefix = homeLink ? homeLink.getAttribute("href").replace(/index\.html$/, "") : "";
     const li = document.createElement("li");
@@ -668,7 +668,7 @@ renderDetail(DATA[0]);
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "index.html": "homepage.html",
+        "index.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -703,6 +703,7 @@ renderDetail(DATA[0]);
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
+    "index.html": "index.html",
     "homepage.html": "index.html",
     "how-it-works.html": "how-it-works.html"
 };

@@ -54,7 +54,7 @@
        never gets stuck. Keep the animation, just finish the navigation. */
     if (window.parent === window) {
       var __t = String(href), __b = __t.split(/[?#]/)[0];
-      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      if (__b === "homepage.html") __t = "index.html" + __t.slice(__b.length);
       else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
       else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
       else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
@@ -499,7 +499,7 @@ document.addEventListener("keydown", function (event) {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "store-dashboard.html": "homepage.html",
+        "store-dashboard.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -534,7 +534,7 @@ document.addEventListener("keydown", function (event) {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "homepage.html": "store-dashboard.html",
+    "index.html": "store-dashboard.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "deposit-payment.html";
