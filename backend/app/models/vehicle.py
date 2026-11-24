@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, String, Enum, ForeignKey
+from sqlalchemy import Column, BigInteger, Integer, String, Enum, ForeignKey, Text
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
@@ -8,6 +8,10 @@ class Vehicle(Base):
     store_id = Column(BigInteger, ForeignKey("stores.store_id"))
     brand = Column(String(255))
     license_plate = Column(String(255), unique=True)
+    model = Column(String(255), nullable=True)
+    manufacture_year = Column(Integer, nullable=True)
+    engine_capacity = Column(Integer, nullable=True)
+    description = Column(Text, nullable=True)
     type = Column(
         Enum(
             "Xe tay ga",

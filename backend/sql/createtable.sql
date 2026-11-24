@@ -260,3 +260,9 @@ ADD COLUMN business_license VARCHAR(255) NULL,
 ADD COLUMN bank_account_number VARCHAR(50) NULL,
 ADD COLUMN bank_name VARCHAR(100) NULL,
 ADD COLUMN account_holder VARCHAR(150) NULL;
+
+ALTER TABLE vehicles
+ADD COLUMN model VARCHAR(255) NULL,
+ADD COLUMN manufacture_year INT NULL,
+ADD COLUMN engine_capacity INT NULL,
+ADD COLUMN description TEXT NULL;
