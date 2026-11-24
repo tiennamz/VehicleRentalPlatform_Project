@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app.schemas.auth_schemas import RegisterSchema
@@ -7,6 +8,8 @@ from app.core.config import PROJECT_ID
 from app.core.security import create_access_token
 from app.models.user import User
 from app.models.user_role import UserRole
+
+logger = logging.getLogger("uvicorn.error")
 
 def register_service(new_user: RegisterSchema, db: Session):
 
@@ -61,9 +64,11 @@ def login_service(firebase_id_token: str, db: Session):
         firebase_claims = auth.verify_id_token(
             firebase_id_token,
             app=firebase_app,
-            check_revoked=True
+            check_revoked=True,
+            clock_skew_seconds=60
         )
     except (auth.InvalidIdTokenError, auth.UserDisabledError, ValueError) as exc:
+        logger.warning("Firebase ID token verification failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Invalid Firebase ID token'
