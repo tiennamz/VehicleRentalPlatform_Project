@@ -1,8 +1,10 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Request, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
+from app.models.user import User
+from app.models.drivers_license import DriverLicense
 from app.schemas.booking_eligibility_schemas import (
     calculate_age,
     UserProfileUpdateSchema,
@@ -18,6 +20,39 @@ from app.services.booking_eligibility_services import (
 from app.utils.response import create_response
 
 router = APIRouter(tags=["Booking Eligibility & Vehicle Search (TF13D97)"])
+
+
+@router.get("/users/{user_id}/profile", status_code=status.HTTP_200_OK)
+def get_profile_endpoint(
+    request: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy người dùng với ID {user_id}",
+        )
+    lic = db.query(DriverLicense).filter(DriverLicense.user_id == user_id).first()
+    data = {
+        "user_id": user.user_id,
+        "fullname": user.fullname,
+        "email": user.email,
+        "phone_number": user.phone_number,
+        "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
+        "address": user.address,
+        "driver_license": {
+            "drivers_license_id": lic.drivers_license_id,
+            "license_number": lic.license_number,
+            "license_class": lic.license_class,
+            "issue_date": lic.issue_date.isoformat() if lic.issue_date else None,
+            "expiry_date": lic.expiry_date.isoformat() if lic.expiry_date else None,
+            "verification_status": lic.verification_status,
+            "rejected_reason": lic.rejected_reason,
+        } if lic else None,
+    }
+    return create_response(request, status.HTTP_200_OK, "Lấy thông tin hồ sơ cá nhân thành công", data)
 
 
 @router.put("/users/{user_id}/profile", status_code=status.HTTP_200_OK)

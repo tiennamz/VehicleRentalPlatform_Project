@@ -90,7 +90,8 @@ def update_user_profile(
     user.date_of_birth = profile_data.date_of_birth
     user.address = profile_data.address
     if profile_data.phone_number is not None:
-        user.phone_number = profile_data.phone_number.strip()
+        cleaned_phone = profile_data.phone_number.strip()
+        user.phone_number = cleaned_phone if cleaned_phone else None
 
     try:
         db.commit()
