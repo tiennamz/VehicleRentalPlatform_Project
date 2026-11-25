@@ -1925,3 +1925,50 @@ html,body{opacity:1!important;visibility:visible!important;background:#f4f7f5;}
 .vrp-sidebar .sidebar-logout-btn svg { color: #ffffff !important; flex-shrink: 0; }
 .vrp-sidebar .sidebar-logout-btn:hover { background: #cf2632 !important; color: #ffffff !important; }
 .vrp-sidebar .sidebar-logout-btn:active { transform: translateY(1px); }
+
+/* ---- TF14679: 15-minute SLA confirmation, rejection & operator escalation ---- */
+.order-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.btn-reject-sm {
+  padding: 6px 11px; font-size: 12px; font-weight: 600; border-radius: 8px;
+  border: 1px solid #fca5a5; background: #fef2f2; color: #b91c1c; cursor: pointer;
+  transition: background 0.16s, border-color 0.16s;
+}
+.btn-reject-sm:hover { background: #fee2e2; border-color: #f87171; }
+.badge-escalated { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.badge-confirmed { background: #dcfce7; color: #166534; }
+.badge-rejected { background: #fee2e2; color: #b91c1c; }
+.badge-sla-urgent { background: #fee2e2 !important; color: #b91c1c !important; font-weight: 700; }
+.reject-reason-note { display: block; margin-top: 4px; font-size: 12px; color: #64748b; max-width: 240px; line-height: 1.35; }
+
+.vrp-modal-overlay {
+  position: fixed; inset: 0; z-index: 9998; background: rgba(15, 23, 42, 0.55);
+  display: grid; place-items: center; padding: 16px;
+}
+.vrp-modal-overlay[hidden] { display: none !important; }
+.vrp-modal-card {
+  width: min(480px, 100%); background: #fff; border-radius: 16px; padding: 22px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28); border: 1px solid #e2ebe6;
+}
+.vrp-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.vrp-modal-head h3 { font-size: 18px; font-weight: 800; color: #14243a; margin: 0; }
+.vrp-modal-close { border: 0; background: transparent; font-size: 18px; color: #64748b; cursor: pointer; padding: 4px 8px; }
+.vrp-modal-sub { font-size: 13.5px; color: #64748b; margin-bottom: 12px; }
+.reason-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.reason-chip {
+  border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 999px;
+  padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.reason-chip:hover { border-color: #079b70; color: #079b70; background: #ecfdf5; }
+.vrp-modal-label { display: block; font-size: 13px; font-weight: 600; color: #14243a; margin-bottom: 6px; }
+#rejectReasonInput {
+  width: 100%; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 10px 12px;
+  font-family: inherit; font-size: 14px; resize: vertical;
+}
+#rejectReasonInput:focus { outline: none; border-color: #079b70; box-shadow: 0 0 0 3px rgba(7, 155, 112, 0.14); }
+.vrp-modal-error { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: #fef2f2; color: #b91c1c; font-size: 12.5px; font-weight: 600; }
+.vrp-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.btn-danger-solid {
+  padding: 9px 16px; border-radius: 10px; border: 0; background: #dc2626; color: #fff;
+  font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+}
+.btn-danger-solid:hover { background: #b91c1c; }

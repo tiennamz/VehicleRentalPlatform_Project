@@ -13,6 +13,7 @@ from sqlalchemy import text
 from app.core.config import API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID, MEASUREMENT_ID
 from app.routers.store import router as store_router
 from app.routers.vehicle import router as vehicle_router
+from app.routers.store_order_confirmation_routers import router as store_order_confirmation_routers
 
 app = FastAPI(
     title='Vehicle Rental Platfrom',
@@ -79,3 +80,4 @@ app.include_router(booking_eligibility_routers)
 app.include_router(delivery_routers)
 app.include_router(store_router)
 app.include_router(vehicle_router)
+app.include_router(store_order_confirmation_routers)

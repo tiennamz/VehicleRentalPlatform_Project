@@ -159,6 +159,10 @@ def _serialize_order(order) -> dict:
         "note": order.note,
         "order_status": order.order_status,
         "created_at": order.created_at.isoformat() if order.created_at else None,
+        "confirmation_deadline": order.confirmation_deadline.isoformat() if order.confirmation_deadline else None,
+        "store_responded_at": order.store_responded_at.isoformat() if order.store_responded_at else None,
+        "rejection_reason": order.rejection_reason,
+        "escalated_at": order.escalated_at.isoformat() if order.escalated_at else None,
     }
 
 

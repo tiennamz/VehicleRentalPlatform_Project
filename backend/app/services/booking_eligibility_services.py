@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import math
 from typing import Optional, List, Sequence, Dict, Any
@@ -444,6 +444,7 @@ def create_rental_order(
         note=order_data.note,
         order_status="Chờ thanh toán",
         created_at=now_utc,
+        confirmation_deadline=now_utc + timedelta(minutes=15),
     )
 
     try:

@@ -22,6 +22,10 @@ class Order(Base):
     note = Column(Text, nullable=True)
     order_status = Column(String(255))
     created_at = Column(DateTime)
+    confirmation_deadline = Column(DateTime, nullable=True)
+    store_responded_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    escalated_at = Column(DateTime, nullable=True)
 
     renter = relationship("User", back_populates="rented_orders", foreign_keys=[renter_id])
     vehicle = relationship("Vehicle", back_populates="orders")

@@ -279,3 +279,9 @@ ADD COLUMN rental_amount DECIMAL(12,2) DEFAULT 0.00,
 ADD COLUMN deposit_amount DECIMAL(12,2) DEFAULT 0.00,
 ADD COLUMN remaining_amount DECIMAL(12,2) DEFAULT 0.00,
 ADD COLUMN note TEXT NULL;
+
+ALTER TABLE orders
+ADD COLUMN confirmation_deadline DATETIME NULL,
+ADD COLUMN store_responded_at DATETIME NULL,
+ADD COLUMN rejection_reason TEXT NULL,
+ADD COLUMN escalated_at DATETIME NULL;
