@@ -742,7 +742,7 @@ window.showToast = function (msg) {
             if (startSelect.value !== PAD(selection.start)) startSelect.value = PAD(selection.start);
             if (endSelect.value !== PAD(selection.end)) endSelect.value = PAD(selection.end);
             if (document.activeElement !== noteInput) noteInput.value = noteText;
-            continueLink.href = "deposit-payment.html?xe=" + encodeURIComponent(vehicle) +
+            continueLink.href = "create-rental-order.html?xe=" + encodeURIComponent(vehicle) +
                 "&date=" + selection.dateKey + "&hour=" + PAD(selection.start) + ":00" +
                 "&end=" + PAD(selection.end) + ":00" +
                 (noteText ? "&note=" + encodeURIComponent(noteText) : "");
@@ -890,7 +890,7 @@ window.showToast = function (msg) {
             if (!selection) return;
             selection.note = noteText;
             ensureHold();
-            continueLink.href = "deposit-payment.html?xe=" + encodeURIComponent(vehicle) +
+            continueLink.href = "create-rental-order.html?xe=" + encodeURIComponent(vehicle) +
                 "&date=" + selection.dateKey + "&hour=" + PAD(selection.start) + ":00" +
                 "&end=" + PAD(selection.end) + ":00" +
                 (noteText ? "&note=" + encodeURIComponent(noteText) : "");

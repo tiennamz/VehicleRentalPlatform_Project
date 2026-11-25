@@ -10,13 +10,16 @@ from app.schemas.booking_eligibility_schemas import (
     calculate_age,
     UserProfileUpdateSchema,
     DriverLicenseSubmitSchema,
+    OrderCalculateRequestSchema,
     OrderCreateSchema,
 )
 from app.services.booking_eligibility_services import (
     update_user_profile,
     submit_driver_license,
     search_vehicles,
+    calculate_order_pricing,
     create_rental_order,
+    get_order_by_id,
 )
 from app.routers.user_routers import _get_optional_user
 from app.schemas.user_schemas import PersonalProfileUpdateSchema
@@ -137,14 +140,8 @@ def search_vehicles_endpoint(
     return create_response(request, status.HTTP_200_OK, "Tìm kiếm phương tiện thành công", data)
 
 
-@router.post("/orders", status_code=status.HTTP_201_CREATED)
-def create_order_endpoint(
-    request: Request,
-    order_data: OrderCreateSchema,
-    db: Session = Depends(get_db),
-):
-    order = create_rental_order(db=db, order_data=order_data)
-    data = {
+def _serialize_order(order) -> dict:
+    return {
         "order_id": order.order_id,
         "renter_id": order.renter_id,
         "vehicle_id": order.vehicle_id,
@@ -155,8 +152,57 @@ def create_order_endpoint(
         "delivery_address": order.delivery_address,
         "delivery_distance_km": float(order.delivery_distance_km) if order.delivery_distance_km is not None else 0.0,
         "delivery_fee": float(order.delivery_fee) if order.delivery_fee is not None else 0.0,
+        "rental_amount": float(order.rental_amount) if order.rental_amount is not None else 0.0,
+        "deposit_amount": float(order.deposit_amount) if order.deposit_amount is not None else 0.0,
+        "remaining_amount": float(order.remaining_amount) if order.remaining_amount is not None else 0.0,
         "total_amount": float(order.total_amount) if order.total_amount is not None else 0.0,
+        "note": order.note,
         "order_status": order.order_status,
         "created_at": order.created_at.isoformat() if order.created_at else None,
     }
-    return create_response(request, status.HTTP_201_CREATED, "Tạo đơn đặt xe thành công", data)
+
+
+@router.post("/orders/calculate", status_code=status.HTTP_200_OK)
+def calculate_order_pricing_endpoint(
+    request: Request,
+    calc_req: OrderCalculateRequestSchema,
+    db: Session = Depends(get_db),
+):
+    pricing = calculate_order_pricing(db=db, calc_req=calc_req)
+    data = {
+        "vehicle_id": pricing["vehicle_id"],
+        "price_id": pricing["price_id"],
+        "duration_days": pricing["duration_days"],
+        "unit_price": float(pricing["unit_price"]),
+        "rental_amount": float(pricing["rental_amount"]),
+        "delivery_method": pricing["delivery_method"],
+        "delivery_address": pricing["delivery_address"],
+        "delivery_distance_km": float(pricing["delivery_distance_km"]),
+        "delivery_fee": float(pricing["delivery_fee"]),
+        "total_amount": float(pricing["total_amount"]),
+        "deposit_rate": float(pricing["deposit_rate"]),
+        "deposit_amount": float(pricing["deposit_amount"]),
+        "remaining_amount": float(pricing["remaining_amount"]),
+        "deposit_rule_note": pricing["deposit_rule_note"],
+    }
+    return create_response(request, status.HTTP_200_OK, "Tính chi phí đơn thuê thành công", data)
+
+
+@router.post("/orders", status_code=status.HTTP_201_CREATED)
+def create_order_endpoint(
+    request: Request,
+    order_data: OrderCreateSchema,
+    db: Session = Depends(get_db),
+):
+    order = create_rental_order(db=db, order_data=order_data)
+    return create_response(request, status.HTTP_201_CREATED, "Tạo đơn đặt xe thành công", _serialize_order(order))
+
+
+@router.get("/orders/{order_id}", status_code=status.HTTP_200_OK)
+def get_order_endpoint(
+    request: Request,
+    order_id: int,
+    db: Session = Depends(get_db),
+):
+    order = get_order_by_id(db=db, order_id=order_id)
+    return create_response(request, status.HTTP_200_OK, "Lấy chi tiết đơn thuê thành công", _serialize_order(order))

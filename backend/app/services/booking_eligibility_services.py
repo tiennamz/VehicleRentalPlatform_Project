@@ -1,8 +1,9 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import math
-from typing import Optional, List, Sequence
+from typing import Optional, List, Sequence, Dict, Any
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.user import User
@@ -10,15 +11,22 @@ from app.models.drivers_license import DriverLicense
 from app.models.vehicle import Vehicle
 from app.models.price_table import PriceTable
 from app.models.order import Order
+from app.models.system_config import SystemConfig
 from app.schemas.booking_eligibility_schemas import (
     calculate_age,
     UserProfileUpdateSchema,
     DriverLicenseSubmitSchema,
+    OrderCalculateRequestSchema,
     OrderCreateSchema,
 )
 from app.schemas.vehicle_search_schemas import VehicleSearchItem
 from app.services.delivery_services import calculate_and_validate_delivery_fee
 from app.services.vehicle_search_services import search_and_sort_vehicles
+
+DEPOSIT_RATE_DEFAULT = Decimal("30")
+DEPOSIT_MIN_VND = Decimal("200000.00")
+DEPOSIT_MAX_VND = Decimal("1000000.00")
+INACTIVE_ORDER_STATUSES = {"Đã hủy", "Hoàn thành", "Cancelled", "Completed"}
 
 
 MOTORBIKE_TYPES = {"Xe tay ga", "Xe số"}
@@ -205,16 +213,141 @@ def search_vehicles(
     )
 
 
+def _get_deposit_rate(db: Session) -> Decimal:
+    row = db.query(SystemConfig).filter(SystemConfig.config_key == "deposit_rate").first()
+    if row and row.config_value:
+        try:
+            rate = Decimal(str(row.config_value).strip())
+            if Decimal("0") < rate <= Decimal("100"):
+                return rate
+        except Exception:
+            pass
+    return DEPOSIT_RATE_DEFAULT
+
+
+def calculate_deposit_br03(db: Session, total_amount: Decimal) -> Dict[str, Any]:
+    """
+    Tính tiền cọc theo quy tắc BR-03:
+    - Mặc định 30% tổng tiền đơn thuê (hoặc theo cấu hình deposit_rate).
+    - Tối thiểu 200.000đ, tối đa 1.000.000đ/đơn.
+    - Trường hợp tổng tiền < 200.000đ: cọc bằng tổng tiền để số tiền còn lại không âm.
+    """
+    total = Decimal(str(total_amount)).quantize(Decimal("0.01"))
+    if total <= Decimal("0.00"):
+        return {
+            "deposit_rate": _get_deposit_rate(db),
+            "deposit_min": DEPOSIT_MIN_VND,
+            "deposit_max": DEPOSIT_MAX_VND,
+            "deposit_amount": Decimal("0.00"),
+            "remaining_amount": Decimal("0.00"),
+            "deposit_rule_note": "Không phát sinh tiền cọc",
+        }
+
+    rate = _get_deposit_rate(db)
+    raw_deposit = (total * rate / Decimal("100")).quantize(Decimal("0.01"))
+
+    if total < DEPOSIT_MIN_VND:
+        deposit = total
+        rule_note = "Tổng đơn nhỏ hơn mức cọc tối thiểu 200.000đ — thanh toán 100% đơn"
+    elif raw_deposit < DEPOSIT_MIN_VND:
+        deposit = DEPOSIT_MIN_VND
+        rule_note = f"{rate}% tổng đơn — áp dụng mức cọc tối thiểu 200.000đ (BR-03)"
+    elif raw_deposit > DEPOSIT_MAX_VND:
+        deposit = DEPOSIT_MAX_VND
+        rule_note = f"{rate}% tổng đơn — áp dụng mức cọc tối đa 1.000.000đ (BR-03)"
+    else:
+        deposit = raw_deposit
+        rule_note = f"{rate}% tổng tiền đơn thuê (BR-03)"
+
+    remaining = (total - deposit).quantize(Decimal("0.01"))
+    return {
+        "deposit_rate": rate,
+        "deposit_min": DEPOSIT_MIN_VND,
+        "deposit_max": DEPOSIT_MAX_VND,
+        "deposit_amount": deposit,
+        "remaining_amount": remaining,
+        "deposit_rule_note": rule_note,
+    }
+
+
+def calculate_order_pricing(
+    db: Session,
+    calc_req: OrderCalculateRequestSchema,
+) -> Dict[str, Any]:
+    """
+    Tính trước đầy đủ chi phí đơn thuê: tiền thuê, phí giao nhận, tổng tiền,
+    tiền cọc theo BR-03 và số tiền trả khi nhận xe.
+    """
+    vehicle = db.query(Vehicle).filter(Vehicle.vehicle_id == calc_req.vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy phương tiện với ID {calc_req.vehicle_id}",
+        )
+
+    delivery_info = calculate_and_validate_delivery_fee(
+        db=db,
+        delivery_method=calc_req.delivery_method,
+        delivery_distance_km=calc_req.delivery_distance_km,
+        delivery_address=calc_req.delivery_address,
+    )
+
+    price_record = None
+    if calc_req.price_id:
+        price_record = db.query(PriceTable).filter(PriceTable.price_id == calc_req.price_id).first()
+    if not price_record:
+        price_record = db.query(PriceTable).filter(PriceTable.vehicle_id == vehicle.vehicle_id).first()
+
+    start_naive = calc_req.start_time.replace(tzinfo=None)
+    end_naive = calc_req.end_time.replace(tzinfo=None)
+    elapsed_seconds = round((end_naive - start_naive).total_seconds())
+    duration_days = max(1, math.ceil(elapsed_seconds / 86400))
+
+    unit_amount = Decimal(str(price_record.amount)) if (price_record and price_record.amount) else Decimal("0.00")
+    rental_amount = (unit_amount * Decimal(duration_days)).quantize(Decimal("0.01"))
+    delivery_fee = delivery_info["delivery_fee"]
+    total_amount = (rental_amount + delivery_fee).quantize(Decimal("0.01"))
+    br03 = calculate_deposit_br03(db, total_amount)
+
+    return {
+        "vehicle_id": vehicle.vehicle_id,
+        "price_id": price_record.price_id if price_record else calc_req.price_id,
+        "duration_days": duration_days,
+        "unit_price": unit_amount.quantize(Decimal("0.01")),
+        "rental_amount": rental_amount,
+        "delivery_method": delivery_info["delivery_method"],
+        "delivery_address": delivery_info["delivery_address"],
+        "delivery_distance_km": delivery_info["delivery_distance_km"],
+        "delivery_fee": delivery_fee,
+        "total_amount": total_amount,
+        "deposit_rate": br03["deposit_rate"],
+        "deposit_amount": br03["deposit_amount"],
+        "remaining_amount": br03["remaining_amount"],
+        "deposit_rule_note": br03["deposit_rule_note"],
+    }
+
+
+def get_order_by_id(db: Session, order_id: int) -> Order:
+    order = db.query(Order).filter(Order.order_id == order_id).first()
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy đơn thuê với ID {order_id}",
+        )
+    return order
+
+
 def create_rental_order(
     db: Session,
     order_data: OrderCreateSchema,
 ) -> Order:
     """
-    Tạo đơn đặt xe (TF13D97 + Cấu hình giao nhận & tính phí giao xe):
+    Tạo đơn đặt xe (TF13D97 + Cấu hình giao nhận & tính phí giao xe + BR-03):
     1. Kiểm tra khách hàng tồn tại và đủ 18 tuổi trở lên.
     2. Kiểm tra khách hàng đã có GPLX và GPLX phải ở trạng thái 'Đã xác thực'.
     3. Kiểm tra GPLX còn thời hạn sử dụng & hạng GPLX phù hợp với loại xe.
-    4. Kiểm tra phương thức giao nhận (Nhận tại cửa hàng hoặc Giao tận nơi trong bán kính quy định) và tính phí giao xe tương ứng.
+    4. Kiểm tra trùng lịch đặt xe.
+    5. Kiểm tra phương thức giao nhận, tính tiền thuê, phí giao, tiền cọc BR-03 và số tiền trả khi nhận xe.
     """
     renter = db.query(User).filter(User.user_id == order_data.renter_id).first()
     if not renter:
@@ -261,42 +394,54 @@ def create_rental_order(
             detail=f"Hạng giấy phép lái xe ({license_record.license_class}) không phù hợp để thuê loại xe '{vehicle.type}'.",
         )
 
-    # 4. Kiểm tra phương thức giao nhận, bán kính giao xe & tính phí giao xe tương ứng
-    delivery_info = calculate_and_validate_delivery_fee(
-        db=db,
-        delivery_method=order_data.delivery_method,
-        delivery_distance_km=order_data.delivery_distance_km,
-        delivery_address=order_data.delivery_address,
-    )
-
-    # 5. Tính tổng tiền đơn thuê (tiền thuê xe + phí giao xe)
-    price_record = None
-    if order_data.price_id:
-        price_record = db.query(PriceTable).filter(PriceTable.price_id == order_data.price_id).first()
-    if not price_record:
-        price_record = db.query(PriceTable).filter(PriceTable.vehicle_id == vehicle.vehicle_id).first()
-
+    # 4. Kiểm tra trùng lịch đặt xe
     start_naive = order_data.start_time.replace(tzinfo=None)
     end_naive = order_data.end_time.replace(tzinfo=None)
-    elapsed_seconds = round((end_naive - start_naive).total_seconds())
-    duration_days = max(1, math.ceil(elapsed_seconds / 86400))
+    conflict_order = (
+        db.query(Order)
+        .filter(
+            Order.vehicle_id == vehicle.vehicle_id,
+            or_(Order.order_status.is_(None), ~Order.order_status.in_(INACTIVE_ORDER_STATUSES)),
+            Order.start_time < end_naive,
+            Order.end_time > start_naive,
+        )
+        .first()
+    )
+    if conflict_order:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Xe đã có đơn đặt trong khoảng thời gian bạn chọn. Vui lòng chọn lịch khác.",
+        )
 
-    unit_amount = Decimal(str(price_record.amount)) if (price_record and price_record.amount) else Decimal("0.00")
-    rental_amount = (unit_amount * Decimal(duration_days)).quantize(Decimal("0.01"))
-    delivery_fee = delivery_info["delivery_fee"]
-    total_amount = (rental_amount + delivery_fee).quantize(Decimal("0.01"))
+    # 5. Tính tiền thuê, phí giao nhận, tiền cọc BR-03 & số tiền trả khi nhận xe
+    pricing = calculate_order_pricing(
+        db=db,
+        calc_req=OrderCalculateRequestSchema(
+            vehicle_id=order_data.vehicle_id,
+            price_id=order_data.price_id,
+            start_time=start_naive,
+            end_time=end_naive,
+            delivery_method=order_data.delivery_method,
+            delivery_address=order_data.delivery_address,
+            delivery_distance_km=order_data.delivery_distance_km,
+        ),
+    )
 
     new_order = Order(
         renter_id=order_data.renter_id,
         vehicle_id=order_data.vehicle_id,
-        price_id=price_record.price_id if price_record else order_data.price_id,
+        price_id=pricing["price_id"],
         start_time=start_naive,
         end_time=end_naive,
-        delivery_method=delivery_info["delivery_method"],
-        delivery_address=delivery_info["delivery_address"],
-        delivery_distance_km=delivery_info["delivery_distance_km"],
-        delivery_fee=delivery_fee,
-        total_amount=total_amount,
+        delivery_method=pricing["delivery_method"],
+        delivery_address=pricing["delivery_address"],
+        delivery_distance_km=pricing["delivery_distance_km"],
+        delivery_fee=pricing["delivery_fee"],
+        rental_amount=pricing["rental_amount"],
+        deposit_amount=pricing["deposit_amount"],
+        remaining_amount=pricing["remaining_amount"],
+        total_amount=pricing["total_amount"],
+        note=order_data.note,
         order_status="Chờ thanh toán",
         created_at=now_utc,
     )

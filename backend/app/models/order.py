@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, DateTime, Numeric, String, ForeignKey
+from sqlalchemy import Column, BigInteger, Integer, DateTime, Numeric, String, Text, ForeignKey
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
@@ -15,7 +15,11 @@ class Order(Base):
     delivery_address = Column(String(255), nullable=True)
     delivery_distance_km = Column(Numeric(6, 2), default=0)
     delivery_fee = Column(Numeric(12, 2), default=0)
+    rental_amount = Column(Numeric(12, 2), default=0)
+    deposit_amount = Column(Numeric(12, 2), default=0)
+    remaining_amount = Column(Numeric(12, 2), default=0)
     total_amount = Column(Numeric(12, 2))
+    note = Column(Text, nullable=True)
     order_status = Column(String(255))
     created_at = Column(DateTime)
 

@@ -119,16 +119,22 @@
   });
 })();
 
-// Dữ liệu xe được chọn từ trang chủ
+// Dữ liệu đơn thuê & xe được chọn
 let depositAmount = 200000;
 let remainingSeconds = 30 * 60;
+let pendingOrder = null;
+try {
+    pendingOrder = JSON.parse(sessionStorage.getItem("vrpPendingOrder") || "null");
+} catch (err) {
+    pendingOrder = null;
+}
 
-const vehicleName = sessionStorage.getItem("selectedVehicleName");
-const vehicleType = sessionStorage.getItem("selectedVehicleType");
-const vehicleRating = sessionStorage.getItem("selectedVehicleRating");
-const vehicleSpecs = sessionStorage.getItem("selectedVehicleSpecs");
+const vehicleName = (pendingOrder && pendingOrder.vehicle_name) || sessionStorage.getItem("selectedVehicleName");
+const vehicleType = (pendingOrder && pendingOrder.vehicle_type) || sessionStorage.getItem("selectedVehicleType");
+const vehicleRating = (pendingOrder && pendingOrder.vehicle_rating) || sessionStorage.getItem("selectedVehicleRating");
+const vehicleSpecs = (pendingOrder && pendingOrder.vehicle_specs) || sessionStorage.getItem("selectedVehicleSpecs");
 const vehiclePrice = sessionStorage.getItem("selectedVehiclePrice");
-const vehicleImage = sessionStorage.getItem("selectedVehicleImage");
+const vehicleImage = (pendingOrder && pendingOrder.vehicle_image) || sessionStorage.getItem("selectedVehicleImage");
 
 // Cập nhật thông tin xe trên trang thanh toán
 if (vehicleName) {
@@ -161,25 +167,35 @@ if (vehicleSpecs) {
 }
 
 function formatMoney(amount) {
-    return amount.toLocaleString("vi-VN") + "đ";
+    return Math.round(Number(amount) || 0).toLocaleString("vi-VN") + "đ";
 }
 
-// Tính tiền thuê và tiền cọc theo xe được chọn
-const rentalDays = 2;
-const deliveryFeeValue = 30000;
+// Tính tiền thuê và tiền cọc theo đơn thuê đã tạo (BR-03) hoặc fallback xe được chọn
+let rentalDays = 2;
+let deliveryFeeValue = 30000;
 let totalValue = 330000;
 
-if (vehiclePrice) {
-    const dailyPrice = parseInt(vehiclePrice.replace(/\D/g, ""));
-    const rentalTotalValue = dailyPrice * rentalDays;
-    totalValue = rentalTotalValue + deliveryFeeValue;
+if (pendingOrder && typeof pendingOrder.total_amount === "number") {
+    rentalDays = pendingOrder.duration_days || 1;
+    deliveryFeeValue = pendingOrder.delivery_fee || 0;
+    totalValue = pendingOrder.total_amount;
+    depositAmount = pendingOrder.deposit_amount;
+    const rentalTotalValue = pendingOrder.rental_amount;
+    const remainingValue = pendingOrder.remaining_amount;
 
-    depositAmount = Math.min(
-        Math.max(totalValue * 0.3, 200000),
-        1000000
-    );
+    const infoStrongs = document.querySelectorAll(".booking-info-grid .info-item strong");
+    if (infoStrongs.length >= 4) {
+        if (pendingOrder.start_display) infoStrongs[0].textContent = pendingOrder.start_display;
+        if (pendingOrder.end_display) infoStrongs[1].textContent = pendingOrder.end_display;
+        infoStrongs[2].textContent = rentalDays + " ngày";
+        infoStrongs[3].textContent = pendingOrder.delivery_method +
+            (pendingOrder.delivery_address ? " · " + pendingOrder.delivery_address : "");
+    }
 
-    const remainingValue = totalValue - depositAmount;
+    const rentalLabelEl = document.querySelector(".cost-panel .cost-row span");
+    if (rentalLabelEl) {
+        rentalLabelEl.textContent = "Tiền thuê xe (" + rentalDays + " ngày)";
+    }
 
     document.getElementById("rentalTotal").textContent = formatMoney(rentalTotalValue);
     document.getElementById("deliveryFee").textContent = formatMoney(deliveryFeeValue);
@@ -187,6 +203,26 @@ if (vehiclePrice) {
     document.getElementById("remainingAmount").textContent = formatMoney(remainingValue);
     document.getElementById("totalAmount").textContent = formatMoney(totalValue);
     document.getElementById("payAmount").textContent = formatMoney(depositAmount);
+    window.__vrpDepositAmount = depositAmount;
+} else if (vehiclePrice) {
+    const dailyPrice = parseInt(vehiclePrice.replace(/\D/g, ""), 10);
+    const rentalTotalValue = dailyPrice * rentalDays;
+    totalValue = rentalTotalValue + deliveryFeeValue;
+
+    depositAmount = Math.min(
+        Math.min(Math.max(Math.round(totalValue * 0.3), 200000), 1000000),
+        totalValue
+    );
+
+    const remainingValue = Math.max(0, totalValue - depositAmount);
+
+    document.getElementById("rentalTotal").textContent = formatMoney(rentalTotalValue);
+    document.getElementById("deliveryFee").textContent = formatMoney(deliveryFeeValue);
+    document.getElementById("depositAmount").textContent = formatMoney(depositAmount);
+    document.getElementById("remainingAmount").textContent = formatMoney(remainingValue);
+    document.getElementById("totalAmount").textContent = formatMoney(totalValue);
+    document.getElementById("payAmount").textContent = formatMoney(depositAmount);
+    window.__vrpDepositAmount = depositAmount;
 }
 
 const countdown = document.getElementById("countdown");

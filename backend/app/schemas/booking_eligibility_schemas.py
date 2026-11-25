@@ -65,6 +65,22 @@ class DriverLicenseSubmitSchema(BaseModel):
         return self
 
 
+class OrderCalculateRequestSchema(BaseModel):
+    vehicle_id: int
+    price_id: Optional[int] = None
+    start_time: datetime
+    end_time: datetime
+    delivery_method: str = "Nhận tại cửa hàng"
+    delivery_address: Optional[str] = None
+    delivery_distance_km: Optional[Decimal] = Decimal("0.00")
+
+    @model_validator(mode="after")
+    def validate_rental_period(self):
+        if self.end_time <= self.start_time:
+            raise ValueError("Thời gian trả xe phải lớn hơn thời gian nhận xe.")
+        return self
+
+
 class OrderCreateSchema(BaseModel):
     renter_id: int
     vehicle_id: int
@@ -74,6 +90,17 @@ class OrderCreateSchema(BaseModel):
     delivery_method: str = "Nhận tại cửa hàng"
     delivery_address: Optional[str] = None
     delivery_distance_km: Optional[Decimal] = Decimal("0.00")
+    note: Optional[str] = None
+
+    @field_validator("note")
+    @classmethod
+    def validate_note(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        cleaned = value.strip()
+        if len(cleaned) > 500:
+            raise ValueError("Ghi chú không được vượt quá 500 ký tự.")
+        return cleaned or None
 
     @model_validator(mode="after")
     def validate_rental_period(self):
