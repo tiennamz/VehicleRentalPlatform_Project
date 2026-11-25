@@ -1,10 +1,10 @@
-from sqlalchemy import Column, BigInteger, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, BigInteger, Integer, String, Text, DateTime, ForeignKey
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
 class Image(Base):
     __tablename__ = "images"
-    image_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    image_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     vehicle_id = Column(BigInteger, ForeignKey("vehicles.vehicle_id"))
     handover_id = Column(BigInteger,ForeignKey("handover_records.handover_id"))
     review_id = Column(BigInteger, ForeignKey("reviews.review_id"))

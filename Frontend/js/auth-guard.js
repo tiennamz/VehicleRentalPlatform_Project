@@ -152,7 +152,17 @@
     }
 
     userEmail = payload.email || payload.sub || "";
-    userName = payload.name || (userEmail ? userEmail.split("@")[0] : "Tài khoản");
+    var cachedProfileName = "";
+    try {
+      if (userEmail) {
+        var profRaw = localStorage.getItem("vrp_profile_data_" + userEmail.toLowerCase());
+        if (profRaw) {
+          var profParsed = JSON.parse(profRaw);
+          if (profParsed && profParsed.fullname) cachedProfileName = String(profParsed.fullname).trim();
+        }
+      }
+    } catch (e) {}
+    userName = cachedProfileName || payload.name || (userEmail ? userEmail.split("@")[0] : "Tài khoản");
 
     setCookie("vrp_logged_in", "1", 7);
     setCookie("vrp_role", role, 7);
@@ -277,15 +287,33 @@
       }
     }
 
-    // Cập nhật tên thật & chữ viết tắt trên góc phải Header khi đã đăng nhập
+    // Cập nhật tên thật, ảnh đại diện & chữ viết tắt trên góc phải Header khi đã đăng nhập
     if (isTokenValid && userName) {
       var initials = getInitials(userName);
+      var savedAvatar = "";
+      try {
+        if (userEmail) {
+          savedAvatar = localStorage.getItem("vrp_user_avatar_" + userEmail.toLowerCase()) || "";
+        }
+      } catch (e) {}
+
       var profileBtn = document.getElementById("userProfileBtn") || document.querySelector(".user-profile");
       if (profileBtn) {
         profileBtn.setAttribute("title", "Tài khoản " + userName);
         var avatarEl = profileBtn.querySelector(".user-avatar");
         var nameEl = profileBtn.querySelector(".user-name");
-        if (avatarEl) avatarEl.textContent = initials;
+        if (avatarEl) {
+          if (savedAvatar) {
+            avatarEl.style.overflow = "hidden";
+            avatarEl.style.padding = "0";
+            avatarEl.innerHTML =
+              '<img src="' +
+              savedAvatar.replace(/"/g, "&quot;") +
+              '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">';
+          } else {
+            avatarEl.textContent = initials;
+          }
+        }
         if (nameEl) nameEl.textContent = userName;
       }
 

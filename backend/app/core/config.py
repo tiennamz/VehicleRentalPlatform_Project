@@ -27,3 +27,7 @@ STORAGE_BUCKET = (os.getenv('STORAGE_BUCKET') or '').strip()
 MESSAGING_SENDER_ID = (os.getenv('MESSAGING_SENDER_ID') or '').strip()
 APP_ID = (os.getenv('APP_ID') or '').strip()
 MEASUREMENT_ID = (os.getenv('MEASUREMENT_ID') or '').strip()
+
+CLOUDINARY_CLOUD_NAME = (os.getenv('CLOUDINARY_CLOUD_NAME') or '').strip()
+CLOUDINARY_API_KEY = (os.getenv('CLOUDINARY_API_KEY') or '').strip()
+CLOUDINARY_API_SECRET = (os.getenv('CLOUDINARY_API_SECRET') or '').strip()

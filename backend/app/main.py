@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.database import Base, engine, get_db
 from app.routers.auth_routers import router as auth_routers
+from app.routers.user_routers import router as user_routers
 from app.routers.verification_routers import router as verification_routers
 from app.routers.audit_routers import router as audit_routers
 from app.routers.booking_eligibility_routers import router as booking_eligibility_routers
@@ -71,6 +72,7 @@ def get_firebase_config():
     }
 
 app.include_router(auth_routers)
+app.include_router(user_routers)
 app.include_router(verification_routers)
 app.include_router(audit_routers)
 app.include_router(booking_eligibility_routers)
