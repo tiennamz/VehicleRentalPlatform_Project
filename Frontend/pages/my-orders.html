@@ -38,16 +38,21 @@
 <main class="main">
   <div class="container">
     <div class="page-head">
-      <h1>Đơn thuê của tôi</h1>
-      <p>Theo dõi trạng thái đơn — chờ thanh toán, chờ cửa hàng, đang thuê, hoàn tất.</p>
+      <h1>Đơn thuê &amp; Lịch sử của tôi</h1>
+      <p>Theo dõi trạng thái đơn, xem lịch sử thuê xe và hủy đơn hoàn cọc theo quy tắc <strong>BR-04</strong> (100% ≥ 24h · 50% từ 6h–&lt;24h · 0% &lt;6h).</p>
     </div>
-    <div class="stats-grid" style="margin-bottom:20px">
-      <div class="stat-card"><strong>1</strong><span>Chờ thanh toán</span></div>
-      <div class="stat-card"><strong>1</strong><span>Đã xác nhận</span></div>
-      <div class="stat-card"><strong>1</strong><span>Đang thuê</span></div>
-      <div class="stat-card"><strong>3</strong><span>Hoàn tất</span></div>
+    <div class="stats-grid" id="myOrderStats" style="margin-bottom:18px">
+      <div class="stat-card"><strong id="statPending">1</strong><span>Chờ thanh toán / XN</span></div>
+      <div class="stat-card"><strong id="statConfirmed">2</strong><span>Đã xác nhận</span></div>
+      <div class="stat-card"><strong id="statActive">1</strong><span>Đang thuê</span></div>
+      <div class="stat-card"><strong id="statHistory">4</strong><span>Lịch sử (Hoàn tất / Hủy)</span></div>
     </div>
-    <div class="card" style="padding:0;overflow:hidden"
+    <div class="mo-tabs" id="myOrderTabs" role="tablist">
+      <button type="button" class="mo-tab active" data-scope="all">Tất cả (0)</button>
+      <button type="button" class="mo-tab" data-scope="active">Đơn hiện tại (0)</button>
+      <button type="button" class="mo-tab" data-scope="history">Lịch sử đơn (0)</button>
+    </div>
+    <div class="card" id="myOrdersList" style="padding:0;overflow:hidden"
       data-data-area data-skeleton="rows" data-skeleton-count="4"
       data-item=".order-row"
       data-empty-icon="🧾"
@@ -112,6 +117,43 @@
 </main>
 <footer class="footer"><div class="container"><div class="footer-bottom">© 2026 VRP-GO</div></div></footer>
 
+<!-- Modal hủy đơn & xem trước hoàn cọc theo BR-04 (TF14841) -->
+<div class="mo-modal-overlay" id="cancelBr04Modal" hidden role="dialog" aria-modal="true" aria-labelledby="cancelBr04Title">
+  <div class="mo-modal-card">
+    <div class="mo-modal-head">
+      <h3 id="cancelBr04Title">Hủy đơn thuê &amp; Hoàn cọc BR-04</h3>
+      <button type="button" class="mo-modal-close" id="cancelModalClose" aria-label="Đóng">✕</button>
+    </div>
+    <p class="mo-modal-sub" id="cancelOrderSummary"></p>
+    <div class="br04-preview-box">
+      <div class="br04-row"><span>Thời gian còn lại trước giờ nhận xe</span><strong id="cancelHoursLeft">—</strong></div>
+      <div class="br04-row"><span>Tiền cọc đã đóng</span><strong id="cancelDepositPaid">0đ</strong></div>
+      <div class="br04-row"><span>Tỷ lệ hoàn cọc (BR-04)</span><strong id="cancelRefundRate">0%</strong></div>
+      <div class="br04-row br04-highlight"><span>Số tiền cọc được hoàn</span><strong id="cancelRefundAmount">0đ</strong></div>
+      <p class="br04-note" id="cancelPolicyNote"></p>
+    </div>
+    <label class="mo-label" for="cancelReasonInput">Lý do hủy đơn (tùy chọn)</label>
+    <textarea id="cancelReasonInput" rows="3" maxlength="500" placeholder="VD: Thay đổi lịch trình công tác / du lịch..."></textarea>
+    <div class="mo-error" id="cancelErrorMsg" hidden></div>
+    <div class="mo-modal-actions">
+      <button type="button" class="btn btn-outline" id="cancelBackBtn">Giữ lại đơn</button>
+      <button type="button" class="btn mo-btn-danger" id="cancelConfirmBtn">Xác nhận hủy đơn</button>
+    </div>
+  </div>
+</div>
 
+<!-- Modal chi tiết & lịch sử đơn thuê (TF14841) -->
+<div class="mo-modal-overlay" id="historyModal" hidden role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
+  <div class="mo-modal-card">
+    <div class="mo-modal-head">
+      <h3 id="historyModalTitle">Chi tiết &amp; Lịch sử đơn</h3>
+      <button type="button" class="mo-modal-close" id="historyModalClose" aria-label="Đóng">✕</button>
+    </div>
+    <div id="historyModalBody"></div>
+    <div class="mo-modal-actions">
+      <button type="button" class="btn btn-primary" id="historyModalOkBtn">Đóng</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
