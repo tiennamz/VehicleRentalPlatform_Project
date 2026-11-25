@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
 from sqlalchemy.orm import Session
@@ -9,13 +10,16 @@ from app.schemas.booking_eligibility_schemas import (
     calculate_age,
     UserProfileUpdateSchema,
     DriverLicenseSubmitSchema,
+    OrderCalculateRequestSchema,
     OrderCreateSchema,
 )
 from app.services.booking_eligibility_services import (
     update_user_profile,
     submit_driver_license,
     search_vehicles,
+    calculate_order_pricing,
     create_rental_order,
+    get_order_by_id,
 )
 from app.routers.user_routers import _get_optional_user
 from app.schemas.user_schemas import PersonalProfileUpdateSchema
@@ -93,9 +97,22 @@ def submit_license_endpoint(
 @router.get("/vehicles", status_code=status.HTTP_200_OK)
 def search_vehicles_endpoint(
     request: Request,
-    vehicle_type: Optional[str] = Query(None, description="Loại xe: Xe tay ga, Xe số, Ô tô 4 chỗ..."),
-    brand: Optional[str] = Query(None, description="Thương hiệu xe"),
-    status_filter: Optional[str] = Query("Available", alias="status"),
+    vehicle_type: Optional[list[str]] = Query(None, description="Loại xe: Xe tay ga, Xe số, Xe điện, Ô tô 4 chỗ... hoặc slug xe-may, xe-dien, o-to"),
+    brand: Optional[list[str]] = Query(None, description="Thương hiệu xe (có thể truyền nhiều hãng)"),
+    min_price: Optional[float] = Query(None, description="Giá thuê tối thiểu mỗi ngày (VNĐ)"),
+    max_price: Optional[float] = Query(None, description="Giá thuê tối đa mỗi ngày (VNĐ)"),
+    delivery_method: Optional[list[str]] = Query(None, description="Hình thức giao nhận: Nhận tại cửa hàng, Giao tận nơi"),
+    min_rating: Optional[float] = Query(None, description="Điểm đánh giá tối thiểu (0 - 5)"),
+    city: Optional[str] = Query(None, description="Tên thành phố hoặc khu vực"),
+    city_id: Optional[int] = Query(None, description="ID thành phố"),
+    start_time: Optional[datetime] = Query(None, description="Thời gian nhận xe (ISO-8601)"),
+    end_time: Optional[datetime] = Query(None, description="Thời gian trả xe (ISO-8601)"),
+    user_lat: Optional[float] = Query(None, description="Vĩ độ người dùng để tính khoảng cách"),
+    user_lng: Optional[float] = Query(None, description="Kinh độ người dùng để tính khoảng cách"),
+    max_distance_km: Optional[float] = Query(None, description="Khoảng cách tối đa tính bằng km"),
+    sort_by: Optional[str] = Query("default", description="Sắp xếp theo: default, price_asc, price_desc, rating_desc, rating_asc, distance_asc, distance_desc"),
+    sort_order: Optional[str] = Query(None, description="Thứ tự sắp xếp: asc hoặc desc"),
+    status_filter: Optional[str] = Query(None, alias="status"),
     user_id: Optional[int] = Query(None, description="ID người dùng tìm xe (tài khoản chưa duyệt GPLX vẫn tìm xe được)"),
     db: Session = Depends(get_db),
 ):
@@ -103,31 +120,28 @@ def search_vehicles_endpoint(
         db=db,
         vehicle_type=vehicle_type,
         brand=brand,
+        min_price=min_price,
+        max_price=max_price,
+        delivery_method=delivery_method,
+        min_rating=min_rating,
+        city=city,
+        city_id=city_id,
+        start_time=start_time,
+        end_time=end_time,
+        user_lat=user_lat,
+        user_lng=user_lng,
+        max_distance_km=max_distance_km,
+        sort_by=sort_by,
+        sort_order=sort_order,
         status_filter=status_filter,
         user_id=user_id,
     )
-    data = [
-        {
-            "vehicle_id": v.vehicle_id,
-            "store_id": v.store_id,
-            "brand": v.brand,
-            "license_plate": v.license_plate,
-            "type": v.type,
-            "status": v.status,
-        }
-        for v in vehicles
-    ]
+    data = [v.model_dump() for v in vehicles]
     return create_response(request, status.HTTP_200_OK, "Tìm kiếm phương tiện thành công", data)
 
 
-@router.post("/orders", status_code=status.HTTP_201_CREATED)
-def create_order_endpoint(
-    request: Request,
-    order_data: OrderCreateSchema,
-    db: Session = Depends(get_db),
-):
-    order = create_rental_order(db=db, order_data=order_data)
-    data = {
+def _serialize_order(order) -> dict:
+    return {
         "order_id": order.order_id,
         "renter_id": order.renter_id,
         "vehicle_id": order.vehicle_id,
@@ -138,8 +152,57 @@ def create_order_endpoint(
         "delivery_address": order.delivery_address,
         "delivery_distance_km": float(order.delivery_distance_km) if order.delivery_distance_km is not None else 0.0,
         "delivery_fee": float(order.delivery_fee) if order.delivery_fee is not None else 0.0,
+        "rental_amount": float(order.rental_amount) if order.rental_amount is not None else 0.0,
+        "deposit_amount": float(order.deposit_amount) if order.deposit_amount is not None else 0.0,
+        "remaining_amount": float(order.remaining_amount) if order.remaining_amount is not None else 0.0,
         "total_amount": float(order.total_amount) if order.total_amount is not None else 0.0,
+        "note": order.note,
         "order_status": order.order_status,
         "created_at": order.created_at.isoformat() if order.created_at else None,
     }
-    return create_response(request, status.HTTP_201_CREATED, "Tạo đơn đặt xe thành công", data)
+
+
+@router.post("/orders/calculate", status_code=status.HTTP_200_OK)
+def calculate_order_pricing_endpoint(
+    request: Request,
+    calc_req: OrderCalculateRequestSchema,
+    db: Session = Depends(get_db),
+):
+    pricing = calculate_order_pricing(db=db, calc_req=calc_req)
+    data = {
+        "vehicle_id": pricing["vehicle_id"],
+        "price_id": pricing["price_id"],
+        "duration_days": pricing["duration_days"],
+        "unit_price": float(pricing["unit_price"]),
+        "rental_amount": float(pricing["rental_amount"]),
+        "delivery_method": pricing["delivery_method"],
+        "delivery_address": pricing["delivery_address"],
+        "delivery_distance_km": float(pricing["delivery_distance_km"]),
+        "delivery_fee": float(pricing["delivery_fee"]),
+        "total_amount": float(pricing["total_amount"]),
+        "deposit_rate": float(pricing["deposit_rate"]),
+        "deposit_amount": float(pricing["deposit_amount"]),
+        "remaining_amount": float(pricing["remaining_amount"]),
+        "deposit_rule_note": pricing["deposit_rule_note"],
+    }
+    return create_response(request, status.HTTP_200_OK, "Tính chi phí đơn thuê thành công", data)
+
+
+@router.post("/orders", status_code=status.HTTP_201_CREATED)
+def create_order_endpoint(
+    request: Request,
+    order_data: OrderCreateSchema,
+    db: Session = Depends(get_db),
+):
+    order = create_rental_order(db=db, order_data=order_data)
+    return create_response(request, status.HTTP_201_CREATED, "Tạo đơn đặt xe thành công", _serialize_order(order))
+
+
+@router.get("/orders/{order_id}", status_code=status.HTTP_200_OK)
+def get_order_endpoint(
+    request: Request,
+    order_id: int,
+    db: Session = Depends(get_db),
+):
+    order = get_order_by_id(db=db, order_id=order_id)
+    return create_response(request, status.HTTP_200_OK, "Lấy chi tiết đơn thuê thành công", _serialize_order(order))

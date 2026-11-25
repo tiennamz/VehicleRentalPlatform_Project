@@ -49,6 +49,7 @@ CREATE TABLE vehicles (
     type ENUM(
         'Xe tay ga',
         'Xe số',
+        'Xe điện',
         'Ô tô 4 chỗ',
         'Ô tô 7 chỗ',
         'Ô tô 16 chỗ'
@@ -266,3 +267,15 @@ ADD COLUMN model VARCHAR(255) NULL,
 ADD COLUMN manufacture_year INT NULL,
 ADD COLUMN engine_capacity INT NULL,
 ADD COLUMN description TEXT NULL;
+
+ALTER TABLE stores
+ADD COLUMN latitude DOUBLE NULL,
+ADD COLUMN longitude DOUBLE NULL,
+ADD COLUMN allow_store_pickup TINYINT(1) NOT NULL DEFAULT 1,
+ADD COLUMN allow_home_delivery TINYINT(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE orders
+ADD COLUMN rental_amount DECIMAL(12,2) DEFAULT 0.00,
+ADD COLUMN deposit_amount DECIMAL(12,2) DEFAULT 0.00,
+ADD COLUMN remaining_amount DECIMAL(12,2) DEFAULT 0.00,
+ADD COLUMN note TEXT NULL;

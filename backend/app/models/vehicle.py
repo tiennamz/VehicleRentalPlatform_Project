@@ -18,6 +18,7 @@ class Vehicle(Base):
         Enum(
             "Xe tay ga",
             "Xe số",
+            "Xe điện",
             "Ô tô 4 chỗ",
             "Ô tô 7 chỗ",
             "Ô tô 16 chỗ"
@@ -28,7 +29,8 @@ class Vehicle(Base):
             "Sẵn sàng",
             "Đang thuê",
             "Bảo trì",
-            "Đã xóa"
+            "Đã xóa",
+            "Available"
         )
     )
 

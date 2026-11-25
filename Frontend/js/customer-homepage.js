@@ -137,10 +137,11 @@ if (slides.length > 1) {
     setInterval(changeSlide, 4000);
 }
 
-// FR-12 và FR-13: Lọc và sắp xếp xe
+// FR-12 và FR-13: Lọc và sắp xếp xe (kết nối GET /vehicles + fallback cục bộ)
 const vehicleSection = document.querySelector(".vehicles");
 
 if (vehicleSection) {
+    const api = window.VRPVehicleAPI;
     const filterSidebar = vehicleSection.querySelector(".filter-sidebar");
     const filterToggle = vehicleSection.querySelector(".mobile-filter-toggle");
     const filterOverlay = vehicleSection.querySelector(".filter-overlay");
@@ -153,7 +154,25 @@ if (vehicleSection) {
         vehicleGrid.querySelectorAll(".vehicle-card")
     );
 
-    // Lấy thông tin xe
+    let userCoords = api ? { lat: api.DEFAULT_COORDS.lat, lng: api.DEFAULT_COORDS.lng } : { lat: 16.0678, lng: 108.2208 };
+    let apiMode = null;
+    let apiVehicleMap = Object.create(null);
+    let activeReqId = 0;
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+        if (api) return api.haversineKm(lat1, lon1, lat2, lon2);
+        const toRad = deg => (deg * Math.PI) / 180;
+        const R = 6371.0;
+        const dPhi = toRad(lat2 - lat1);
+        const dLambda = toRad(lon2 - lon1);
+        const a =
+            Math.sin(dPhi / 2) * Math.sin(dPhi / 2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLambda / 2) * Math.sin(dLambda / 2);
+        return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 100) / 100;
+    }
+
+    // Lấy thông tin xe từ thẻ cục bộ
     function getCardData(card) {
         const typeText = card.querySelector(".vehicle-type")?.textContent.trim().toLowerCase() || "";
         const title = card.querySelector(".vehicle-title h3")?.textContent.trim().toLowerCase() || "";
@@ -167,7 +186,6 @@ if (vehicleSection) {
                     : specs.includes("vũng tàu") ? "vung-tau" : "";
 
         let type = "xe-may";
-
         if (typeText.includes("ô tô")) {
             type = "o-to";
         } else if (typeText.includes("xe điện")) {
@@ -178,32 +196,90 @@ if (vehicleSection) {
             : title.includes("yamaha") ? "yamaha"
                 : title.includes("vinfast") ? "vinfast" : "";
 
+        const lat = card.dataset.lat !== undefined && card.dataset.lat !== "" ? Number(card.dataset.lat) : NaN;
+        const lng = card.dataset.lng !== undefined && card.dataset.lng !== "" ? Number(card.dataset.lng) : NaN;
+        const distance = Number.isFinite(lat) && Number.isFinite(lng)
+            ? haversineKm(userCoords.lat, userCoords.lng, lat, lng)
+            : Infinity;
+
         return {
             type: type,
             brand: brand,
             place: place,
             price: Number(priceText.replace(/[^0-9]/g, "")) || 0,
             rating: Number((ratingText.match(/[0-9]+(?:[.,][0-9]+)?/) || ["0"])[0].replace(",", ".")),
-            delivery: (card.dataset.delivery || "").split(",")
+            delivery: (card.dataset.delivery || "").split(","),
+            distance: distance
         };
     }
 
-    // Lấy các giá trị đang được chọn
     function selectedValues(name) {
         return Array.from(
             vehicleSection.querySelectorAll(`input[name="${name}"]:checked`)
         ).map(input => input.value);
     }
 
-    // FR-12: Lọc xe
-    function filterVehicles() {
+    function getFilterPayload() {
+        const places = selectedValues("place");
+        const placeMap = { "da-nang": "Đà Nẵng", "vung-tau": "Vũng Tàu", "ha-noi": "Hà Nội", "hcm": "TP.HCM" };
+        return {
+            types: selectedValues("type"),
+            brands: selectedValues("brand"),
+            deliveries: selectedValues("delivery"),
+            price: vehicleSection.querySelector('input[name="price"]:checked')?.value || "",
+            minRating: Number(vehicleSection.querySelector('input[name="rating-filter"]:checked')?.value || 0),
+            city: places.length === 1 ? (placeMap[places[0]] || places[0]) : "",
+            sort: sortSelect ? sortSelect.value : "default",
+            userLat: userCoords.lat,
+            userLng: userCoords.lng
+        };
+    }
+
+    function renderApiVehicles(items) {
+        apiVehicleMap = Object.create(null);
+        const esc = api.escapeHtml;
+        vehicleGrid.innerHTML = items.map(v => {
+            apiVehicleMap[String(v.vehicle_id)] = v;
+            const fullName = [v.brand, v.model].filter(Boolean).join(" ").trim() || v.brand;
+            const ratingStr = Number(v.rating || 0).toFixed(1);
+            const countPart = v.review_count ? ` (${v.review_count})` : "";
+            const locText = v.store_address || v.city_name || "Đà Nẵng";
+            const distPart = v.distance_km != null ? ` · ${Number(v.distance_km).toFixed(1)} km` : "";
+            const deliveryPart = (v.delivery_methods || []).length ? ` · ${v.delivery_methods.join(" / ")}` : "";
+            const imgUrl = v.image_url || api.FALLBACK_IMG;
+            const priceStr = api.formatPrice(v.price_per_day);
+            return `
+              <article class="vehicle-card" data-vehicle-id="${esc(v.vehicle_id)}">
+                <div class="vehicle-image">
+                  <img src="${esc(imgUrl)}" alt="${esc(fullName)}">
+                  <button type="button" class="favorite-btn" aria-label="Yêu thích">♡</button>
+                </div>
+                <div class="vehicle-info">
+                  <p class="vehicle-type">${esc(v.type)}</p>
+                  <div class="vehicle-title">
+                    <h3>${esc(fullName)}</h3>
+                    <span class="rating">★ ${ratingStr}${countPart}</span>
+                  </div>
+                  <p class="vehicle-specs">${esc(locText)}${esc(distPart)}${esc(deliveryPart)}</p>
+                  <div class="vehicle-card-bottom">
+                    <p class="vehicle-price">${esc(priceStr)} <span>/ ngày</span></p>
+                    <div class="vehicle-actions">
+                      <a href="#chi-tiet-xe" class="btn btn-outline btn-detail-vrp" style="padding:8px 12px;font-size:12.5px">Chi tiết</a>
+                      <a href="weekly-vehicle-schedule.html?xe=${encodeURIComponent(fullName)}" class="btn btn-rent">Thuê xe</a>
+                    </div>
+                  </div>
+                </div>
+              </article>`;
+        }).join("");
+        emptyMessage.hidden = items.length > 0;
+    }
+
+    function filterLocalVehicles() {
         const types = selectedValues("type");
         const places = selectedValues("place");
         const brands = selectedValues("brand");
         const deliveries = selectedValues("delivery");
-
         const price = vehicleSection.querySelector('input[name="price"]:checked')?.value || "";
-
         const minRating = Number(
             vehicleSection.querySelector('input[name="rating-filter"]:checked')?.value || 0
         );
@@ -214,85 +290,114 @@ if (vehicleSection) {
             const data = getCardData(card);
             let matches = true;
 
-            if (types.length && !types.includes(data.type)) {
-                matches = false;
-            }
-
-            if (places.length && !places.includes(data.place)) {
-                matches = false;
-            }
-
-            if (brands.length && !brands.includes(data.brand)) {
-                matches = false;
-            }
-
-            if (deliveries.length && !deliveries.some(value => data.delivery.includes(value))) {
-                matches = false;
-            }
-
-            if (price === "under-25" && data.price >= 25000) {
-                matches = false;
-            }
-
-            if (price === "25-50" && (data.price < 25000 || data.price > 50000)) {
-                matches = false;
-            }
-
-            if (price === "over-50" && data.price <= 50000) {
-                matches = false;
-            }
-
-            if (minRating && data.rating < minRating) {
-                matches = false;
-            }
+            if (types.length && !types.includes(data.type)) matches = false;
+            if (places.length && !places.includes(data.place)) matches = false;
+            if (brands.length && !brands.includes(data.brand)) matches = false;
+            if (deliveries.length && !deliveries.some(value => data.delivery.includes(value))) matches = false;
+            if (price === "under-200" && data.price >= 200000) matches = false;
+            if (price === "200-400" && (data.price < 200000 || data.price > 400000)) matches = false;
+            if (price === "over-400" && data.price <= 400000) matches = false;
+            if (price === "under-25" && data.price >= 25000) matches = false;
+            if (price === "25-50" && (data.price < 25000 || data.price > 50000)) matches = false;
+            if (price === "over-50" && data.price <= 50000) matches = false;
+            if (minRating && data.rating < minRating) matches = false;
 
             card.hidden = !matches;
-
-            if (matches) {
-                visibleCount++;
-            }
+            if (matches) visibleCount++;
         });
 
         emptyMessage.hidden = visibleCount > 0;
-
-        sortVehicles();
+        sortLocalVehicles();
     }
 
-    // FR-13: Sắp xếp xe
-    function sortVehicles() {
+    function sortLocalVehicles() {
         const sortType = sortSelect.value;
-
         const visibleCards = originalCards.filter(card => !card.hidden);
         const hiddenCards = originalCards.filter(card => card.hidden);
 
         if (sortType === "price-asc") {
-            visibleCards.sort((a, b) =>
-                getCardData(a).price - getCardData(b).price
-            );
+            visibleCards.sort((a, b) => getCardData(a).price - getCardData(b).price);
+        } else if (sortType === "price-desc") {
+            visibleCards.sort((a, b) => getCardData(b).price - getCardData(a).price);
+        } else if (sortType === "rating-desc") {
+            visibleCards.sort((a, b) => getCardData(b).rating - getCardData(a).rating);
+        } else if (sortType === "distance-asc") {
+            visibleCards.sort((a, b) => getCardData(a).distance - getCardData(b).distance);
         }
 
-        else if (sortType === "price-desc") {
-            visibleCards.sort((a, b) =>
-                getCardData(b).price - getCardData(a).price
-            );
-        }
+        const ordered = sortType === "default" ? originalCards : [...visibleCards, ...hiddenCards];
+        ordered.forEach(card => {
+            const specsEl = card.querySelector(".vehicle-specs");
+            if (specsEl) {
+                const baseSpecs = specsEl.dataset.baseSpecs || specsEl.textContent.replace(/\s*·\s*[0-9]+(?:\.[0-9]+)?\s*km$/, "");
+                specsEl.dataset.baseSpecs = baseSpecs;
+                const d = getCardData(card).distance;
+                specsEl.textContent = Number.isFinite(d) ? `${baseSpecs} · ${d.toFixed(1)} km` : baseSpecs;
+            }
+            vehicleGrid.appendChild(card);
+        });
+    }
 
-        else if (sortType === "rating-desc") {
-            visibleCards.sort((a, b) =>
-                getCardData(b).rating - getCardData(a).rating
-            );
+    async function filterVehicles() {
+        if (!api || apiMode === false) {
+            filterLocalVehicles();
+            return;
         }
+        const reqId = ++activeReqId;
+        try {
+            const items = await api.fetchVehicles(getFilterPayload(), 2200);
+            if (reqId !== activeReqId) return;
+            if (apiMode === null && items.length === 0) {
+                apiMode = false;
+                filterLocalVehicles();
+                return;
+            }
+            apiMode = true;
+            renderApiVehicles(items);
+        } catch (err) {
+            if (reqId !== activeReqId) return;
+            if (apiMode === null) apiMode = false;
+            filterLocalVehicles();
+        }
+    }
 
-        else if (sortType === "distance-asc") {
-            if (window.showToast) {
-                window.showToast("Chưa thể sắp xếp theo khoảng cách vì dữ liệu xe hiện chưa có tọa độ.");
+    function sortVehicles() {
+        if (apiMode === true) {
+            filterVehicles();
+        } else {
+            sortLocalVehicles();
+        }
+    }
+
+    vehicleGrid.addEventListener("click", function (event) {
+        const detailBtn = event.target.closest(".btn-detail-vrp");
+        if (detailBtn && api) {
+            event.preventDefault();
+            const card = detailBtn.closest(".vehicle-card");
+            const v = card && card.dataset.vehicleId ? apiVehicleMap[card.dataset.vehicleId] : null;
+            if (v) {
+                api.saveSelectedVehicle(v);
+                api.openVehicleModal(v);
             }
             return;
         }
+        const rentBtn = event.target.closest(".btn-rent");
+        if (rentBtn && api) {
+            const card = rentBtn.closest(".vehicle-card");
+            const v = card && card.dataset.vehicleId ? apiVehicleMap[card.dataset.vehicleId] : null;
+            if (v) api.saveSelectedVehicle(v);
+        }
+    });
 
-        [...visibleCards, ...hiddenCards].forEach(card => {
-            vehicleGrid.appendChild(card);
-        });
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                sortVehicles();
+            },
+            () => { /* giữ tọa độ mặc định trung tâm Đà Nẵng */ },
+            { enableHighAccuracy: false, timeout: 4000 }
+        );
     }
 
     // Đặt lại bộ lọc
@@ -300,9 +405,7 @@ if (vehicleSection) {
         vehicleSection.querySelectorAll(".filter-sidebar input").forEach(input => {
             input.checked = false;
         });
-
         sortSelect.value = "default";
-
         filterVehicles();
     }
 
@@ -311,33 +414,24 @@ if (vehicleSection) {
         filterSidebar.classList.remove("is-open");
         filterOverlay.classList.remove("is-visible");
         document.body.classList.remove("filter-open");
-
         filterToggle.setAttribute("aria-expanded", "false");
     }
 
-    // Mở Bottom Sheet trên điện thoại
     filterToggle.addEventListener("click", () => {
         filterSidebar.classList.add("is-open");
         filterOverlay.classList.add("is-visible");
         document.body.classList.add("filter-open");
-
         filterToggle.setAttribute("aria-expanded", "true");
     });
 
-    // Bấm bên ngoài để đóng
     filterOverlay.addEventListener("click", closeFilterSheet);
-
-    // Sự kiện đặt lại
     resetButton.addEventListener("click", resetFilters);
-
-    // Sự kiện lọc
     vehicleSection.querySelectorAll(".filter-sidebar input").forEach(input => {
         input.addEventListener("change", filterVehicles);
     });
-
-    // Sự kiện sắp xếp
     sortSelect.addEventListener("change", sortVehicles);
 
+    filterLocalVehicles();
     filterVehicles();
 }
 

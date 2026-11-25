@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tạo đơn thuê xe · VRP-GO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/create-rental-order.css">
+  <script src="../js/auth-guard.js"></script>
+  <script src="../js/vehicle-api.js" defer></script>
+  <script src="../js/create-rental-order.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a href="customer-homepage.html" class="logo">
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="17" r="3"></circle>
+            <circle cx="18" cy="17" r="3"></circle>
+            <path d="M9 17h4l3-7h-4"></path>
+            <path d="M13 10l-2-3H8"></path>
+          </svg>
+        </span>
+        <span class="logo-text"><span class="vrp">VRP</span><span class="go">-GO</span></span>
+      </a>
+
+      <nav class="nav" aria-label="Điều hướng chính">
+        <ul class="nav-list">
+          <li><a href="customer-homepage.html">Trang chủ</a></li>
+          <li><a href="vehicle-search.html">Tìm xe</a></li>
+          <li><a href="weekly-vehicle-schedule.html">Lịch thuê</a></li>
+          <li><a href="my-orders.html">Đơn của tôi</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container cro-main">
+    <nav class="cro-breadcrumb" aria-label="Breadcrumb">
+      <a href="customer-homepage.html">Trang chủ</a>
+      <span>/</span>
+      <a href="vehicle-search.html">Tìm xe</a>
+      <span>/</span>
+      <a id="bkBack" href="weekly-vehicle-schedule.html">Lịch thuê xe</a>
+      <span>/</span>
+      <span>Tạo đơn thuê</span>
+    </nav>
+
+    <div class="cro-head">
+      <div>
+        <span class="cro-eyebrow">BƯỚC 1 / 2 · TẠO ĐƠN THUÊ</span>
+        <h1>Xác nhận lịch thuê &amp; hình thức giao nhận</h1>
+        <p class="cro-sub">Chọn thời gian thuê, phương thức giao nhận và ghi chú cho cửa hàng. Hệ thống tự động tính tiền thuê, phí giao nhận, tiền cọc theo BR-03 và số tiền trả khi nhận xe.</p>
+      </div>
+    </div>
+
+    <div class="hold-banner" role="status" aria-live="polite">
+      <div class="cro-hold-icon" aria-hidden="true">⏱</div>
+      <div>
+        <strong>Đang giữ chỗ tạm thời cho đơn thuê của bạn: <span id="countdown">10:00</span></strong>
+        <p>Hoàn tất tạo đơn và đặt cọc trước khi hết thời gian giữ chỗ để đảm bảo xe còn trống.</p>
+      </div>
+      <div class="hold-bar-wrap"><div class="hold-bar" id="hold-bar"></div></div>
+    </div>
+
+    <div class="order-layout">
+      <div class="cro-left">
+        <section class="cro-card">
+          <div class="cro-card-head">
+            <h2>1. Xe đã chọn</h2>
+            <a href="vehicle-search.html" class="cro-link-btn">Đổi xe khác</a>
+          </div>
+          <div class="cro-vehicle-strip">
+            <img id="bkImg" src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=85" alt="Xe đã chọn">
+            <div class="cro-vehicle-info">
+              <span class="cro-vehicle-type" id="bkType">XE MÁY</span>
+              <h3 id="bkName">Honda Vision 2024</h3>
+              <p class="cro-vehicle-meta" id="bkMeta">Chưa chọn khung giờ — vui lòng chọn bên dưới</p>
+              <p class="cro-vehicle-price" id="bkUnitPrice">150.000đ / ngày</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="cro-card">
+          <div class="cro-card-head">
+            <h2>2. Thời gian thuê</h2>
+            <span class="cro-badge" id="durationBadge">1 ngày</span>
+          </div>
+          <div class="cro-grid-2">
+            <label class="cro-field">
+              <span>Ngày nhận xe</span>
+              <input type="date" id="startDate" required>
+            </label>
+            <label class="cro-field">
+              <span>Giờ nhận xe</span>
+              <select id="startHour"></select>
+            </label>
+            <label class="cro-field">
+              <span>Ngày trả xe</span>
+              <input type="date" id="endDate" required>
+            </label>
+            <label class="cro-field">
+              <span>Giờ trả xe</span>
+              <select id="endHour"></select>
+            </label>
+          </div>
+        </section>
+
+        <section class="cro-card">
+          <div class="cro-card-head">
+            <h2>3. Hình thức giao nhận</h2>
+          </div>
+
+          <label class="delivery-card" for="methodStorePickup">
+            <div class="cro-radio-row">
+              <input type="radio" id="methodStorePickup" name="deliveryMethod" value="Nhận tại cửa hàng" checked>
+              <div class="cro-radio-text">
+                <strong>Nhận tại cửa hàng</strong>
+                <span>Miễn phí giao nhận · Nhận xe trực tiếp tại điểm thuê của cửa hàng</span>
+              </div>
+              <span class="cro-fee-tag">0đ</span>
+            </div>
+          </label>
+
+          <label class="delivery-card" for="methodHomeDelivery">
+            <div class="cro-radio-row">
+              <input type="radio" id="methodHomeDelivery" name="deliveryMethod" value="Giao tận nơi">
+              <div class="cro-radio-text">
+                <strong>Giao tận nơi</strong>
+                <span>Cửa hàng giao xe tận địa chỉ của bạn (tối đa 15 km)</span>
+              </div>
+              <span class="cro-fee-tag" id="homeDeliveryTag">Từ 30.000đ</span>
+            </div>
+          </label>
+
+          <div class="cro-delivery-box" id="deliveryDetailsBox" hidden>
+            <div class="cro-grid-2">
+              <label class="cro-field cro-span-2">
+                <span>Địa chỉ giao xe <b class="cro-req">*</b></span>
+                <input type="text" id="deliveryAddress" maxlength="255" placeholder="VD: 123 Thùy Vân, Phường Thắng Tam, Vũng Tàu">
+              </label>
+              <label class="cro-field">
+                <span>Khoảng cách ước tính (km) <b class="cro-req">*</b></span>
+                <input type="number" id="deliveryDistanceKm" min="0.5" max="15" step="0.5" value="3" placeholder="VD: 3">
+              </label>
+              <div class="cro-delivery-hint">
+                <strong>Công thức phí giao nhận</strong>
+                <p id="deliveryFormulaHint">30.000đ cơ bản + 10.000đ/km · Bán kính phục vụ tối đa 15 km.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="cro-card">
+          <div class="cro-card-head">
+            <h2>4. Ghi chú cho cửa hàng</h2>
+            <span class="cro-char-count" id="noteCharCount">0 / 500</span>
+          </div>
+          <label class="cro-field">
+            <span class="sr-only">Ghi chú đơn thuê</span>
+            <textarea id="bkNote" rows="3" maxlength="500" placeholder="VD: Chuẩn bị giúp 2 mũ bảo hiểm fullface, giao xe trước sảnh khách sạn..."></textarea>
+          </label>
+        </section>
+      </div>
+
+      <aside class="cro-right">
+        <div class="cro-summary-card">
+          <div class="cro-summary-head">
+            <span class="cro-eyebrow">CHI TIẾT CHI PHÍ</span>
+            <h2>Tóm tắt đơn thuê</h2>
+          </div>
+
+          <div class="cro-cost-list">
+            <div class="cro-cost-row">
+              <span id="sumRentalLabel">Tiền thuê xe (1 ngày)</span>
+              <strong id="sumRentalAmount">150.000đ</strong>
+            </div>
+            <div class="cro-cost-row">
+              <span id="sumDeliveryLabel">Phí giao nhận</span>
+              <strong id="sumDeliveryFee">0đ</strong>
+            </div>
+            <div class="cro-cost-divider"></div>
+            <div class="cro-cost-row cro-cost-total">
+              <span>Tổng giá trị đơn</span>
+              <strong id="sumTotalAmount">150.000đ</strong>
+            </div>
+          </div>
+
+          <div class="cro-br03-box">
+            <div class="cro-br03-row">
+              <span>Tiền cọc cần thanh toán ngay</span>
+              <strong id="sumDepositAmount">150.000đ</strong>
+            </div>
+            <p class="cro-br03-rule" id="sumDepositRule">Theo BR-03: 30% tổng đơn, tối thiểu 200.000đ và tối đa 1.000.000đ (không vượt quá tổng đơn).</p>
+            <div class="cro-br03-row cro-br03-remaining">
+              <span>Số tiền trả khi nhận xe</span>
+              <strong id="sumRemainingAmount">0đ</strong>
+            </div>
+          </div>
+
+          <div class="cro-pricing-status" id="pricingStatus" aria-live="polite"></div>
+          <div class="cro-error-box" id="orderErrorBox" role="alert" hidden></div>
+
+          <button type="button" class="cro-btn-primary" id="btn-pay">
+            Tạo đơn thuê &amp; chuyển đặt cọc →
+          </button>
+
+          <p class="cro-footnote">
+            Bằng việc tiếp tục, bạn đồng ý với <a href="rental-policy.html">chính sách thuê xe &amp; đặt cọc BR-03</a> của VRP-GO.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p style="padding: 20px 0; text-align: center; color: #94a3b8; font-size: 13px;">© 2026 VRP-GO · Nền tảng cho thuê xe tự lái</p>
+    </div>
+  </footer>
+</body>
+</html>

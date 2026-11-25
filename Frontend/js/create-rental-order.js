@@ -544,65 +544,463 @@ window.showToast = function (msg) {
   }
 })();
 
-let sec = 10 * 60;
-  const el = document.getElementById("countdown");
-  const bar = document.getElementById("hold-bar");
-  const total = sec;
-  setInterval(() => {
-    if (sec <= 0) { el.textContent = "00:00"; return; }
-    sec--;
-    const m = String(Math.floor(sec / 60)).padStart(2, "0");
-    const s = String(sec % 60).padStart(2, "0");
-    el.textContent = m + ":" + s;
-    bar.style.width = (sec / total * 100) + "%";
-  }, 1000);
-  (function () {
-    const PAD = n => String(n).padStart(2, "0");
-    const params = new URLSearchParams(window.__VRP_QUERY || "");
-    const stored = {};
-    try {
-      stored.name = sessionStorage.getItem("selectedVehicleName") || "";
-      stored.image = sessionStorage.getItem("selectedVehicleImage") || "";
-      stored.date = sessionStorage.getItem("selectedVehicleDate") || "";
-      stored.hour = sessionStorage.getItem("selectedVehicleHour") || "";
-    } catch (err) { /* no-op */ }
-    const name = (params.get("xe") || stored.name || "").trim();
-    const image = stored.image;
-    const dateKey = (params.get("date") || stored.date || "").slice(0, 10);
-    const hour = (params.get("hour") || stored.hour || "").slice(0, 5);
-    const end = (params.get("end") || "").slice(0, 5);
-    const note = params.get("note") || "";
-    if (name) document.getElementById("bkName").textContent = name;
-    if (image) document.getElementById("bkImg").src = image;
-    if (dateKey && hour) {
-      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
-      if (match) {
-        const h = parseInt(hour, 10);
-        const ca = h < 12 ? "Ca Sáng" : h < 18 ? "Ca Chiều" : "Ca Tối";
-        const dateText = match[3] + "/" + match[2] + "/" + match[1];
-        document.getElementById("bkMeta").textContent =
-          dateText + " · " + hour + (end ? " – " + end : "") + " · " + ca;
+(function () {
+  var API_BASE = (window.VRPVehicleAPI && window.VRPVehicleAPI.API_BASE) || "http://127.0.0.1:8000";
+  var DEFAULT_IMG = "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=85";
+  var DEFAULT_DELIVERY = { baseFee: 30000, feePerKm: 10000, maxRadiusKm: 15 };
+
+  // 10-minute hold countdown
+  var sec = 10 * 60;
+  var el = document.getElementById("countdown");
+  var bar = document.getElementById("hold-bar");
+  var totalSec = sec;
+  if (el && bar) {
+    setInterval(function () {
+      if (sec <= 0) {
+        el.textContent = "00:00";
+        bar.style.width = "0%";
+        return;
       }
+      sec--;
+      var m = String(Math.floor(sec / 60)).padStart(2, "0");
+      var s = String(sec % 60).padStart(2, "0");
+      el.textContent = m + ":" + s;
+      bar.style.width = (sec / totalSec * 100) + "%";
+    }, 1000);
+  }
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function formatVnd(amount) {
+    return Math.round(Number(amount) || 0).toLocaleString("vi-VN") + "đ";
+  }
+
+  function toDateInputValue(dateObj) {
+    return dateObj.getFullYear() + "-" + pad2(dateObj.getMonth() + 1) + "-" + pad2(dateObj.getDate());
+  }
+
+  function parsePriceNumber(raw) {
+    if (typeof raw === "number" && !isNaN(raw) && raw > 0) return raw;
+    var digits = String(raw || "").replace(/\D/g, "");
+    var n = parseInt(digits, 10);
+    return isNaN(n) || n <= 0 ? 150000 : n;
+  }
+
+  function formatDisplayDateTime(dateStr, hourStr) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || "");
+    if (!m) return (dateStr || "") + " · " + (hourStr || "08:00");
+    return m[3] + "/" + m[2] + "/" + m[1] + " · " + (hourStr || "08:00");
+  }
+
+  function buildHourOptions(selectEl, defaultHour) {
+    if (!selectEl) return;
+    var html = "";
+    for (var h = 6; h <= 22; h++) {
+      var val = pad2(h) + ":00";
+      html += '<option value="' + val + '"' + (val === defaultHour ? " selected" : "") + ">" + val + "</option>";
     }
-    if (note) document.getElementById("bkNote").value = note;
-    const back = new URLSearchParams();
-    if (name) back.set("xe", name);
-    if (dateKey) back.set("date", dateKey);
-    if (hour) back.set("hour", hour);
-    if (end) back.set("end", end);
-    if (note) back.set("note", note);
-    const backQuery = back.toString();
-    document.getElementById("bkBack").setAttribute("href",
-      "weekly-vehicle-schedule.html" + (backQuery ? "?" + backQuery : ""));
-  })();
-  document.getElementById("btn-pay").onclick = () => {
-    if (window.showToast) {
-      window.showToast("Đang chuyển cổng thanh toán cọc (demo) — cửa hàng có 15 phút xác nhận đơn.");
+    selectEl.innerHTML = html;
+  }
+
+  function calcDepositBr03Local(totalAmount) {
+    var total = Math.max(0, Number(totalAmount) || 0);
+    if (total <= 0) return 0;
+    var raw = Math.round(total * 0.3);
+    var bounded = Math.min(Math.max(raw, 200000), 1000000);
+    return Math.min(bounded, total);
+  }
+
+  function calculateLocalPricing(state) {
+    var start = new Date(state.startDate + "T" + state.startHour + ":00");
+    var end = new Date(state.endDate + "T" + state.endHour + ":00");
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+      return { error: "Thời gian trả xe phải sau thời gian nhận xe." };
     }
-    setTimeout(function () {
-      if (window.motogoNavigate) window.motogoNavigate("my-orders.html"); else window.__vrpGo("my-orders.html");
-    }, 700);
-  };
+    var diffMs = end.getTime() - start.getTime();
+    var durationDays = Math.max(1, Math.ceil(diffMs / 86400000));
+    var rentalAmount = state.unitPrice * durationDays;
+    var deliveryFee = 0;
+
+    if (state.deliveryMethod === "Giao tận nơi") {
+      if (!state.deliveryAddress || !state.deliveryAddress.trim()) {
+        return { error: "Vui lòng nhập địa chỉ giao xe khi chọn Giao tận nơi." };
+      }
+      var dist = parseFloat(state.deliveryDistanceKm);
+      if (isNaN(dist) || dist <= 0) {
+        return { error: "Khoảng cách giao xe phải lớn hơn 0 km." };
+      }
+      if (dist > DEFAULT_DELIVERY.maxRadiusKm) {
+        return { error: "Khoảng cách giao xe vượt quá bán kính tối đa " + DEFAULT_DELIVERY.maxRadiusKm + " km." };
+      }
+      deliveryFee = Math.round(DEFAULT_DELIVERY.baseFee + dist * DEFAULT_DELIVERY.feePerKm);
+    }
+
+    var totalAmount = rentalAmount + deliveryFee;
+    var depositAmount = calcDepositBr03Local(totalAmount);
+    var remainingAmount = Math.max(0, totalAmount - depositAmount);
+
+    return {
+      source: "local",
+      duration_days: durationDays,
+      unit_price: state.unitPrice,
+      rental_amount: rentalAmount,
+      delivery_fee: deliveryFee,
+      total_amount: totalAmount,
+      deposit_rate: 30,
+      deposit_amount: depositAmount,
+      remaining_amount: remainingAmount
+    };
+  }
+
+  var params = new URLSearchParams(window.location.search || window.__VRP_QUERY || "");
+  var storedVehicle = null;
+  var stored = {};
+  try {
+    storedVehicle = JSON.parse(sessionStorage.getItem("vrpSelectedVehicle") || "null");
+    stored.name = sessionStorage.getItem("selectedVehicleName") || "";
+    stored.type = sessionStorage.getItem("selectedVehicleType") || "";
+    stored.rating = sessionStorage.getItem("selectedVehicleRating") || "";
+    stored.specs = sessionStorage.getItem("selectedVehicleSpecs") || "";
+    stored.price = sessionStorage.getItem("selectedVehiclePrice") || "";
+    stored.image = sessionStorage.getItem("selectedVehicleImage") || "";
+    stored.date = sessionStorage.getItem("selectedVehicleDate") || "";
+    stored.hour = sessionStorage.getItem("selectedVehicleHour") || "";
+  } catch (err) { /* no-op */ }
+
+  var vehicleId = (storedVehicle && storedVehicle.vehicle_id) || parseInt(params.get("vehicle_id") || "", 10) || null;
+  var vehicleName = (params.get("xe") || (storedVehicle && storedVehicle.name) || stored.name || "Honda Vision 2024").trim();
+  var vehicleType = (storedVehicle && storedVehicle.vehicle_type) || stored.type || "XE MÁY";
+  var vehicleImage = (storedVehicle && storedVehicle.image_url) || stored.image || DEFAULT_IMG;
+  var unitPrice = parsePriceNumber((storedVehicle && storedVehicle.price_per_day) || stored.price || 150000);
+  var storeName = (storedVehicle && storedVehicle.store_name) || "";
+  var vehicleRating = stored.rating || ((storedVehicle && storedVehicle.avg_rating) ? (storedVehicle.avg_rating + " (" + (storedVehicle.review_count || 0) + ")") : "");
+  var vehicleSpecs = stored.specs || (storeName ? ("Cửa hàng " + storeName) : "");
+
+  var bkNameEl = document.getElementById("bkName");
+  var bkTypeEl = document.getElementById("bkType");
+  var bkImgEl = document.getElementById("bkImg");
+  var bkMetaEl = document.getElementById("bkMeta");
+  var bkUnitPriceEl = document.getElementById("bkUnitPrice");
+  var bkNoteEl = document.getElementById("bkNote");
+  var bkBackEl = document.getElementById("bkBack");
+  var startDateEl = document.getElementById("startDate");
+  var startHourEl = document.getElementById("startHour");
+  var endDateEl = document.getElementById("endDate");
+  var endHourEl = document.getElementById("endHour");
+  var durationBadgeEl = document.getElementById("durationBadge");
+  var deliveryDetailsBox = document.getElementById("deliveryDetailsBox");
+  var deliveryAddressEl = document.getElementById("deliveryAddress");
+  var deliveryDistanceEl = document.getElementById("deliveryDistanceKm");
+  var noteCharCountEl = document.getElementById("noteCharCount");
+  var sumRentalLabelEl = document.getElementById("sumRentalLabel");
+  var sumRentalAmountEl = document.getElementById("sumRentalAmount");
+  var sumDeliveryLabelEl = document.getElementById("sumDeliveryLabel");
+  var sumDeliveryFeeEl = document.getElementById("sumDeliveryFee");
+  var sumTotalAmountEl = document.getElementById("sumTotalAmount");
+  var sumDepositAmountEl = document.getElementById("sumDepositAmount");
+  var sumRemainingAmountEl = document.getElementById("sumRemainingAmount");
+  var pricingStatusEl = document.getElementById("pricingStatus");
+  var orderErrorBoxEl = document.getElementById("orderErrorBox");
+  var btnPayEl = document.getElementById("btn-pay");
+
+  if (bkNameEl) bkNameEl.textContent = vehicleName;
+  if (bkTypeEl) bkTypeEl.textContent = vehicleType;
+  if (bkImgEl) {
+    bkImgEl.src = vehicleImage;
+    bkImgEl.onerror = function () { bkImgEl.src = DEFAULT_IMG; };
+  }
+  if (bkUnitPriceEl) bkUnitPriceEl.textContent = formatVnd(unitPrice) + " / ngày";
+
+  var today = new Date();
+  var defaultStartDate = (params.get("date") || stored.date || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(defaultStartDate)) {
+    var tomorrow = new Date(today.getTime() + 86400000);
+    defaultStartDate = toDateInputValue(tomorrow);
+  }
+  var startDateObj = new Date(defaultStartDate + "T00:00:00");
+  var defaultEndDateObj = new Date(startDateObj.getTime() + 2 * 86400000);
+  var defaultEndDate = toDateInputValue(defaultEndDateObj);
+
+  var rawStartHour = (params.get("hour") || stored.hour || "08:00").slice(0, 5);
+  var rawEndHour = (params.get("end") || rawStartHour || "08:00").slice(0, 5);
+  if (!/^\d{2}:00$/.test(rawStartHour)) rawStartHour = "08:00";
+  if (!/^\d{2}:00$/.test(rawEndHour)) rawEndHour = "08:00";
+
+  buildHourOptions(startHourEl, rawStartHour);
+  buildHourOptions(endHourEl, rawEndHour);
+  if (startDateEl) startDateEl.value = defaultStartDate;
+  if (endDateEl) endDateEl.value = defaultEndDate;
+
+  var initialNote = params.get("note") || "";
+  if (bkNoteEl && initialNote) bkNoteEl.value = initialNote;
+
+  function updateNoteCount() {
+    if (!bkNoteEl || !noteCharCountEl) return;
+    noteCharCountEl.textContent = bkNoteEl.value.length + " / 500";
+  }
+  updateNoteCount();
+
+  if (bkBackEl) {
+    var back = new URLSearchParams();
+    if (vehicleName) back.set("xe", vehicleName);
+    if (defaultStartDate) back.set("date", defaultStartDate);
+    if (rawStartHour) back.set("hour", rawStartHour);
+    if (rawEndHour) back.set("end", rawEndHour);
+    if (initialNote) back.set("note", initialNote);
+    var backQuery = back.toString();
+    bkBackEl.setAttribute("href", "weekly-vehicle-schedule.html" + (backQuery ? "?" + backQuery : ""));
+  }
+
+  function getSelectedDeliveryMethod() {
+    var checked = document.querySelector('input[name="deliveryMethod"]:checked');
+    return checked ? checked.value : "Nhận tại cửa hàng";
+  }
+
+  function showError(msg) {
+    if (!orderErrorBoxEl) return;
+    if (!msg) {
+      orderErrorBoxEl.hidden = true;
+      orderErrorBoxEl.textContent = "";
+    } else {
+      orderErrorBoxEl.hidden = false;
+      orderErrorBoxEl.textContent = msg;
+    }
+  }
+
+  function readFormState() {
+    return {
+      vehicleId: vehicleId,
+      unitPrice: unitPrice,
+      startDate: startDateEl ? startDateEl.value : defaultStartDate,
+      startHour: startHourEl ? startHourEl.value : "08:00",
+      endDate: endDateEl ? endDateEl.value : defaultEndDate,
+      endHour: endHourEl ? endHourEl.value : "08:00",
+      deliveryMethod: getSelectedDeliveryMethod(),
+      deliveryAddress: deliveryAddressEl ? deliveryAddressEl.value.trim() : "",
+      deliveryDistanceKm: deliveryDistanceEl ? deliveryDistanceEl.value : "",
+      note: bkNoteEl ? bkNoteEl.value.trim() : ""
+    };
+  }
+
+  var latestPricing = null;
+  var calcTimer = null;
+  var calcSeq = 0;
+
+  function renderPricing(pricing, state) {
+    latestPricing = pricing;
+    if (bkMetaEl) {
+      bkMetaEl.textContent =
+        formatDisplayDateTime(state.startDate, state.startHour) +
+        " → " +
+        formatDisplayDateTime(state.endDate, state.endHour);
+    }
+    if (pricing.error) {
+      showError(pricing.error);
+      if (btnPayEl) btnPayEl.disabled = true;
+      return;
+    }
+    showError("");
+    if (btnPayEl) btnPayEl.disabled = false;
+
+    if (durationBadgeEl) durationBadgeEl.textContent = pricing.duration_days + " ngày";
+    if (sumRentalLabelEl) sumRentalLabelEl.textContent = "Tiền thuê xe (" + pricing.duration_days + " ngày)";
+    if (sumRentalAmountEl) sumRentalAmountEl.textContent = formatVnd(pricing.rental_amount);
+    if (sumDeliveryLabelEl) {
+      sumDeliveryLabelEl.textContent = state.deliveryMethod === "Giao tận nơi"
+        ? "Phí giao nhận (" + state.deliveryDistanceKm + " km)"
+        : "Phí giao nhận (Nhận tại cửa hàng)";
+    }
+    if (sumDeliveryFeeEl) sumDeliveryFeeEl.textContent = formatVnd(pricing.delivery_fee);
+    if (sumTotalAmountEl) sumTotalAmountEl.textContent = formatVnd(pricing.total_amount);
+    if (sumDepositAmountEl) sumDepositAmountEl.textContent = formatVnd(pricing.deposit_amount);
+    if (sumRemainingAmountEl) sumRemainingAmountEl.textContent = formatVnd(pricing.remaining_amount);
+
+    if (pricingStatusEl) {
+      pricingStatusEl.textContent = pricing.source === "api"
+        ? "Đã đồng bộ báo giá trực tiếp từ hệ thống (BR-03)."
+        : "Đang tính tạm tính theo công thức BR-03.";
+    }
+  }
+
+  async function requestBackendPricing(state) {
+    if (!state.vehicleId) return null;
+    var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 2200) : null;
+    try {
+      var body = {
+        vehicle_id: state.vehicleId,
+        start_time: state.startDate + "T" + state.startHour + ":00",
+        end_time: state.endDate + "T" + state.endHour + ":00",
+        delivery_method: state.deliveryMethod
+      };
+      if (state.deliveryMethod === "Giao tận nơi") {
+        body.delivery_address = state.deliveryAddress;
+        body.delivery_distance_km = parseFloat(state.deliveryDistanceKm);
+      }
+      var res = await fetch(API_BASE + "/orders/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller ? controller.signal : undefined
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        return { error: data.detail || "Không thể tính giá đơn thuê. Vui lòng kiểm tra lại thông tin." };
+      }
+      data.source = "api";
+      return data;
+    } catch (err) {
+      return null;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  }
+
+  function refreshPricing() {
+    var state = readFormState();
+    if (deliveryDetailsBox) {
+      deliveryDetailsBox.hidden = state.deliveryMethod !== "Giao tận nơi";
+    }
+    var localResult = calculateLocalPricing(state);
+    renderPricing(localResult, state);
+    if (localResult.error || !state.vehicleId) return;
+
+    var seq = ++calcSeq;
+    clearTimeout(calcTimer);
+    calcTimer = setTimeout(async function () {
+      var apiResult = await requestBackendPricing(state);
+      if (seq !== calcSeq || !apiResult) return;
+      renderPricing(apiResult, state);
+    }, 260);
+  }
+
+  [startDateEl, startHourEl, endDateEl, endHourEl, deliveryAddressEl, deliveryDistanceEl].forEach(function (node) {
+    if (!node) return;
+    node.addEventListener("input", refreshPricing);
+    node.addEventListener("change", refreshPricing);
+  });
+
+  document.querySelectorAll('input[name="deliveryMethod"]').forEach(function (radio) {
+    radio.addEventListener("change", refreshPricing);
+  });
+
+  if (bkNoteEl) {
+    bkNoteEl.addEventListener("input", updateNoteCount);
+  }
+
+  refreshPricing();
+
+  if (btnPayEl) {
+    btnPayEl.addEventListener("click", async function () {
+      var state = readFormState();
+      var localCheck = calculateLocalPricing(state);
+      if (localCheck.error) {
+        showError(localCheck.error);
+        return;
+      }
+
+      btnPayEl.disabled = true;
+      btnPayEl.textContent = "Đang tạo đơn thuê...";
+      showError("");
+
+      var createdOrder = null;
+      var userId = (window.VRPAuth && window.VRPAuth.userId) || null;
+
+      if (state.vehicleId && userId) {
+        var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+        var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 3500) : null;
+        try {
+          var payload = {
+            vehicle_id: state.vehicleId,
+            start_time: state.startDate + "T" + state.startHour + ":00",
+            end_time: state.endDate + "T" + state.endHour + ":00",
+            delivery_method: state.deliveryMethod,
+            note: state.note || null
+          };
+          if (state.deliveryMethod === "Giao tận nơi") {
+            payload.delivery_address = state.deliveryAddress;
+            payload.delivery_distance_km = parseFloat(state.deliveryDistanceKm);
+          }
+          var res = await fetch(API_BASE + "/orders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-User-Id": String(userId)
+            },
+            body: JSON.stringify(payload),
+            signal: controller ? controller.signal : undefined
+          });
+          var data = await res.json().catch(function () { return {}; });
+          if (!res.ok) {
+            showError(data.detail || "Không thể tạo đơn thuê (mã lỗi " + res.status + ").");
+            btnPayEl.disabled = false;
+            btnPayEl.textContent = "Tạo đơn thuê & chuyển đặt cọc →";
+            return;
+          }
+          createdOrder = data;
+        } catch (err) {
+          // Backend unreachable -> fall back to demo pending order below
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId);
+        }
+      }
+
+      var finalPricing = createdOrder || latestPricing || localCheck;
+      var pendingOrder = {
+        order_id: createdOrder ? createdOrder.order_id : null,
+        order_code: createdOrder ? ("VRP-" + String(createdOrder.order_id).padStart(6, "0")) : ("VRP-" + String(Date.now()).slice(-6)),
+        status: createdOrder ? createdOrder.status : "Chờ đặt cọc",
+        vehicle_id: state.vehicleId,
+        vehicle_name: vehicleName,
+        vehicle_type: vehicleType,
+        vehicle_image: vehicleImage,
+        vehicle_rating: vehicleRating,
+        vehicle_specs: vehicleSpecs,
+        unit_price: finalPricing.unit_price || unitPrice,
+        start_time: state.startDate + "T" + state.startHour + ":00",
+        end_time: state.endDate + "T" + state.endHour + ":00",
+        start_display: formatDisplayDateTime(state.startDate, state.startHour),
+        end_display: formatDisplayDateTime(state.endDate, state.endHour),
+        duration_days: finalPricing.duration_days || localCheck.duration_days,
+        delivery_method: state.deliveryMethod,
+        delivery_address: state.deliveryMethod === "Giao tận nơi" ? state.deliveryAddress : null,
+        delivery_distance_km: state.deliveryMethod === "Giao tận nơi" ? parseFloat(state.deliveryDistanceKm) : null,
+        note: state.note || null,
+        rental_amount: finalPricing.rental_amount,
+        delivery_fee: finalPricing.delivery_fee,
+        total_amount: finalPricing.total_amount,
+        deposit_amount: finalPricing.deposit_amount,
+        remaining_amount: finalPricing.remaining_amount
+      };
+
+      try {
+        sessionStorage.setItem("vrpPendingOrder", JSON.stringify(pendingOrder));
+        sessionStorage.setItem("selectedVehicleName", vehicleName);
+        sessionStorage.setItem("selectedVehicleType", vehicleType);
+        sessionStorage.setItem("selectedVehicleImage", vehicleImage);
+        sessionStorage.setItem("selectedVehiclePrice", formatVnd(unitPrice) + "/ngày");
+        if (vehicleRating) sessionStorage.setItem("selectedVehicleRating", vehicleRating);
+        if (vehicleSpecs) sessionStorage.setItem("selectedVehicleSpecs", vehicleSpecs);
+        sessionStorage.setItem("vrpScheduleLabel", pendingOrder.start_display + " → " + pendingOrder.end_display);
+      } catch (err) { /* no-op */ }
+
+      if (window.showToast) {
+        window.showToast("Đã tạo đơn thuê " + pendingOrder.order_code + " — chuyển sang thanh toán cọc BR-03.");
+      }
+      setTimeout(function () {
+        if (window.motogoNavigate) {
+          window.motogoNavigate("deposit-payment.html");
+        } else if (window.__vrpGo) {
+          window.__vrpGo("deposit-payment.html");
+        } else {
+          window.location.href = "deposit-payment.html";
+        }
+      }, 350);
+    });
+  }
+})();
 
 
 
