@@ -765,6 +765,17 @@ body {
     align-items: center;
     justify-content: center;
     border: 2px solid #059669;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.profile-big-avatar img,
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
 }
 
 .btn-change-avatar {
@@ -849,22 +860,72 @@ body {
     cursor: pointer;
 }
 
+.license-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.license-input-row #licenseNumberInput {
+    flex: 1;
+    min-width: 0;
+}
+
+.license-class-select {
+    width: 118px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
 .license-badge {
-    height: 42px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     gap: 8px;
     background-color: #ecfdf5;
     color: #059669;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
-    padding: 0 12px;
+    padding: 6px 12px;
     border-radius: 8px;
     border: 1px solid #a7f3d0;
+    margin-top: 4px;
+}
+
+.license-badge.is-empty {
+    background-color: #f8fafc;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+.license-badge.is-pending {
+    background-color: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+}
+
+.license-badge.is-rejected {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
 }
 
 .form-actions {
     margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.profile-save-msg {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #059669;
+}
+
+.profile-save-msg.error {
+    color: #dc2626;
 }
 
 .btn-save-profile {
@@ -1146,6 +1207,17 @@ body {
     align-items: center;
     justify-content: center;
     border: 2px solid #059669;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.profile-big-avatar img,
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
 }
 
 .btn-change-avatar {
@@ -1230,22 +1302,72 @@ body {
     cursor: pointer;
 }
 
+.license-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.license-input-row #licenseNumberInput {
+    flex: 1;
+    min-width: 0;
+}
+
+.license-class-select {
+    width: 118px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
 .license-badge {
-    height: 42px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     gap: 8px;
     background-color: #ecfdf5;
     color: #059669;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
-    padding: 0 12px;
+    padding: 6px 12px;
     border-radius: 8px;
     border: 1px solid #a7f3d0;
+    margin-top: 4px;
+}
+
+.license-badge.is-empty {
+    background-color: #f8fafc;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+.license-badge.is-pending {
+    background-color: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+}
+
+.license-badge.is-rejected {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
 }
 
 .form-actions {
     margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.profile-save-msg {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #059669;
+}
+
+.profile-save-msg.error {
+    color: #dc2626;
 }
 
 .btn-save-profile {

@@ -10,11 +10,10 @@ from app.models.user import User
 from app.models.image import Image
 from app.schemas.vehicle import ( VehicleCreate, VehicleUpdate,VehicleResponse)
 from app.services.vehicle import ( create_vehicle, update_vehicle, delete_vehicle, get_vehicles, pause_vehicle_service)
+from app.utils.cloudinary_helper import upload_vehicle_image_to_cloudinary, delete_cloudinary_image_by_public_id
 
 router = APIRouter(prefix="/vehicles",tags=["Vehicles"])
 
-BACKEND_DIR = Path(__file__).resolve().parents[2]
-UPLOAD_DIR = BACKEND_DIR / "uploads" / "vehicles"
 MAX_FILE_SIZE = 5 * 1024 * 1024
 ALLOWED_FILES = {
     ".jpg": ("image/jpeg", b"\xff\xd8\xff"),
@@ -89,9 +88,8 @@ async def create_vehicle_api(
         engine_capacity=engine_capacity,
         description=description
     )
-    saved_paths = []
+    uploaded_public_ids = []
     try:
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         vehicle = create_vehicle(
             db=db,
             user_id=current_user.user_id,
@@ -99,13 +97,16 @@ async def create_vehicle_api(
         )
         for content, extension in validated_files:
             filename = f"{uuid4().hex}{extension}"
-            file_path = UPLOAD_DIR / filename
-            with open(file_path, "wb") as image_file:
-                image_file.write(content)
-            saved_paths.append(file_path)
+            upload = upload_vehicle_image_to_cloudinary(
+                content=content,
+                filename=filename,
+                content_type=ALLOWED_FILES[extension][0],
+                store_id=vehicle.store_id,
+            )
+            uploaded_public_ids.append(upload["public_id"])
             image = Image(
                 vehicle_id=vehicle.vehicle_id,
-                img_url=f"uploads/vehicles/{filename}",
+                img_url=upload["secure_url"],
                 img_type="vehicle",
                 upload_at=datetime.now()
             )
@@ -115,19 +116,17 @@ async def create_vehicle_api(
         return vehicle
     except HTTPException:
         db.rollback()
-        for file_path in saved_paths:
-            if file_path.exists():
-                file_path.unlink()
+        for public_id in uploaded_public_ids:
+            delete_cloudinary_image_by_public_id(public_id, delivery_type="upload")
         raise
-    except Exception:
+    except Exception as exc:
         db.rollback()
-        for file_path in saved_paths:
-            if file_path.exists():
-                file_path.unlink()
+        for public_id in uploaded_public_ids:
+            delete_cloudinary_image_by_public_id(public_id, delivery_type="upload")
         raise HTTPException(
             status_code=500,
             detail="Không thể tạo xe hoặc lưu ảnh"
-        )
+        ) from exc
 
 @router.get("",response_model=list[VehicleResponse])
 def get_vehicles_api(db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):

@@ -11,6 +11,8 @@ class DriverLicense(Base):
     license_class = Column(Enum("A", "A1", "B1", "C"))
     issue_date = Column(DateTime)
     expiry_date = Column(DateTime)
+    img_license_front = Column(String(255), nullable=True)
+    img_license_back = Column(String(255), nullable=True)
     verification_status = Column(
         Enum(
             "Đang chờ",

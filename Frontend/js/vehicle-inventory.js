@@ -34,7 +34,7 @@
        never gets stuck. Keep the animation, just finish the navigation. */
     if (window.parent === window) {
       var __t = String(href), __b = __t.split(/[?#]/)[0];
-      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      if (__b === "homepage.html") __t = "index.html" + __t.slice(__b.length);
       else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
       else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
       else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
@@ -738,7 +738,7 @@ window.showToast = function (msg) {
 
   // "Cửa hàng" đã bị bỏ khỏi HTML của trang khách; chỉ chèn lại khi có quyền.
   const navList = document.querySelector(".nav-list");
-  if (canStore && navList && !navList.querySelector('a[href*="store/"]')) {
+  if (canStore && navList && !navList.querySelector('a[href*="store-dashboard"], a[href*="store-homepage"], a[href*="store/"]')) {
     const homeLink = navList.querySelector('a[href$="store-dashboard.html"]');
     const prefix = homeLink ? homeLink.getAttribute("href").replace(/index\.html$/, "") : "";
     const li = document.createElement("li");
@@ -793,7 +793,7 @@ window.showToast = function (msg) {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "store-dashboard.html": "homepage.html",
+        "store-dashboard.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -828,7 +828,7 @@ window.showToast = function (msg) {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "homepage.html": "store-dashboard.html",
+    "index.html": "store-dashboard.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "vehicle-inventory.html";
@@ -885,20 +885,20 @@ window.showToast = function (msg) {
 /* Popup chỉnh sửa phương tiện (từ bản VRP-GO-hoan-chinh / vehicle-inventory.html) */
 (function () {
   'use strict';
-  var KEY = 'vrp_store_vehicles_v1';
+  var KEY = 'vrp_store_vehicles_hourly_v1';
   var defaults = [
-    ['Honda Air Blade 160', '51G1-23456', 'Sẵn sàng', 180000],
-    ['Yamaha Exciter 155', '51G1-77889', 'Đang thuê', 220000],
-    ['Honda Vision 2024', '51G1-11223', 'Sẵn sàng', 150000],
-    ['Honda SH Mode 125', '51G1-55667', 'Bảo dưỡng', 200000],
-    ['Yamaha Janus 2023', '51G1-33445', 'Sẵn sàng', 160000],
-    ['VinFast Feliz S', '51G1-99887', 'Đang thuê', 180000],
-    ['Honda Lead 125', '51G1-66778', 'Sẵn sàng', 155000],
-    ['Honda Winner X', '51G1-44556', 'Sẵn sàng', 210000],
-    ['Yamaha Grande', '51G1-22334', 'Sẵn sàng', 170000],
-    ['Honda SH 150i', '51G1-88990', 'Đang thuê', 280000],
-    ['Suzuki Raider', '51G1-10112', 'Sẵn sàng', 190000],
-    ['Yamaha NVX 155', '51G1-55601', 'Bảo dưỡng', 230000]
+    ['Honda Air Blade 160', '51G1-23456', 'Sẵn sàng', 25000],
+    ['Yamaha Exciter 155', '51G1-77889', 'Đang thuê', 30000],
+    ['Honda Vision 2024', '51G1-11223', 'Sẵn sàng', 20000],
+    ['Honda SH Mode 125', '51G1-55667', 'Bảo dưỡng', 28000],
+    ['Yamaha Janus 2023', '51G1-33445', 'Sẵn sàng', 20000],
+    ['VinFast Feliz S', '51G1-99887', 'Đang thuê', 25000],
+    ['Honda Lead 125', '51G1-66778', 'Sẵn sàng', 22000],
+    ['Honda Winner X', '51G1-44556', 'Sẵn sàng', 28000],
+    ['Yamaha Grande', '51G1-22334', 'Sẵn sàng', 25000],
+    ['Honda SH 150i', '51G1-88990', 'Đang thuê', 35000],
+    ['Suzuki Raider', '51G1-10112', 'Sẵn sàng', 25000],
+    ['Yamaha NVX 155', '51G1-55601', 'Bảo dưỡng', 30000]
   ].map(function (v, i) {
     return { id: i, name: v[0], plate: v[1], status: v[2], price: v[3] };
   });
@@ -941,7 +941,7 @@ window.showToast = function (msg) {
         span.style.cssText = 'color:' + color + ';font-weight:600';
         meta.appendChild(span);
       }
-      if (price) price.innerHTML = money(v.price) + ' <small>/ ngày</small>';
+      if (price) price.innerHTML = money(v.price) + ' <small>/ giờ</small>';
     });
   }
 

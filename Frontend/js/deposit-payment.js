@@ -54,7 +54,7 @@
        never gets stuck. Keep the animation, just finish the navigation. */
     if (window.parent === window) {
       var __t = String(href), __b = __t.split(/[?#]/)[0];
-      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      if (__b === "homepage.html") __t = "index.html" + __t.slice(__b.length);
       else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
       else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
       else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
@@ -164,22 +164,43 @@ function formatMoney(amount) {
     return amount.toLocaleString("vi-VN") + "đ";
 }
 
-// Tính tiền thuê và tiền cọc theo xe được chọn
-const rentalDays = 2;
+// Tính tiền thuê theo giờ và tiền cọc theo xe được chọn
+function computeRentalHoursFromSlot(startStr, endStr) {
+    const parseHm = (s) => {
+        const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || "").trim());
+        return m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : null;
+    };
+    const sMin = parseHm(startStr);
+    const eMin = parseHm(endStr);
+    if (sMin !== null && eMin !== null && eMin > sMin) {
+        return Math.max(1, Math.round(((eMin - sMin) / 60) * 10) / 10);
+    }
+    return 4;
+}
+
+const rentalHours = computeRentalHoursFromSlot(
+    sessionStorage.getItem("selectedVehicleHour") || "",
+    sessionStorage.getItem("selectedVehicleEnd") || ""
+);
 const deliveryFeeValue = 30000;
-let totalValue = 330000;
+let totalValue = 110000;
 
 if (vehiclePrice) {
-    const dailyPrice = parseInt(vehiclePrice.replace(/\D/g, ""));
-    const rentalTotalValue = dailyPrice * rentalDays;
+    const hourlyPrice = parseInt(vehiclePrice.replace(/\D/g, ""), 10) || 20000;
+    const rentalTotalValue = Math.round(hourlyPrice * rentalHours);
     totalValue = rentalTotalValue + deliveryFeeValue;
 
     depositAmount = Math.min(
-        Math.max(totalValue * 0.3, 200000),
+        Math.max(Math.round(totalValue * 0.3), 200000),
         1000000
     );
 
-    const remainingValue = totalValue - depositAmount;
+    const remainingValue = Math.max(0, totalValue - depositAmount);
+
+    const durLabelEl = document.getElementById("rentalDurationLabel");
+    if (durLabelEl) durLabelEl.textContent = "Tiền thuê xe (" + rentalHours + " giờ)";
+    const durTextEl = document.getElementById("rentalDurationText");
+    if (durTextEl) durTextEl.textContent = rentalHours + " giờ";
 
     document.getElementById("rentalTotal").textContent = formatMoney(rentalTotalValue);
     document.getElementById("deliveryFee").textContent = formatMoney(deliveryFeeValue);
@@ -454,7 +475,7 @@ document.addEventListener("keydown", function (event) {
     var loc=document.getElementById('vehicleLocation'); if(loc){ var place=(specs||'').split('·').pop().trim(); loc.innerHTML='<i class="fa-solid fa-location-dot"></i> '+(place||'Đà Nẵng'); } var rEl=document.getElementById('vehicleRatingValue'); if(rEl && rating){ var m=String(rating).match(/[\d.]+/); if(m) rEl.textContent=m[0]; }
 
     
-    var PRICE_MAP={'Honda Vision 2024':150000,'Yamaha Exciter 155':220000,'Honda SH Mode 125':180000,'VinFast Feliz S':180000,'Honda Winner X':170000,'Yamaha Janus 2023':160000,'Honda Lead 125':160000,'Honda SH 150i':280000,'Honda Air Blade 160':180000};
+    var PRICE_MAP={'Honda Vision 2024':20000,'Yamaha Exciter 155':30000,'Honda SH Mode 125':28000,'VinFast Feliz S':25000,'Honda Winner X':28000,'Yamaha Janus 2023':20000,'Honda Lead 125':22000,'Honda SH 150i':35000,'Honda Air Blade 160':25000};
     if(!price && name && PRICE_MAP[name]) price=String(PRICE_MAP[name]);
     var IMG_MAP={'Honda Vision 2024':'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=85','Yamaha Exciter 155':'https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?auto=format&fit=crop&w=700&q=85','Honda SH Mode 125':'https://images.unsplash.com/photo-1622185135505-2d795003994a?auto=format&fit=crop&w=700&q=85','VinFast Feliz S':'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=700&q=85','Honda Winner X':'https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?auto=format&fit=crop&w=700&q=85','Yamaha Janus 2023':'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=700&q=85','Honda Lead 125':'https://images.unsplash.com/photo-1595691403533-7f4a52a5b4a4?auto=format&fit=crop&w=700&q=85','Honda SH 150i':'https://images.unsplash.com/photo-1558981852-426c6c22a060?auto=format&fit=crop&w=700&q=85'};
     if(!image && name && IMG_MAP[name]) image=IMG_MAP[name];
@@ -468,14 +489,16 @@ document.addEventListener("keydown", function (event) {
       if(items[2]) items[2].textContent = label || (hour&&end ? (hour+' – '+end) : 'Theo lịch tuần đã chọn');
     }
 
-    var daily=parseInt(String(price||'').replace(/\D/g,''),10);
-    if(!daily || isNaN(daily)) daily=150000;
-    var rentalDays=2, delivery=30000;
-    var rentalTotal=daily*rentalDays;
+    var hourly=parseInt(String(price||'').replace(/\D/g,''),10);
+    if(!hourly || isNaN(hourly)) hourly=20000;
+    var rentalHours=computeRentalHoursFromSlot(hour, end);
+    var delivery=30000;
+    var rentalTotal=Math.round(hourly*rentalHours);
     var total=rentalTotal+delivery;
     var deposit=Math.round(Math.min(Math.max(total*0.3,200000),1000000));
-    var remain=total-deposit;
+    var remain=Math.max(0, total-deposit);
     var set=function(id,val){var el=document.getElementById(id); if(el) el.textContent=val;};
+    set('rentalDurationLabel','Tiền thuê xe ('+rentalHours+' giờ)');
     set('rentalTotal',fmtMoney(rentalTotal));
     set('deliveryFee',fmtMoney(delivery));
     set('depositAmount',fmtMoney(deposit));
@@ -499,7 +522,7 @@ document.addEventListener("keydown", function (event) {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "store-dashboard.html": "homepage.html",
+        "store-dashboard.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -534,7 +557,7 @@ document.addEventListener("keydown", function (event) {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "homepage.html": "store-dashboard.html",
+    "index.html": "store-dashboard.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "deposit-payment.html";

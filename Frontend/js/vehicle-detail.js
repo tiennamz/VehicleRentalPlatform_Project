@@ -21,13 +21,13 @@
 (function () {
   var PAGE = "vehicle-detail.html";
   var QUERY = window.location.search;
-  var KEYS = ["homepage.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
+  var KEYS = ["index.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
   window.__VRP_PAGE = PAGE;
   window.__VRP_QUERY = QUERY;
 
   function norm(path) {
-    if (!path) return "homepage.html";
-    if (path.slice(-1) === "/") path += "homepage.html";
+    if (!path) return "index.html";
+    if (path.slice(-1) === "/") path += "index.html";
     return path.replace(/^\/+/, "");
   }
 
@@ -54,7 +54,7 @@
        never gets stuck. Keep the animation, just finish the navigation. */
     if (window.parent === window) {
       var __t = String(href), __b = __t.split(/[?#]/)[0];
-      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      if (__b === "homepage.html") __t = "index.html" + __t.slice(__b.length);
       else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
       else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
       else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
@@ -525,8 +525,8 @@ window.showToast = function (msg) {
 
   // "Cửa hàng" đã bị bỏ khỏi HTML của trang khách; chỉ chèn lại khi có quyền.
   const navList = document.querySelector(".nav-list");
-  if (canStore && navList && !navList.querySelector('a[href*="store/"]')) {
-    const homeLink = navList.querySelector('a[href$="homepage.html"]');
+  if (canStore && navList && !navList.querySelector('a[href*="store-dashboard"], a[href*="store-homepage"], a[href*="store/"]')) {
+    const homeLink = navList.querySelector('a[href$="index.html"]');
     const prefix = homeLink ? homeLink.getAttribute("href").replace(/index\.html$/, "") : "";
     const li = document.createElement("li");
     li.innerHTML = '<a href="' + prefix + 'store-dashboard.html">Cửa hàng</a>';
@@ -549,7 +549,7 @@ window.showToast = function (msg) {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "homepage.html": "homepage.html",
+        "index.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -584,7 +584,8 @@ window.showToast = function (msg) {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "homepage.html": "homepage.html",
+    "index.html": "index.html",
+    "homepage.html": "index.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "vehicle-detail.html";
@@ -603,8 +604,8 @@ window.showToast = function (msg) {
     });
 
     function norm(path) {
-        if (!path) return "homepage.html";
-        if (path.slice(-1) === "/") path += "homepage.html";
+        if (!path) return "index.html";
+        if (path.slice(-1) === "/") path += "index.html";
         return path.replace(/^\/+/, "");
     }
 
@@ -640,7 +641,7 @@ window.showToast = function (msg) {
 
 /* VRP-GO: đồng bộ xe đang chọn giữa các giao diện */
 (function () {
-  var CARS = [{"name": "Honda Vision 2024", "type": "Tay ga · Phố", "specType": "Tay ga · Phố", "label": "XE MÁY · TAY GA", "rating": "4.9", "reviews": 128, "location": "Hải Châu, Đà Nẵng", "price": "150.000đ", "image": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=800&q=80", "cc": "110cc", "year": "2024", "plate": "30A-123.45"}, {"name": "Yamaha Exciter 155", "type": "Côn tay · Tour", "specType": "Côn tay · Tour", "label": "XE MÁY · CÔN TAY", "rating": "4.8", "reviews": 64, "location": "Đà Nẵng", "price": "220.000đ", "image": "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=800&q=80", "cc": "155cc", "year": "2024", "plate": "30B-456.78"}, {"name": "Honda SH Mode 125", "type": "Tay ga cao cấp", "specType": "Tay ga cao cấp", "label": "XE MÁY · CAO CẤP", "rating": "4.9", "reviews": 52, "location": "Đà Nẵng", "price": "200.000đ", "image": "https://images.unsplash.com/photo-1609630875171-b1321377ee65?auto=format&fit=crop&w=800&q=80", "cc": "125cc", "year": "2024", "plate": "30C-789.01"}, {"name": "VinFast Feliz S", "type": "Xe điện", "specType": "Xe điện", "label": "XE ĐIỆN", "rating": "4.7", "reviews": 41, "location": "Đà Nẵng", "price": "180.000đ", "image": "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80", "cc": "Điện", "year": "2024", "plate": "30D-234.56"}, {"name": "Honda Winner X", "type": "Côn tay", "specType": "Côn tay", "label": "XE MÁY · CÔN TAY", "rating": "4.8", "reviews": 58, "location": "Đà Nẵng", "price": "210.000đ", "image": "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?auto=format&fit=crop&w=800&q=80", "cc": "150cc", "year": "2024", "plate": "30E-345.67"}, {"name": "Yamaha Janus 2023", "type": "Tay ga · Nữ", "specType": "Tay ga · Nữ", "label": "XE MÁY · TAY GA", "rating": "4.6", "reviews": 37, "location": "Đà Nẵng", "price": "160.000đ", "image": "https://images.unsplash.com/photo-1558981852-426c6c22a060?auto=format&fit=crop&w=800&q=80", "cc": "125cc", "year": "2023", "plate": "30F-456.78"}, {"name": "Honda Lead 125", "type": "Tay ga · Cốp rộng", "specType": "Tay ga · Cốp rộng", "label": "XE MÁY · TAY GA", "rating": "4.7", "reviews": 45, "location": "Đà Nẵng", "price": "155.000đ", "image": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=800&q=80", "cc": "125cc", "year": "2024", "plate": "30G-567.89"}, {"name": "Honda SH 150i", "type": "Tay ga cao cấp", "specType": "Tay ga cao cấp", "label": "XE MÁY · CAO CẤP", "rating": "5.0", "reviews": 71, "location": "Đà Nẵng", "price": "280.000đ", "image": "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=800&q=80", "cc": "150cc", "year": "2024", "plate": "30H-678.90"}, {"name": "Honda Air Blade 160", "type": "Xe máy · Tay ga", "specType": "Tay ga", "label": "XE MÁY · TAY GA", "rating": "4.9", "reviews": 66, "location": "Đà Nẵng", "price": "180.000đ", "image": "https://images.unsplash.com/photo-1609630875171-b1321377ee65?auto=format&fit=crop&w=700&q=80", "cc": "160cc", "year": "2024", "plate": "30I-789.01"}];
+  var CARS = [{"name": "Honda Vision 2024", "type": "Tay ga · Phố", "specType": "Tay ga · Phố", "label": "XE MÁY · TAY GA", "rating": "4.9", "reviews": 128, "location": "Hải Châu, Đà Nẵng", "price": "20.000đ", "image": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=800&q=80", "cc": "110cc", "year": "2024", "plate": "30A-123.45"}, {"name": "Yamaha Exciter 155", "type": "Côn tay · Tour", "specType": "Côn tay · Tour", "label": "XE MÁY · CÔN TAY", "rating": "4.8", "reviews": 64, "location": "Đà Nẵng", "price": "30.000đ", "image": "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=800&q=80", "cc": "155cc", "year": "2024", "plate": "30B-456.78"}, {"name": "Honda SH Mode 125", "type": "Tay ga cao cấp", "specType": "Tay ga cao cấp", "label": "XE MÁY · CAO CẤP", "rating": "4.9", "reviews": 52, "location": "Đà Nẵng", "price": "28.000đ", "image": "https://images.unsplash.com/photo-1609630875171-b1321377ee65?auto=format&fit=crop&w=800&q=80", "cc": "125cc", "year": "2024", "plate": "30C-789.01"}, {"name": "VinFast Feliz S", "type": "Xe điện", "specType": "Xe điện", "label": "XE ĐIỆN", "rating": "4.7", "reviews": 41, "location": "Đà Nẵng", "price": "25.000đ", "image": "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80", "cc": "Điện", "year": "2024", "plate": "30D-234.56"}, {"name": "Honda Winner X", "type": "Côn tay", "specType": "Côn tay", "label": "XE MÁY · CÔN TAY", "rating": "4.8", "reviews": 58, "location": "Đà Nẵng", "price": "28.000đ", "image": "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?auto=format&fit=crop&w=800&q=80", "cc": "150cc", "year": "2024", "plate": "30E-345.67"}, {"name": "Yamaha Janus 2023", "type": "Tay ga · Nữ", "specType": "Tay ga · Nữ", "label": "XE MÁY · TAY GA", "rating": "4.6", "reviews": 37, "location": "Đà Nẵng", "price": "20.000đ", "image": "https://images.unsplash.com/photo-1558981852-426c6c22a060?auto=format&fit=crop&w=800&q=80", "cc": "125cc", "year": "2023", "plate": "30F-456.78"}, {"name": "Honda Lead 125", "type": "Tay ga · Cốp rộng", "specType": "Tay ga · Cốp rộng", "label": "XE MÁY · TAY GA", "rating": "4.7", "reviews": 45, "location": "Đà Nẵng", "price": "22.000đ", "image": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=800&q=80", "cc": "125cc", "year": "2024", "plate": "30G-567.89"}, {"name": "Honda SH 150i", "type": "Tay ga cao cấp", "specType": "Tay ga cao cấp", "label": "XE MÁY · CAO CẤP", "rating": "5.0", "reviews": 71, "location": "Đà Nẵng", "price": "35.000đ", "image": "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=800&q=80", "cc": "150cc", "year": "2024", "plate": "30H-678.90"}, {"name": "Honda Air Blade 160", "type": "Xe máy · Tay ga", "specType": "Tay ga", "label": "XE MÁY · TAY GA", "rating": "4.9", "reviews": 66, "location": "Đà Nẵng", "price": "25.000đ", "image": "https://images.unsplash.com/photo-1609630875171-b1321377ee65?auto=format&fit=crop&w=700&q=80", "cc": "160cc", "year": "2024", "plate": "30I-789.01"}];
   var PAGE = window.__VRP_PAGE || "";
 
   function norm(v) { return String(v || "").replace(/\s+/g, " ").trim().toLowerCase(); }
@@ -670,7 +671,7 @@ window.showToast = function (msg) {
     } catch (e) { return null; }
   }
 
-  if (PAGE === "homepage.html") {
+  if (PAGE === "index.html") {
     document.querySelectorAll(".vehicles-grid .vehicle-card").forEach(function (card) {
       var h = card.querySelector("h3");
       if (!h) return;
@@ -743,16 +744,17 @@ window.showToast = function (msg) {
       specs[3].textContent = c.plate;
     }
     var rate = Number(String(c.price).replace(/[^0-9]/g, "")) || 0;
-    var rent2 = rate * 2;
-    var fee = Math.round(rent2 * 0.05);
+    var rentHours = 4;
+    var rentTotal = rate * rentHours;
+    var fee = Math.round(rentTotal * 0.05);
     var ins = 30000;
-    var sub = rent2 + fee + ins;
+    var sub = rentTotal + fee + ins;
     var deposit = Math.round(sub * 0.3);
     var big = document.querySelector(".price-big");
     if (big) big.textContent = c.price;
     var lines = document.querySelectorAll(".cost-line strong");
     if (lines.length >= 4) {
-      lines[0].textContent = money(rent2);
+      lines[0].textContent = money(rentTotal);
       lines[1].textContent = money(fee);
       lines[2].textContent = money(ins);
       lines[3].textContent = money(deposit);

@@ -21,13 +21,13 @@
 (function () {
   var PAGE = "vehicle-search.html";
   var QUERY = window.location.search;
-  var KEYS = ["homepage.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
+  var KEYS = ["index.html","sprint-review-report.html","customer-account.html","weekly-vehicle-schedule.html","customer-homepage.html","deposit-payment.html","electronic-receipt.html","complaint-handling.html","create-rental-order.html","faq.html","help-center.html","how-it-works.html","login-register.html","my-orders.html","login-register.html","rental-policy.html","customer-review.html","vehicle-detail.html","vehicle-search.html","store-dashboard.html","store-homepage.html","vehicle-inventory.html","store-rental-orders.html","revenue.html","store-rental-schedule.html","fleet-management.html","store-operations.html","layout-navigation.html","brand-login-register.html","store-registration.html","ui-kit.html","customer-info.html"];
   window.__VRP_PAGE = PAGE;
   window.__VRP_QUERY = QUERY;
 
   function norm(path) {
-    if (!path) return "homepage.html";
-    if (path.slice(-1) === "/") path += "homepage.html";
+    if (!path) return "index.html";
+    if (path.slice(-1) === "/") path += "index.html";
     return path.replace(/^\/+/, "");
   }
 
@@ -54,7 +54,7 @@
        never gets stuck. Keep the animation, just finish the navigation. */
     if (window.parent === window) {
       var __t = String(href), __b = __t.split(/[?#]/)[0];
-      if (__b === "index.html" && !/index\.html$/i.test(location.pathname)) __t = "homepage.html" + __t.slice(__b.length);
+      if (__b === "homepage.html") __t = "index.html" + __t.slice(__b.length);
       else if (__b === "receipt.html") __t = "electronic-receipt.html" + __t.slice(__b.length);
       else if (__b === "account.html") __t = "customer-account.html" + __t.slice(__b.length);
       else if (__b === "booking.html") __t = "create-rental-order.html" + __t.slice(__b.length);
@@ -525,8 +525,8 @@ window.showToast = function (msg) {
 
   // "Cửa hàng" đã bị bỏ khỏi HTML của trang khách; chỉ chèn lại khi có quyền.
   const navList = document.querySelector(".nav-list");
-  if (canStore && navList && !navList.querySelector('a[href*="store/"]')) {
-    const homeLink = navList.querySelector('a[href$="homepage.html"]');
+  if (canStore && navList && !navList.querySelector('a[href*="store-dashboard"], a[href*="store-homepage"], a[href*="store/"]')) {
+    const homeLink = navList.querySelector('a[href$="index.html"]');
     const prefix = homeLink ? homeLink.getAttribute("href").replace(/index\.html$/, "") : "";
     const li = document.createElement("li");
     li.innerHTML = '<a href="' + prefix + 'store-dashboard.html">Cửa hàng</a>';
@@ -560,8 +560,8 @@ window.showToast = function (msg) {
       rating: 5.0,
       trips: 1,
       location: "Hải Châu, Đà Nẵng",
-      price: "150K",
-      period: "/ngày",
+      price: "20K",
+      period: "/giờ",
       owner: "Hoàng Long",
       ownerAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120",
       image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=600",
@@ -577,8 +577,8 @@ window.showToast = function (msg) {
       rating: 4.9,
       trips: 12,
       location: "Mỹ Khê, Đà Nẵng",
-      price: "160K",
-      period: "/ngày",
+      price: "20K",
+      period: "/giờ",
       owner: "Minh Thư",
       ownerAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120",
       image: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=600",
@@ -594,8 +594,8 @@ window.showToast = function (msg) {
       rating: 5.0,
       trips: 40,
       location: "Hải Châu, Đà Nẵng",
-      price: "1.350K",
-      period: "/ngày",
+      price: "150K",
+      period: "/giờ",
       owner: "Đức Mạnh",
       ownerAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=120",
       image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600",
@@ -709,7 +709,7 @@ window.showToast = function (msg) {
       trips: 0,
       location: location.replace(/^★\s*/, "").trim(),
       price: priceNumber ? Math.round(priceNumber / 1000) + "K" : priceText,
-      period: "/ngày",
+      period: "/giờ",
       owner: "VRP-GO",
       ownerAvatar: DEFAULT_AVATAR,
       image: card.querySelector("img") ? card.querySelector("img").src : "",
@@ -890,9 +890,9 @@ window.showToast = function (msg) {
 
       if (types.length && types.indexOf(data.type) === -1) match = false;
       if (brands.length && brands.indexOf(data.brand) === -1) match = false;
-      if (price === "under-200" && data.price >= 200000) match = false;
-      if (price === "mid-300" && (data.price < 150000 || data.price > 300000)) match = false;
-      if (price === "over-300" && data.price <= 300000) match = false;
+      if (price === "under-25" && data.price >= 25000) match = false;
+      if (price === "mid-35" && (data.price < 25000 || data.price > 35000)) match = false;
+      if (price === "over-35" && data.price <= 35000) match = false;
 
       card.hidden = !match;
     });
@@ -911,7 +911,7 @@ window.showToast = function (msg) {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "homepage.html": "homepage.html",
+        "index.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -946,7 +946,8 @@ window.showToast = function (msg) {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "homepage.html": "homepage.html",
+    "index.html": "index.html",
+    "homepage.html": "index.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "vehicle-search.html";
@@ -965,8 +966,8 @@ window.showToast = function (msg) {
     });
 
     function norm(path) {
-        if (!path) return "homepage.html";
-        if (path.slice(-1) === "/") path += "homepage.html";
+        if (!path) return "index.html";
+        if (path.slice(-1) === "/") path += "index.html";
         return path.replace(/^\/+/, "");
     }
 
@@ -1032,7 +1033,7 @@ window.showToast = function (msg) {
     } catch (e) { return null; }
   }
 
-  if (PAGE === "homepage.html") {
+  if (PAGE === "index.html") {
     document.querySelectorAll(".vehicles-grid .vehicle-card").forEach(function (card) {
       var h = card.querySelector("h3");
       if (!h) return;

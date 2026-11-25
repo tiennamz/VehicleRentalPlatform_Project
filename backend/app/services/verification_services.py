@@ -6,6 +6,7 @@ from app.models.drivers_license import DriverLicense
 from app.models.verifiable_information import VerifiableInformation
 from app.schemas.verification_schemas import ReviewKYCRequestSchema, ReviewActionEnum
 from app.services.audit_log_services import record_personal_data_access, get_current_utc_time
+from app.utils.cloudinary_helper import build_viewable_kyc_url
 
 def get_customer_kyc_details(
     db: Session,
@@ -48,6 +49,8 @@ def get_customer_kyc_details(
             "license_class": license_record.license_class,
             "issue_date": license_record.issue_date.isoformat() if license_record.issue_date else None,
             "expiry_date": license_record.expiry_date.isoformat() if license_record.expiry_date else None,
+            "img_license_front": build_viewable_kyc_url(getattr(license_record, "img_license_front", None)),
+            "img_license_back": build_viewable_kyc_url(getattr(license_record, "img_license_back", None)),
             "verification_status": license_record.verification_status,
             "rejected_reason": license_record.rejected_reason,
             "verified_at": license_record.verified_at.isoformat() if license_record.verified_at else None,
@@ -58,8 +61,8 @@ def get_customer_kyc_details(
     if id_card_record:
         id_card_data = {
             "information_id": id_card_record.information_id,
-            "img_id_card_before": id_card_record.img_id_card_before,
-            "img_id_card_after": id_card_record.img_id_card_after,
+            "img_id_card_before": build_viewable_kyc_url(id_card_record.img_id_card_before),
+            "img_id_card_after": build_viewable_kyc_url(id_card_record.img_id_card_after),
             "status": id_card_record.status,
             "rejected_reason": id_card_record.rejected_reason,
             "verified_at": id_card_record.verified_at.isoformat() if id_card_record.verified_at else None,
