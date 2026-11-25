@@ -41,7 +41,15 @@ DELIVERY_METHOD_ALIASES = {
 }
 
 DAILY_PRICE_TYPES = {"DAILY", "DAY", "NGÀY", "THEO NGÀY"}
-INACTIVE_ORDER_STATUSES = {"Đã hủy", "Hoàn thành", "Cancelled", "Completed"}
+INACTIVE_ORDER_STATUSES = {
+    "Đã hủy",
+    "Hoàn thành",
+    "Cửa hàng từ chối",
+    "Từ chối",
+    "Cancelled",
+    "Completed",
+    "Rejected",
+}
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

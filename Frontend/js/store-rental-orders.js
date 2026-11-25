@@ -873,3 +873,407 @@ window.showToast = function (msg) {
     window.location.href = encodeURI('login-register.html');
   });
 })();
+
+/* ---- TF14679: Xác nhận / Từ chối đơn trong 15 phút & tự động chuyển VHV xử lý ---- */
+(function () {
+  var API_BASE = "http://127.0.0.1:8000";
+  var PENDING_STATUSES = ["Chờ XN", "Chờ cửa hàng xác nhận", "Chờ thanh toán", "Đã đặt cọc"];
+  var STATUS_CONFIRMED = "Đã xác nhận";
+  var STATUS_REJECTED = "Cửa hàng từ chối";
+  var STATUS_ESCALATED = "Chờ vận hành viên xử lý";
+
+  var tbody = document.querySelector(".order-table tbody");
+  var tabsWrap = document.getElementById("orderStatusTabs");
+  var modal = document.getElementById("rejectOrderModal");
+  var modalClose = document.getElementById("rejectModalClose");
+  var modalCancel = document.getElementById("rejectCancelBtn");
+  var modalSubmit = document.getElementById("rejectSubmitBtn");
+  var modalOrderInfo = document.getElementById("rejectModalOrderInfo");
+  var reasonInput = document.getElementById("rejectReasonInput");
+  var rejectError = document.getElementById("rejectErrorMsg");
+  if (!tbody) return;
+
+  var activeTab = "all";
+  var activeRejectOrder = null;
+  var ordersState = [];
+
+  /* Escape ký tự HTML đặc biệt để tránh XSS khi render chuỗi vào bảng */
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* Hiển thị thông báo nhanh (toast) nếu trang có sẵn helper showToast */
+  function toast(msg) {
+    if (window.showToast) window.showToast(msg);
+  }
+
+  /* Đổi chuỗi đếm ngược dạng MM:SS sang tổng số giây (mặc định 15 phút) */
+  function parseMmSsToSeconds(str) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(str || "").trim());
+    if (!m) return 15 * 60;
+    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  }
+
+  /* Định dạng số giây còn lại thành chuỗi MM:SS để hiển thị trên badge */
+  function formatMmSs(totalSeconds) {
+    var sec = Math.max(0, Math.floor(totalSeconds));
+    var m = String(Math.floor(sec / 60)).padStart(2, "0");
+    var s = String(sec % 60).padStart(2, "0");
+    return m + ":" + s;
+  }
+
+  /* Định dạng khoảng thời gian nhận - trả xe từ ISO string sang dạng dd–dd/mm */
+  function formatRangeFromIso(startIso, endIso) {
+    if (!startIso || !endIso) return "—";
+    var s = new Date(startIso);
+    var e = new Date(endIso);
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return "—";
+    var d1 = String(s.getDate()).padStart(2, "0");
+    var m1 = String(s.getMonth() + 1).padStart(2, "0");
+    var d2 = String(e.getDate()).padStart(2, "0");
+    var m2 = String(e.getMonth() + 1).padStart(2, "0");
+    return m1 === m2 ? (d1 + "–" + d2 + "/" + m2) : (d1 + "/" + m1 + "–" + d2 + "/" + m2);
+  }
+
+  /* Ánh xạ trạng thái tiếng Việt của đơn về đúng nhóm tab lọc trên giao diện */
+  function getTabBucket(status) {
+    if (PENDING_STATUSES.indexOf(status) !== -1) return "pending";
+    if (status === STATUS_ESCALATED) return "escalated";
+    if (status === STATUS_CONFIRMED) return "confirmed";
+    if (status === "Đang thuê") return "renting";
+    if (status === "Hoàn tất" || status === "Hoàn thành") return "done";
+    if (status === STATUS_REJECTED || status === "Từ chối") return "rejected";
+    return "all";
+  }
+
+  /* Chuẩn hóa dữ liệu demo cục bộ (dùng khi chạy Frontend độc lập không bật Backend) */
+  function normalizeDemoOrders() {
+    var now = Date.now();
+    return (window.VRP_ORDERS || []).map(function (o) {
+      var isPending = PENDING_STATUSES.indexOf(o.status) !== -1;
+      var deadlineMs = o.deadlineMs || (isPending ? now + parseMmSsToSeconds(o.hour) * 1000 : null);
+      return {
+        order_id: o.order_id || null,
+        code: o.id || ("ORD-" + (o.order_id || "0000")),
+        customer: o.customer || "Khách thuê",
+        phone: o.phone || "",
+        vehicle: o.vehicle || "Xe thuê",
+        range: o.range || "—",
+        status: o.status || "Chờ XN",
+        deadlineMs: deadlineMs,
+        rejection_reason: o.rejection_reason || (o.status === "Từ chối" ? o.note : ""),
+        note: o.note || "",
+        fromApi: false
+      };
+    });
+  }
+
+  /* Chuẩn hóa dữ liệu trả về từ API GET /stores/orders về cùng cấu trúc hiển thị */
+  function normalizeApiOrders(rows) {
+    var now = Date.now();
+    return (rows || []).map(function (o) {
+      var isPending = PENDING_STATUSES.indexOf(o.order_status) !== -1;
+      var deadlineMs = isPending ? (now + (Number(o.remaining_seconds) || 0) * 1000) : null;
+      return {
+        order_id: o.order_id,
+        code: o.order_code || ("ORD-" + o.order_id),
+        customer: o.renter_name || ("Khách #" + o.renter_id),
+        phone: o.renter_phone || "",
+        vehicle: o.vehicle_name || ("Xe #" + o.vehicle_id),
+        range: formatRangeFromIso(o.start_time, o.end_time),
+        status: o.order_status,
+        deadlineMs: deadlineMs,
+        rejection_reason: o.rejection_reason || "",
+        note: o.note || "",
+        fromApi: true
+      };
+    });
+  }
+
+  /* Cập nhật số lượng đơn trên từng tab trạng thái (Tất cả, Chờ XN, Chờ VHV xử lý...) */
+  function updateTabCounts() {
+    if (!tabsWrap) return;
+    var counts = { all: ordersState.length, pending: 0, escalated: 0, confirmed: 0, renting: 0, done: 0, rejected: 0 };
+    ordersState.forEach(function (o) {
+      var b = getTabBucket(o.status);
+      if (counts[b] != null) counts[b]++;
+    });
+    var labels = {
+      all: "Tất cả",
+      pending: "Chờ XN",
+      escalated: "Chờ VHV xử lý",
+      confirmed: "Đã xác nhận",
+      renting: "Đang thuê",
+      done: "Hoàn tất",
+      rejected: "Từ chối"
+    };
+    tabsWrap.querySelectorAll(".tab[data-tab]").forEach(function (btn) {
+      var key = btn.getAttribute("data-tab");
+      btn.textContent = (labels[key] || key) + " (" + (counts[key] || 0) + ")";
+      btn.classList.toggle("active", key === activeTab);
+    });
+  }
+
+  function renderStatusCell(order) {
+    var bucket = getTabBucket(order.status);
+    if (bucket === "pending") {
+      var rem = order.deadlineMs ? Math.max(0, Math.ceil((order.deadlineMs - Date.now()) / 1000)) : 0;
+      var urgentCls = rem <= 180 ? " badge-sla-urgent" : "";
+      return '<span class="badge badge-open' + urgentCls + '" data-sla-code="' + esc(order.code) + '">Chờ XN · ' + formatMmSs(rem) + "</span>";
+    }
+    if (bucket === "escalated") {
+      return '<span class="badge badge-escalated">Chờ vận hành viên xử lý</span><span class="reject-reason-note">Quá hạn 15 phút xác nhận</span>';
+    }
+    if (bucket === "confirmed") {
+      return '<span class="badge badge-confirmed">Đã xác nhận</span>';
+    }
+    if (bucket === "renting") {
+      return '<span class="badge badge-progress">Đang thuê</span>';
+    }
+    if (bucket === "done") {
+      return '<span class="badge badge-done">Hoàn tất</span>';
+    }
+    return '<span class="badge badge-rejected">' + esc(order.status) + "</span>" +
+      (order.rejection_reason ? '<span class="reject-reason-note">Lý do: ' + esc(order.rejection_reason) + "</span>" : "");
+  }
+
+  function renderActionCell(order) {
+    var bucket = getTabBucket(order.status);
+    var scheduleLink = '<a class="vrp-row-link" href="store-rental-schedule.html?xe=' + encodeURIComponent(order.vehicle) + '&order=' + encodeURIComponent(order.code) + '">Xem lịch</a>';
+    if (bucket === "pending") {
+      return '<div class="order-actions">' +
+        '<button type="button" class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="confirm" data-code="' + esc(order.code) + '">Xác nhận</button>' +
+        '<button type="button" class="btn-reject-sm" data-action="reject" data-code="' + esc(order.code) + '">Từ chối</button>' +
+        scheduleLink +
+      "</div>";
+    }
+    return '<div class="order-actions">' + scheduleLink + "</div>";
+  }
+
+  function renderTable() {
+    updateTabCounts();
+    var filtered = ordersState.filter(function (o) {
+      return activeTab === "all" || getTabBucket(o.status) === activeTab;
+    });
+    tbody.innerHTML = filtered.map(function (o) {
+      return '<tr data-order-code="' + esc(o.code) + '">' +
+        "<td><strong>" + esc(o.code) + "</strong></td>" +
+        "<td>" + esc(o.customer) + (o.phone ? '<br><small style="color:var(--muted)">' + esc(o.phone) + "</small>" : "") + "</td>" +
+        "<td>" + esc(o.vehicle) + "</td>" +
+        "<td>" + esc(o.range) + "</td>" +
+        "<td>" + renderStatusCell(o) + "</td>" +
+        "<td>" + renderActionCell(o) + "</td>" +
+      "</tr>";
+    }).join("");
+    if (window.VRPDataState) window.VRPDataState.refresh("[data-data-area]");
+  }
+
+  function getOwnerHeaders() {
+    var headers = { "Content-Type": "application/json" };
+    if (window.VRPAuth && window.VRPAuth.userId) {
+      headers["X-User-Id"] = String(window.VRPAuth.userId);
+    }
+    return headers;
+  }
+
+  /* Xử lý khi cửa hàng bấm "Xác nhận": kiểm tra quá hạn 15 phút và gọi API xác nhận */
+  async function handleConfirm(order) {
+    if (!order) return;
+    if (order.deadlineMs && Date.now() >= order.deadlineMs) {
+      order.status = STATUS_ESCALATED;
+      order.deadlineMs = null;
+      toast("Đơn " + order.code + " đã quá hạn 15 phút — đã chuyển sang Chờ vận hành viên xử lý.");
+      renderTable();
+      return;
+    }
+
+    if (order.fromApi && order.order_id) {
+      try {
+        var res = await fetch(API_BASE + "/stores/orders/" + order.order_id + "/confirm", {
+          method: "POST",
+          headers: getOwnerHeaders(),
+          body: JSON.stringify({})
+        });
+        var payload = await res.json().catch(function () { return {}; });
+        if (res.status === 409) {
+          order.status = STATUS_ESCALATED;
+          order.deadlineMs = null;
+          toast(payload.detail || "Đơn đã quá hạn 15 phút và chuyển sang Chờ vận hành viên xử lý.");
+          renderTable();
+          return;
+        }
+        if (!res.ok) {
+          toast(payload.detail || "Không thể xác nhận đơn.");
+          return;
+        }
+      } catch (err) {
+        // Offline fallback below
+      }
+    }
+
+    order.status = STATUS_CONFIRMED;
+    order.deadlineMs = null;
+    toast("Đã xác nhận đơn " + order.code + " thành công.");
+    renderTable();
+  }
+
+  /* Mở modal yêu cầu cửa hàng nhập lý do trước khi từ chối đơn thuê */
+  function openRejectModal(order) {
+    if (!modal || !order) return;
+    activeRejectOrder = order;
+    if (modalOrderInfo) {
+      modalOrderInfo.textContent = "Đơn " + order.code + " · " + order.vehicle + " (" + order.customer + "). Vui lòng nhập lý do từ chối:";
+    }
+    if (reasonInput) reasonInput.value = "";
+    if (rejectError) { rejectError.hidden = true; rejectError.textContent = ""; }
+    modal.hidden = false;
+    if (reasonInput) reasonInput.focus();
+  }
+
+  function closeRejectModal() {
+    if (modal) modal.hidden = true;
+    activeRejectOrder = null;
+  }
+
+  /* Xác nhận từ chối đơn: kiểm tra lý do >= 3 ký tự, kiểm tra SLA 15 phút và gọi API từ chối */
+  async function submitReject() {
+    if (!activeRejectOrder) return;
+    var reason = (reasonInput ? reasonInput.value : "").trim();
+    if (reason.length < 3) {
+      if (rejectError) {
+        rejectError.hidden = false;
+        rejectError.textContent = "Vui lòng nhập lý do từ chối (tối thiểu 3 ký tự).";
+      }
+      return;
+    }
+
+    var order = activeRejectOrder;
+    if (order.deadlineMs && Date.now() >= order.deadlineMs) {
+      order.status = STATUS_ESCALATED;
+      order.deadlineMs = null;
+      closeRejectModal();
+      toast("Đơn " + order.code + " đã quá hạn 15 phút — đã chuyển sang Chờ vận hành viên xử lý.");
+      renderTable();
+      return;
+    }
+
+    if (order.fromApi && order.order_id) {
+      try {
+        var res = await fetch(API_BASE + "/stores/orders/" + order.order_id + "/reject", {
+          method: "POST",
+          headers: getOwnerHeaders(),
+          body: JSON.stringify({ rejection_reason: reason })
+        });
+        var payload = await res.json().catch(function () { return {}; });
+        if (res.status === 409) {
+          order.status = STATUS_ESCALATED;
+          order.deadlineMs = null;
+          closeRejectModal();
+          toast(payload.detail || "Đơn đã quá hạn 15 phút và chuyển sang Chờ vận hành viên xử lý.");
+          renderTable();
+          return;
+        }
+        if (!res.ok) {
+          if (rejectError) {
+            rejectError.hidden = false;
+            rejectError.textContent = payload.detail || "Không thể từ chối đơn.";
+          }
+          return;
+        }
+      } catch (err) {
+        // Offline fallback below
+      }
+    }
+
+    order.status = STATUS_REJECTED;
+    order.rejection_reason = reason;
+    order.deadlineMs = null;
+    closeRejectModal();
+    toast("Đã từ chối đơn " + order.code + " với lý do: " + reason);
+    renderTable();
+  }
+
+  if (tabsWrap) {
+    tabsWrap.addEventListener("click", function (e) {
+      var btn = e.target.closest(".tab[data-tab]");
+      if (!btn) return;
+      activeTab = btn.getAttribute("data-tab") || "all";
+      renderTable();
+    });
+  }
+
+  tbody.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    var code = btn.getAttribute("data-code");
+    var order = ordersState.find(function (o) { return o.code === code; });
+    if (!order) return;
+    if (btn.getAttribute("data-action") === "confirm") handleConfirm(order);
+    if (btn.getAttribute("data-action") === "reject") openRejectModal(order);
+  });
+
+  if (modalClose) modalClose.addEventListener("click", closeRejectModal);
+  if (modalCancel) modalCancel.addEventListener("click", closeRejectModal);
+  if (modalSubmit) modalSubmit.addEventListener("click", submitReject);
+  if (modal) {
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) closeRejectModal();
+    });
+  }
+  document.querySelectorAll("#rejectReasonChips .reason-chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      if (reasonInput) reasonInput.value = chip.getAttribute("data-reason") || "";
+      if (rejectError) rejectError.hidden = true;
+    });
+  });
+
+  // Live 1-second SLA ticker: auto-escalate any order hitting 00:00
+  setInterval(function () {
+    var changed = false;
+    var now = Date.now();
+    ordersState.forEach(function (o) {
+      if (getTabBucket(o.status) !== "pending" || !o.deadlineMs) return;
+      var rem = Math.ceil((o.deadlineMs - now) / 1000);
+      if (rem <= 0) {
+        o.status = STATUS_ESCALATED;
+        o.deadlineMs = null;
+        changed = true;
+        toast("Đơn " + o.code + " đã quá hạn 15 phút — tự động chuyển sang Chờ vận hành viên xử lý.");
+      } else {
+        var badge = tbody.querySelector('[data-sla-code="' + o.code + '"]');
+        if (badge) {
+          badge.textContent = "Chờ XN · " + formatMmSs(rem);
+          badge.classList.toggle("badge-sla-urgent", rem <= 180);
+        }
+      }
+    });
+    if (changed) renderTable();
+  }, 1000);
+
+  async function initOrders() {
+    ordersState = normalizeDemoOrders();
+    renderTable();
+    var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, 2000) : null;
+    try {
+      var res = await fetch(API_BASE + "/stores/orders", {
+        headers: getOwnerHeaders(),
+        signal: controller ? controller.signal : undefined
+      });
+      if (!res.ok) return;
+      var payload = await res.json();
+      if (payload && Array.isArray(payload.data) && payload.data.length > 0) {
+        ordersState = normalizeApiOrders(payload.data);
+        renderTable();
+      }
+    } catch (err) {
+      // Keep demo orders seamlessly when backend is offline
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  initOrders();
+})();

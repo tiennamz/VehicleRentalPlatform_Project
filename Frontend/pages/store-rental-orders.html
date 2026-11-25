@@ -122,14 +122,16 @@
   <main class="store-main">
     <div class="page-head">
       <h1>Đơn thuê</h1>
-      <p>Danh sách đơn theo trạng thái — xác nhận trong 15 phút.</p>
+      <p>Danh sách đơn theo trạng thái — cửa hàng có <strong>15 phút</strong> để xác nhận hoặc từ chối kèm lý do; quá hạn tự động chuyển sang <strong>Chờ vận hành viên xử lý</strong>.</p>
     </div>
-    <div class="tabs">
-      <button class="tab active">Tất cả (12)</button>
-      <button class="tab">Chờ XN (3)</button>
-      <button class="tab">Đang thuê (4)</button>
-      <button class="tab">Hoàn tất (4)</button>
-      <button class="tab">Từ chối (1)</button>
+    <div class="tabs" id="orderStatusTabs">
+      <button type="button" class="tab active" data-tab="all">Tất cả (12)</button>
+      <button type="button" class="tab" data-tab="pending">Chờ XN (3)</button>
+      <button type="button" class="tab" data-tab="escalated">Chờ VHV xử lý (0)</button>
+      <button type="button" class="tab" data-tab="confirmed">Đã xác nhận (0)</button>
+      <button type="button" class="tab" data-tab="renting">Đang thuê (4)</button>
+      <button type="button" class="tab" data-tab="done">Hoàn tất (4)</button>
+      <button type="button" class="tab" data-tab="rejected">Từ chối (1)</button>
     </div>
     <div class="card" style="padding:0;overflow:hidden"
       data-data-area data-skeleton="rows" data-skeleton-count="5"
@@ -252,6 +254,27 @@
   </div>
   <footer class="vrp-footer"><div class="vrp-footer-inner"><span>© 2026 VRP/Go</span></div></footer>
 
-
+  <!-- Modal từ chối đơn thuê kèm lý do (TF14679) -->
+  <div class="vrp-modal-overlay" id="rejectOrderModal" hidden role="dialog" aria-modal="true" aria-labelledby="rejectModalTitle">
+    <div class="vrp-modal-card">
+      <div class="vrp-modal-head">
+        <h3 id="rejectModalTitle">Từ chối đơn thuê</h3>
+        <button type="button" class="vrp-modal-close" id="rejectModalClose" aria-label="Đóng">✕</button>
+      </div>
+      <p class="vrp-modal-sub" id="rejectModalOrderInfo">Vui lòng nhập lý do từ chối đơn thuê (tối thiểu 3 ký tự).</p>
+      <div class="reason-chips" id="rejectReasonChips">
+        <button type="button" class="reason-chip" data-reason="Xe đang bảo trì kỹ thuật đột xuất">Xe đang bảo trì đột xuất</button>
+        <button type="button" class="reason-chip" data-reason="Trùng lịch thuê trực tiếp tại cửa hàng">Trùng lịch tại cửa hàng</button>
+        <button type="button" class="reason-chip" data-reason="Địa chỉ giao xe ngoài phạm vi phục vụ của cửa hàng">Ngoài phạm vi giao xe</button>
+      </div>
+      <label class="vrp-modal-label" for="rejectReasonInput">Lý do từ chối <span style="color:#dc2626">*</span></label>
+      <textarea id="rejectReasonInput" rows="3" maxlength="500" placeholder="Nhập lý do cụ thể gửi tới khách hàng..."></textarea>
+      <div class="vrp-modal-error" id="rejectErrorMsg" hidden></div>
+      <div class="vrp-modal-actions">
+        <button type="button" class="btn btn-outline" id="rejectCancelBtn">Hủy</button>
+        <button type="button" class="btn btn-danger-solid" id="rejectSubmitBtn">Xác nhận từ chối</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

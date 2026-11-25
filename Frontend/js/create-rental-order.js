@@ -549,16 +549,34 @@ window.showToast = function (msg) {
   var DEFAULT_IMG = "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=85";
   var DEFAULT_DELIVERY = { baseFee: 30000, feePerKm: 10000, maxRadiusKm: 15 };
 
-  // 10-minute hold countdown
+  // Đồng hồ đếm ngược giữ chỗ tạm thời (hết giờ sẽ khóa nút Tạo đơn thuê)
   var sec = 10 * 60;
+  var isHoldExpired = false;
   var el = document.getElementById("countdown");
   var bar = document.getElementById("hold-bar");
   var totalSec = sec;
+
+  function lockOrderOnHoldExpired() {
+    isHoldExpired = true;
+    if (el) el.textContent = "00:00";
+    if (bar) bar.style.width = "0%";
+    var payBtn = document.getElementById("btn-pay");
+    if (payBtn) {
+      payBtn.disabled = true;
+      payBtn.textContent = "Hết thời gian giữ chỗ — vui lòng chọn lại lịch";
+    }
+    var errBox = document.getElementById("orderErrorBox");
+    if (errBox) {
+      errBox.hidden = false;
+      errBox.textContent = "Đã hết thời gian giữ chỗ tạm thời. Vui lòng quay lại chọn lịch thuê mới để tạo đơn.";
+    }
+  }
+
   if (el && bar) {
-    setInterval(function () {
+    var holdTimerId = setInterval(function () {
       if (sec <= 0) {
-        el.textContent = "00:00";
-        bar.style.width = "0%";
+        clearInterval(holdTimerId);
+        lockOrderOnHoldExpired();
         return;
       }
       sec--;
@@ -566,6 +584,10 @@ window.showToast = function (msg) {
       var s = String(sec % 60).padStart(2, "0");
       el.textContent = m + ":" + s;
       bar.style.width = (sec / totalSec * 100) + "%";
+      if (sec <= 0) {
+        clearInterval(holdTimerId);
+        lockOrderOnHoldExpired();
+      }
     }, 1000);
   }
 
@@ -796,6 +818,10 @@ window.showToast = function (msg) {
         " → " +
         formatDisplayDateTime(state.endDate, state.endHour);
     }
+    if (isHoldExpired) {
+      lockOrderOnHoldExpired();
+      return;
+    }
     if (pricing.error) {
       showError(pricing.error);
       if (btnPayEl) btnPayEl.disabled = true;
@@ -894,6 +920,10 @@ window.showToast = function (msg) {
 
   if (btnPayEl) {
     btnPayEl.addEventListener("click", async function () {
+      if (isHoldExpired) {
+        lockOrderOnHoldExpired();
+        return;
+      }
       var state = readFormState();
       var localCheck = calculateLocalPricing(state);
       if (localCheck.error) {
