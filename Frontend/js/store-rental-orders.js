@@ -879,8 +879,27 @@ window.showToast = function (msg) {
   var API_BASE = "http://127.0.0.1:8000";
   var PENDING_STATUSES = ["Chờ XN", "Chờ cửa hàng xác nhận", "Chờ thanh toán", "Đã đặt cọc"];
   var STATUS_CONFIRMED = "Đã xác nhận";
+  var STATUS_RENTING = "Đang thuê";
   var STATUS_REJECTED = "Cửa hàng từ chối";
   var STATUS_ESCALATED = "Chờ vận hành viên xử lý";
+  var HANDOVER_STORE_KEY = "vrpDualHandover";
+
+  /* Đọc/lưu trạng thái xác nhận bàn giao 2 chiều cục bộ để đồng bộ demo giữa NV & Khách */
+  function readLocalHandover(code) {
+    try {
+      var map = JSON.parse(localStorage.getItem(HANDOVER_STORE_KEY) || "{}");
+      return map[code] || { staff_confirmed: false, customer_confirmed: false };
+    } catch (e) {
+      return { staff_confirmed: false, customer_confirmed: false };
+    }
+  }
+  function saveLocalHandover(code, state) {
+    try {
+      var map = JSON.parse(localStorage.getItem(HANDOVER_STORE_KEY) || "{}");
+      map[code] = state;
+      localStorage.setItem(HANDOVER_STORE_KEY, JSON.stringify(map));
+    } catch (e) { /* no-op */ }
+  }
 
   var tbody = document.querySelector(".order-table tbody");
   var tabsWrap = document.getElementById("orderStatusTabs");
@@ -1027,7 +1046,11 @@ window.showToast = function (msg) {
       return '<span class="badge badge-escalated">Chờ vận hành viên xử lý</span><span class="reject-reason-note">Quá hạn 15 phút xác nhận</span>';
     }
     if (bucket === "confirmed") {
-      return '<span class="badge badge-confirmed">Đã xác nhận</span>';
+      var ho = readLocalHandover(order.code);
+      var sTxt = (order.staff_confirmed || ho.staff_confirmed) ? "NV ✓" : "NV ○";
+      var cTxt = (order.customer_confirmed || ho.customer_confirmed) ? "Khách ✓" : "Khách ○";
+      return '<span class="badge badge-confirmed">Đã xác nhận</span>' +
+        '<span class="reject-reason-note">Bàn giao 2 chiều: ' + sTxt + " · " + cTxt + "</span>";
     }
     if (bucket === "renting") {
       return '<span class="badge badge-progress">Đang thuê</span>';
@@ -1046,6 +1069,16 @@ window.showToast = function (msg) {
       return '<div class="order-actions">' +
         '<button type="button" class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="confirm" data-code="' + esc(order.code) + '">Xác nhận</button>' +
         '<button type="button" class="btn-reject-sm" data-action="reject" data-code="' + esc(order.code) + '">Từ chối</button>' +
+        scheduleLink +
+      "</div>";
+    }
+    if (bucket === "confirmed") {
+      var hoAct = readLocalHandover(order.code);
+      var staffDone = !!(order.staff_confirmed || hoAct.staff_confirmed);
+      return '<div class="order-actions">' +
+        '<button type="button" class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="staff-handover" data-code="' + esc(order.code) + '"' + (staffDone ? " disabled" : "") + '>' +
+          (staffDone ? "NV đã XN · Chờ khách" : "NV xác nhận giao xe") +
+        "</button>" +
         scheduleLink +
       "</div>";
     }
@@ -1212,7 +1245,47 @@ window.showToast = function (msg) {
     if (!order) return;
     if (btn.getAttribute("data-action") === "confirm") handleConfirm(order);
     if (btn.getAttribute("data-action") === "reject") openRejectModal(order);
+    if (btn.getAttribute("data-action") === "staff-handover") handleStaffHandover(order);
   });
+
+  /* TF148C7: Nhân viên xác nhận bàn giao xe (chỉ sang Đang thuê khi Khách cũng đã xác nhận) */
+  async function handleStaffHandover(order) {
+    if (!order) return;
+    if (order.fromApi && order.order_id) {
+      try {
+        var res = await fetch(API_BASE + "/orders/" + order.order_id + "/handover/staff-confirm", {
+          method: "POST",
+          headers: getOwnerHeaders(),
+          body: JSON.stringify({})
+        });
+        var payload = await res.json().catch(function () { return {}; });
+        if (!res.ok) {
+          toast(payload.detail || "Không thể xác nhận bàn giao xe.");
+          return;
+        }
+        var d = payload.data || {};
+        order.staff_confirmed = !!d.staff_confirmed;
+        order.customer_confirmed = !!d.customer_confirmed;
+        order.status = d.order_status || order.status;
+        toast(payload.message || (d.both_confirmed ? "Cả 2 bên đã xác nhận — đơn chuyển sang Đang thuê." : "Nhân viên đã xác nhận — đang chờ khách xác nhận."));
+        renderTable();
+        return;
+      } catch (err) { /* fallback offline bên dưới */ }
+    }
+
+    var localHo = readLocalHandover(order.code);
+    localHo.staff_confirmed = true;
+    saveLocalHandover(order.code, localHo);
+    order.staff_confirmed = true;
+    order.customer_confirmed = !!localHo.customer_confirmed;
+    if (order.staff_confirmed && order.customer_confirmed) {
+      order.status = STATUS_RENTING;
+      toast("Cả nhân viên và khách hàng đã xác nhận — đơn " + order.code + " chuyển sang Đang thuê.");
+    } else {
+      toast("Nhân viên đã xác nhận giao xe " + order.code + " — đang chờ khách hàng xác nhận để chuyển sang Đang thuê.");
+    }
+    renderTable();
+  }
 
   if (modalClose) modalClose.addEventListener("click", closeRejectModal);
   if (modalCancel) modalCancel.addEventListener("click", closeRejectModal);

@@ -643,6 +643,24 @@ window.showToast = function (msg) {
   var API_BASE = "http://127.0.0.1:8000";
   var HISTORY_STATUSES = ["Hoàn tất", "Hoàn thành", "Completed", "Đã hủy", "Cancelled", "Cửa hàng từ chối", "Từ chối"];
   var NON_CANCELLABLE = ["Đang thuê"].concat(HISTORY_STATUSES);
+  var HANDOVER_STORE_KEY = "vrpDualHandover";
+
+  /* Đọc/lưu trạng thái xác nhận bàn giao 2 chiều cục bộ để đồng bộ demo với phía Nhân viên */
+  function readLocalHandover(code) {
+    try {
+      var map = JSON.parse(localStorage.getItem(HANDOVER_STORE_KEY) || "{}");
+      return map[code] || { staff_confirmed: false, customer_confirmed: false };
+    } catch (e) {
+      return { staff_confirmed: false, customer_confirmed: false };
+    }
+  }
+  function saveLocalHandover(code, state) {
+    try {
+      var map = JSON.parse(localStorage.getItem(HANDOVER_STORE_KEY) || "{}");
+      map[code] = state;
+      localStorage.setItem(HANDOVER_STORE_KEY, JSON.stringify(map));
+    } catch (e) { /* no-op */ }
+  }
 
   var listEl = document.getElementById("myOrdersList");
   var tabsEl = document.getElementById("myOrderTabs");
@@ -842,7 +860,16 @@ window.showToast = function (msg) {
       var refundBadge = (o.order_status === "Đã hủy")
         ? '<span class="mo-refund-chip">Hoàn cọc BR-04: ' + Math.round(o.refund_rate || 0) + "% (" + formatVnd(o.refund_amount || 0) + ")</span>"
         : "";
+      var ho = readLocalHandover(o.order_code);
+      var custDone = !!(o.customer_confirmed || ho.customer_confirmed);
+      var staffDone = !!(o.staff_confirmed || ho.staff_confirmed);
+      var handoverInfo = (o.order_status === "Đã xác nhận")
+        ? '<span class="mo-refund-chip">Bàn giao 2 chiều: ' + (staffDone ? "NV ✓" : "NV ○") + " · " + (custDone ? "Khách ✓" : "Khách ○") + "</span>"
+        : "";
       var actions = '<div class="mo-actions">' +
+        (o.order_status === "Đã xác nhận"
+          ? '<button type="button" class="btn btn-primary" style="padding:7px 12px;font-size:12.5px" data-mo-action="customer-handover" data-code="' + esc(o.order_code) + '"' + (custDone ? " disabled" : "") + '>' + (custDone ? "Khách đã XN · Chờ NV" : "Xác nhận nhận xe") + "</button>"
+          : "") +
         '<button type="button" class="btn btn-outline" style="padding:7px 12px;font-size:12.5px" data-mo-action="history" data-code="' + esc(o.order_code) + '">Lịch sử</button>' +
         (canCancel ? '<button type="button" class="mo-btn-cancel-sm" data-mo-action="cancel" data-code="' + esc(o.order_code) + '">Hủy đơn</button>' : "") +
         (o.order_status === "Hoàn tất" || o.order_status === "Hoàn thành" ? '<a href="customer-review.html" class="btn btn-outline" style="padding:7px 12px;font-size:12.5px">Đánh giá</a>' : "") +
@@ -856,7 +883,7 @@ window.showToast = function (msg) {
             (o.start_time ? " · Nhận: " + formatDateTime(o.start_time) : "") +
             (o.city_name ? " · " + esc(o.city_name) : "") +
           "</p>" +
-          refundBadge +
+          refundBadge + handoverInfo +
         "</div>" +
         '<span class="badge ' + badgeClass(o.order_status) + '">' + esc(o.order_status) + "</span>" +
         '<strong style="color:var(--primary);min-width:96px;text-align:right">' + formatVnd(o.total_amount) + "</strong>" +
@@ -997,7 +1024,50 @@ window.showToast = function (msg) {
     if (!order) return;
     if (btn.getAttribute("data-mo-action") === "cancel") openCancelModal(order);
     if (btn.getAttribute("data-mo-action") === "history") openHistoryModal(order);
+    if (btn.getAttribute("data-mo-action") === "customer-handover") handleCustomerHandover(order);
   });
+
+  /* TF148C7: Khách hàng xác nhận nhận xe (chỉ chuyển sang Đang thuê khi Nhân viên cũng đã xác nhận) */
+  async function handleCustomerHandover(order) {
+    if (!order) return;
+    if (order.fromApi && order.order_id) {
+      try {
+        var res = await fetch(API_BASE + "/orders/" + order.order_id + "/handover/customer-confirm", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({})
+        });
+        var payload = await res.json().catch(function () { return {}; });
+        if (!res.ok) {
+          if (window.showToast) window.showToast(payload.detail || "Không thể xác nhận nhận xe.");
+          return;
+        }
+        var d = payload.data || {};
+        order.customer_confirmed = !!d.customer_confirmed;
+        order.staff_confirmed = !!d.staff_confirmed;
+        order.order_status = d.order_status || order.order_status;
+        if (window.showToast) {
+          window.showToast(payload.message || (d.both_confirmed ? "Cả 2 bên đã xác nhận — đơn chuyển sang Đang thuê." : "Bạn đã xác nhận — đang chờ nhân viên cửa hàng xác nhận."));
+        }
+        renderOrders();
+        return;
+      } catch (err) { /* fallback offline bên dưới */ }
+    }
+
+    var localHo = readLocalHandover(order.order_code);
+    localHo.customer_confirmed = true;
+    saveLocalHandover(order.order_code, localHo);
+    order.customer_confirmed = true;
+    order.staff_confirmed = !!localHo.staff_confirmed;
+    if (order.customer_confirmed && order.staff_confirmed) {
+      order.order_status = "Đang thuê";
+      order.can_cancel = false;
+      if (window.showToast) window.showToast("Cả khách hàng và nhân viên đã xác nhận — đơn " + order.order_code + " chuyển sang Đang thuê.");
+    } else {
+      if (window.showToast) window.showToast("Bạn đã xác nhận nhận xe " + order.order_code + " — đang chờ nhân viên cửa hàng xác nhận để chuyển sang Đang thuê.");
+    }
+    renderOrders();
+  }
 
   ["cancelModalClose", "cancelBackBtn"].forEach(function (id) {
     var b = document.getElementById(id);
