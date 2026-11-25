@@ -1,3 +1,8 @@
+"""
+Router API cho luồng cửa hàng xác nhận / từ chối đơn thuê trong 15 phút
+và chuyển đơn quá hạn sang vận hành viên xử lý (Task TF14679).
+"""
+
 from typing import Optional
 from fastapi import APIRouter, Body, Depends, Header, Query, Request, status
 from sqlalchemy.orm import Session
@@ -21,6 +26,7 @@ router = APIRouter(tags=["Store Order Confirmation SLA (TF14679)"])
 
 
 def _resolve_owner_id(x_user_id: Optional[int], body_owner_id: Optional[int]) -> Optional[int]:
+    """Ưu tiên lấy ID chủ cửa hàng từ header X-User-Id, nếu không có thì lấy từ body."""
     return x_user_id if x_user_id is not None else body_owner_id
 
 
@@ -33,6 +39,7 @@ def get_store_orders_endpoint(
     x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db),
 ):
+    """Lấy danh sách đơn thuê của cửa hàng kèm đồng hồ đếm ngược 15 phút (tự động chuyển đơn quá hạn)."""
     resolved_owner = owner_id if owner_id is not None else (x_user_id if store_id is None else None)
     data = list_store_orders(
         db=db,
@@ -51,6 +58,7 @@ def confirm_store_order_endpoint(
     x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db),
 ):
+    """Cửa hàng xác nhận đơn thuê trong thời hạn 15 phút (quá hạn sẽ tự động chuyển VHV và trả 409)."""
     owner_id = _resolve_owner_id(x_user_id, payload.owner_id if payload else None)
     order = confirm_store_order(db=db, order_id=order_id, owner_id=owner_id)
     return create_response(
@@ -69,6 +77,7 @@ def reject_store_order_endpoint(
     x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db),
 ):
+    """Cửa hàng từ chối đơn thuê trong hạn 15 phút, bắt buộc đính kèm lý do từ chối."""
     owner_id = _resolve_owner_id(x_user_id, payload.owner_id)
     order = reject_store_order(
         db=db,
@@ -89,6 +98,7 @@ def escalate_overdue_orders_endpoint(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    """Quét và chuyển toàn bộ đơn quá hạn 15 phút sang trạng thái 'Chờ vận hành viên xử lý'."""
     escalated = escalate_overdue_orders(db=db)
     data = {
         "escalated_count": len(escalated),
@@ -107,6 +117,7 @@ def get_escalated_orders_for_operator_endpoint(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    """Lấy danh sách các đơn quá hạn 15 phút đang chờ vận hành viên tiếp nhận xử lý."""
     data = list_escalated_orders_for_operator(db=db)
     return create_response(
         request,

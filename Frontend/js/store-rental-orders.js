@@ -897,22 +897,26 @@ window.showToast = function (msg) {
   var activeRejectOrder = null;
   var ordersState = [];
 
+  /* Escape ký tự HTML đặc biệt để tránh XSS khi render chuỗi vào bảng */
   function esc(v) {
     return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
 
+  /* Hiển thị thông báo nhanh (toast) nếu trang có sẵn helper showToast */
   function toast(msg) {
     if (window.showToast) window.showToast(msg);
   }
 
+  /* Đổi chuỗi đếm ngược dạng MM:SS sang tổng số giây (mặc định 15 phút) */
   function parseMmSsToSeconds(str) {
     var m = /^(\d{1,2}):(\d{2})$/.exec(String(str || "").trim());
     if (!m) return 15 * 60;
     return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
   }
 
+  /* Định dạng số giây còn lại thành chuỗi MM:SS để hiển thị trên badge */
   function formatMmSs(totalSeconds) {
     var sec = Math.max(0, Math.floor(totalSeconds));
     var m = String(Math.floor(sec / 60)).padStart(2, "0");
@@ -920,6 +924,7 @@ window.showToast = function (msg) {
     return m + ":" + s;
   }
 
+  /* Định dạng khoảng thời gian nhận - trả xe từ ISO string sang dạng dd–dd/mm */
   function formatRangeFromIso(startIso, endIso) {
     if (!startIso || !endIso) return "—";
     var s = new Date(startIso);
@@ -932,6 +937,7 @@ window.showToast = function (msg) {
     return m1 === m2 ? (d1 + "–" + d2 + "/" + m2) : (d1 + "/" + m1 + "–" + d2 + "/" + m2);
   }
 
+  /* Ánh xạ trạng thái tiếng Việt của đơn về đúng nhóm tab lọc trên giao diện */
   function getTabBucket(status) {
     if (PENDING_STATUSES.indexOf(status) !== -1) return "pending";
     if (status === STATUS_ESCALATED) return "escalated";
@@ -942,6 +948,7 @@ window.showToast = function (msg) {
     return "all";
   }
 
+  /* Chuẩn hóa dữ liệu demo cục bộ (dùng khi chạy Frontend độc lập không bật Backend) */
   function normalizeDemoOrders() {
     var now = Date.now();
     return (window.VRP_ORDERS || []).map(function (o) {
@@ -963,6 +970,7 @@ window.showToast = function (msg) {
     });
   }
 
+  /* Chuẩn hóa dữ liệu trả về từ API GET /stores/orders về cùng cấu trúc hiển thị */
   function normalizeApiOrders(rows) {
     var now = Date.now();
     return (rows || []).map(function (o) {
@@ -984,6 +992,7 @@ window.showToast = function (msg) {
     });
   }
 
+  /* Cập nhật số lượng đơn trên từng tab trạng thái (Tất cả, Chờ XN, Chờ VHV xử lý...) */
   function updateTabCounts() {
     if (!tabsWrap) return;
     var counts = { all: ordersState.length, pending: 0, escalated: 0, confirmed: 0, renting: 0, done: 0, rejected: 0 };
@@ -1069,6 +1078,7 @@ window.showToast = function (msg) {
     return headers;
   }
 
+  /* Xử lý khi cửa hàng bấm "Xác nhận": kiểm tra quá hạn 15 phút và gọi API xác nhận */
   async function handleConfirm(order) {
     if (!order) return;
     if (order.deadlineMs && Date.now() >= order.deadlineMs) {
@@ -1109,6 +1119,7 @@ window.showToast = function (msg) {
     renderTable();
   }
 
+  /* Mở modal yêu cầu cửa hàng nhập lý do trước khi từ chối đơn thuê */
   function openRejectModal(order) {
     if (!modal || !order) return;
     activeRejectOrder = order;
@@ -1126,6 +1137,7 @@ window.showToast = function (msg) {
     activeRejectOrder = null;
   }
 
+  /* Xác nhận từ chối đơn: kiểm tra lý do >= 3 ký tự, kiểm tra SLA 15 phút và gọi API từ chối */
   async function submitReject() {
     if (!activeRejectOrder) return;
     var reason = (reasonInput ? reasonInput.value : "").trim();
