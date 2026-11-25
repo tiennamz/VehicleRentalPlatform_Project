@@ -297,3 +297,24 @@ ADD COLUMN staff_confirmed TINYINT(1) NOT NULL DEFAULT 0,
 ADD COLUMN staff_confirmed_at DATETIME NULL,
 ADD COLUMN customer_confirmed TINYINT(1) NOT NULL DEFAULT 0,
 ADD COLUMN customer_confirmed_at DATETIME NULL;
+
+ALTER TABLE orders
+ADD COLUMN commission_rate DECIMAL(5,2) DEFAULT 12.00,
+ADD COLUMN commission_amount DECIMAL(12,2) DEFAULT 0.00;
+
+CREATE TABLE IF NOT EXISTS weekly_reconciliations (
+    reconciliation_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    store_id BIGINT NOT NULL,
+    week_start DATE NOT NULL,
+    week_end DATE NOT NULL,
+    order_count INT NOT NULL DEFAULT 0,
+    total_rental_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    total_delivery_fee DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    gross_revenue DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    commission_rate DECIMAL(5,2) NOT NULL DEFAULT 12.00,
+    commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    net_payout DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(50) NOT NULL DEFAULT 'Đã chốt',
+    generated_at DATETIME NULL,
+    FOREIGN KEY (store_id) REFERENCES stores(store_id)
+);

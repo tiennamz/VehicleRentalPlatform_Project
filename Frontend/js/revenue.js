@@ -873,3 +873,135 @@ window.showToast = function (msg) {
     window.location.href = encodeURI('login-register.html');
   });
 })();
+
+/* ---- TF149EA: Tính hoa hồng 12% BR-09 (không tính phí giao nhận) & Đối soát theo tuần ---- */
+(function () {
+  var API_BASE = "http://127.0.0.1:8000";
+  var listEl = document.getElementById("weeklyReconciliationList");
+  var genBtn = document.getElementById("btnGenerateWeeklyRec");
+  if (!listEl) return;
+
+  /* Định dạng số tiền VNĐ rõ ràng */
+  function formatVnd(n) {
+    return Math.round(Number(n) || 0).toLocaleString("vi-VN") + "đ";
+  }
+
+  /* Tính hoa hồng BR-09 cục bộ (12% trên tiền thuê, miễn phí giao nhận) */
+  function calcWeekBr09(week) {
+    var rental = Number(week.total_rental_amount) || 0;
+    var delivery = Number(week.total_delivery_fee) || 0;
+    var commission = Math.round(rental * 0.12);
+    var netPayout = rental - commission + delivery;
+    return {
+      week_label: week.week_label,
+      week_start: week.week_start,
+      order_count: week.order_count || 0,
+      total_rental_amount: rental,
+      total_delivery_fee: delivery,
+      commission_amount: week.commission_amount != null ? Number(week.commission_amount) : commission,
+      net_payout: week.net_payout != null ? Number(week.net_payout) : netPayout,
+      reconciliation_status: week.reconciliation_status || "Chưa chốt"
+    };
+  }
+
+  /* Dữ liệu mẫu đối soát 4 tuần theo đúng công thức BR-09 khi chạy offline */
+  var demoWeeks = [
+    { week_label: "Tuần 47 (18/11–24/11/2026)", week_start: "2026-11-18", order_count: 14, total_rental_amount: 12000000, total_delivery_fee: 480000, reconciliation_status: "Chưa chốt" },
+    { week_label: "Tuần 46 (11/11–17/11/2026)", week_start: "2026-11-11", order_count: 18, total_rental_amount: 14000000, total_delivery_fee: 560000, reconciliation_status: "Đã chốt" },
+    { week_label: "Tuần 45 (04/11–10/11/2026)", week_start: "2026-11-04", order_count: 13, total_rental_amount: 10500000, total_delivery_fee: 420000, reconciliation_status: "Đã chốt" },
+    { week_label: "Tuần 44 (28/10–03/11/2026)", week_start: "2026-10-28", order_count: 10, total_rental_amount: 7500000, total_delivery_fee: 340000, reconciliation_status: "Đã chốt" }
+  ].map(calcWeekBr09);
+
+  var currentWeeks = demoWeeks;
+  var activeStoreId = null;
+
+  /* Hiển thị 4 thẻ tổng quan BR-09 và bảng đối soát từng tuần */
+  function renderReconciliation(weeks) {
+    currentWeeks = weeks;
+    var sumRental = weeks.reduce(function (acc, w) { return acc + w.total_rental_amount; }, 0);
+    var sumDelivery = weeks.reduce(function (acc, w) { return acc + w.total_delivery_fee; }, 0);
+    var sumCommission = weeks.reduce(function (acc, w) { return acc + w.commission_amount; }, 0);
+    var sumNet = weeks.reduce(function (acc, w) { return acc + w.net_payout; }, 0);
+
+    var setText = function (id, txt) { var n = document.getElementById(id); if (n) n.textContent = txt; };
+    setText("revTotalRental", formatVnd(sumRental));
+    setText("revTotalDelivery", formatVnd(sumDelivery));
+    setText("revCommission12", formatVnd(sumCommission));
+    setText("revNetPayout", formatVnd(sumNet));
+
+    listEl.innerHTML = weeks.map(function (w) {
+      var stColor = w.reconciliation_status === "Đã chốt" ? "#047857" : "#b45309";
+      return '<div style="padding:10px 0;border-bottom:1px solid #f0f4f2;font-size:13.5px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<strong>' + w.week_label + '</strong>' +
+          '<span style="font-size:12px;font-weight:700;color:' + stColor + '">' + w.reconciliation_status + ' · ' + w.order_count + ' đơn</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:4px;font-size:12.5px;color:var(--muted)">' +
+          '<span>Tiền thuê: ' + formatVnd(w.total_rental_amount) + ' · Giao nhận (0% HH): ' + formatVnd(w.total_delivery_fee) + '</span>' +
+          '<span>HH 12%: <b style="color:#b91c1c">-' + formatVnd(w.commission_amount) + '</b> · Thực nhận: <b style="color:var(--primary)">' + formatVnd(w.net_payout) + '</b></span>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function getHeaders() {
+    var h = { "Content-Type": "application/json" };
+    if (window.VRPAuth && window.VRPAuth.userId) h["X-User-Id"] = String(window.VRPAuth.userId);
+    return h;
+  }
+
+  /* Gọi API chốt đối soát tuần hiện tại */
+  if (genBtn) {
+    genBtn.addEventListener("click", async function () {
+      genBtn.disabled = true;
+      genBtn.textContent = "Đang chốt đối soát...";
+      try {
+        var res = await fetch(API_BASE + "/reconciliation/weekly/generate", {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ store_id: activeStoreId })
+        });
+        if (res.ok) {
+          if (window.showToast) window.showToast("Đã chốt và lưu bảng đối soát tuần BR-09 vào hệ thống.");
+          await loadReconciliation();
+          return;
+        }
+      } catch (err) { /* fallback demo bên dưới */ }
+      finally {
+        genBtn.disabled = false;
+        genBtn.textContent = "Chốt đối soát tuần";
+      }
+
+      if (currentWeeks.length > 0) {
+        currentWeeks[0].reconciliation_status = "Đã chốt";
+        renderReconciliation(currentWeeks);
+        if (window.showToast) window.showToast("Đã chốt đối soát tuần " + currentWeeks[0].week_label + " (demo BR-09).");
+      }
+    });
+  }
+
+  /* Nạp dữ liệu đối soát tuần từ Backend (fallback sang demo BR-09 khi offline) */
+  async function loadReconciliation() {
+    renderReconciliation(currentWeeks);
+    var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, 2000) : null;
+    try {
+      var res = await fetch(API_BASE + "/reconciliation/weekly?weeks=4", {
+        headers: getHeaders(),
+        signal: controller ? controller.signal : undefined
+      });
+      if (!res.ok) return;
+      var payload = await res.json();
+      if (payload && payload.data && Array.isArray(payload.data.stores) && payload.data.stores.length > 0) {
+        var firstStore = payload.data.stores[0];
+        activeStoreId = firstStore.store_id;
+        if (Array.isArray(firstStore.weeks) && firstStore.weeks.length > 0) {
+          renderReconciliation(firstStore.weeks.map(calcWeekBr09));
+        }
+      }
+    } catch (err) { /* giữ dữ liệu demo khi chưa bật Backend */ }
+    finally { if (timer) clearTimeout(timer); }
+  }
+
+  loadReconciliation();
+})();
