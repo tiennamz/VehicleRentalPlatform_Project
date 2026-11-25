@@ -1039,7 +1039,7 @@ document.querySelectorAll(".btn-rent-vrp").forEach(function (btn) {
                 '<p class="type">' + api.escapeHtml(v.type) + "</p>" +
                 "<h3>" + api.escapeHtml(fullName) + "</h3>" +
                 '<div class="meta">★ ' + ratingStr + " · " + api.escapeHtml(locText) + "</div>" +
-                '<div class="price">' + api.escapeHtml(priceStr) + ' <small>/ ngày</small></div>' +
+                '<div class="price">' + api.escapeHtml(priceStr) + ' <small>/ giờ</small></div>' +
                 '<div class="vehicle-actions">' +
                   '<a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>' +
                   '<a href="weekly-vehicle-schedule.html?xe=' + encodeURIComponent(fullName) + '" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>' +
