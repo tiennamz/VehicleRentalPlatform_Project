@@ -1022,9 +1022,6 @@ window.showToast = function (msg) {
       if (f.types.length && f.types.indexOf(data.type) === -1) match = false;
       if (f.brands.length && f.brands.indexOf(data.brand) === -1) match = false;
       if (f.deliveries.length && !f.deliveries.some(function (d) { return data.delivery.indexOf(d) !== -1; })) match = false;
-      if (f.price === "under-200" && data.price >= 200000) match = false;
-      if (f.price === "200-400" && (data.price < 200000 || data.price > 400000)) match = false;
-      if (f.price === "over-400" && data.price <= 400000) match = false;
       if (f.price === "under-25" && data.price >= 25000) match = false;
       if (f.price === "mid-35" && (data.price < 25000 || data.price > 35000)) match = false;
       if (f.price === "over-35" && data.price <= 35000) match = false;
@@ -1089,7 +1086,7 @@ window.showToast = function (msg) {
             '<p class="meta">★ ' + ratingStr + countPart + " · " + escapeHtml(locText) + distPart + "</p>" +
             (deliveryTagsHtml ? '<div class="delivery-tags">' + deliveryTagsHtml + "</div>" : "") +
             '<div class="bottom">' +
-              '<p class="price">' + escapeHtml(priceStr) + ' <span>/ ngày</span></p>' +
+              '<p class="price">' + escapeHtml(priceStr) + ' <span>/ giờ</span></p>' +
               '<div class="vehicle-actions">' +
                 '<a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>' +
                 '<a href="' + rentHref + '" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>' +

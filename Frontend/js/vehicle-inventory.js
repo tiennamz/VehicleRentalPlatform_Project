@@ -885,7 +885,37 @@ window.showToast = function (msg) {
 /* Popup chỉnh sửa phương tiện (từ bản VRP-GO-hoan-chinh / vehicle-inventory.html) */
 (function () {
   'use strict';
+  var API_BASE = (window.VRP_API_BASE || 'http://127.0.0.1:8000').replace(/\/+$/, '');
   var KEY = 'vrp_store_vehicles_hourly_v1';
+  var FALLBACK_IMG = 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=600&q=80';
+  function getToken() {
+    var m = document.cookie.match(/(?:^|;\s*)access_token=([^;]*)/);
+    if (m && m[1]) return decodeURIComponent(m[1]);
+    try { return localStorage.getItem('access_token') || sessionStorage.getItem('access_token') || ''; } catch (e) { return ''; }
+  }
+  function getAuthHeaders(extra) {
+    var h = Object.assign({}, extra || {});
+    var t = getToken();
+    if (t) h['Authorization'] = 'Bearer ' + t;
+    return h;
+  }
+  function mapStatusFromApi(s) {
+    var str = String(s || '').toLowerCase();
+    if (str.indexOf('thuê') !== -1) return 'Đang thuê';
+    if (str.indexOf('bảo') !== -1) return 'Bảo dưỡng';
+    return 'Sẵn sàng';
+  }
+  function mapStatusToApi(s) {
+    if (s === 'Bảo dưỡng') return 'Bảo trì';
+    if (s === 'Đang thuê') return 'Đang thuê';
+    return 'Sẵn sàng';
+  }
+  function parseBrandAndModel(fullName) {
+    var cleaned = String(fullName || '').trim();
+    var parts = cleaned.split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) return { brand: cleaned || 'Khác', model: cleaned || 'Mẫu chuẩn' };
+    return { brand: parts[0], model: parts.slice(1).join(' ') };
+  }
   var defaults = [
     ['Honda Air Blade 160', '51G1-23456', 'Sẵn sàng', 25000],
     ['Yamaha Exciter 155', '51G1-77889', 'Đang thuê', 30000],
@@ -954,15 +984,56 @@ window.showToast = function (msg) {
     updateCards(list);
 
     var selected = 0;
+    var pendingEditImageFile = null;
+    var pendingEditImagePreview = '';
+    var editImgPreviewEl = document.getElementById('editVehicleImagePreview');
+    var editImgInputEl = document.getElementById('editVehicleImageFile');
+    var editImgBtnEl = document.getElementById('btnPickEditVehicleImage');
+    var editImgNameEl = document.getElementById('editVehicleImageName');
+
+    if (editImgBtnEl && editImgInputEl) {
+      editImgBtnEl.addEventListener('click', function () {
+        editImgInputEl.click();
+      });
+      editImgInputEl.addEventListener('change', function (e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (!file.type || file.type.indexOf('image/') !== 0) {
+          toast('Vui lòng chọn file ảnh JPG, PNG hoặc WEBP.');
+          editImgInputEl.value = '';
+          return;
+        }
+        pendingEditImageFile = file;
+        if (editImgNameEl) editImgNameEl.textContent = file.name;
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          pendingEditImagePreview = ev.target.result;
+          if (editImgPreviewEl) editImgPreviewEl.src = pendingEditImagePreview;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
     function close() {
       modal.classList.remove('is-open');
       modal.setAttribute('aria-hidden', 'true');
+      pendingEditImageFile = null;
+      pendingEditImagePreview = '';
+      if (editImgInputEl) editImgInputEl.value = '';
+      if (editImgNameEl) editImgNameEl.textContent = 'JPG/PNG/WEBP · tối đa 5MB';
     }
     function openModal(i) {
       selected = i;
-      list = load();
       var v = list[i];
       if (!v) return;
+      pendingEditImageFile = null;
+      pendingEditImagePreview = '';
+      if (editImgInputEl) editImgInputEl.value = '';
+      if (editImgNameEl) editImgNameEl.textContent = 'JPG/PNG/WEBP · tối đa 5MB';
+      if (editImgPreviewEl) {
+        var cardImg = document.querySelectorAll('.vehicle-card .thumb img')[i];
+        editImgPreviewEl.src = v.image || (cardImg ? cardImg.src : FALLBACK_IMG);
+      }
       document.getElementById('editVehicleName').value = v.name;
       document.getElementById('editVehiclePlate').value = v.plate;
       document.getElementById('editVehicleStatus').value = v.status;
@@ -972,37 +1043,203 @@ window.showToast = function (msg) {
       document.getElementById('editVehicleName').focus();
     }
 
-    cards.forEach(function (card, i) {
-      card.tabIndex = 0;
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-label', 'Chỉnh sửa xe');
-      card.addEventListener('click', function () { openModal(i); });
-      card.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(i); }
+    function bindCardHandlers() {
+      document.querySelectorAll('.vehicle-card').forEach(function (card, i) {
+        if (card.dataset.vrpEditBound) return;
+        card.dataset.vrpEditBound = '1';
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', 'Chỉnh sửa xe');
+        card.addEventListener('click', function () { openModal(i); });
+        card.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(i); }
+        });
       });
-    });
+    }
+
+    function renderDynamicGrid(items) {
+      var grid = document.querySelector('.vehicles-grid');
+      if (!grid) return;
+      grid.innerHTML = items.map(function (v) {
+        var color = v.status === 'Sẵn sàng' ? '#047857' : v.status === 'Đang thuê' ? '#b45309' : '#475569';
+        var imgSrc = v.image || FALLBACK_IMG;
+        return '<div class="vehicle-card">' +
+          '<div class="thumb"><img src="' + imgSrc + '" alt=""></div>' +
+          '<div class="body">' +
+            '<h3>' + v.name + '</h3>' +
+            '<div class="meta">' + v.plate + ' · <span style="color:' + color + ';font-weight:600">' + v.status + '</span></div>' +
+            '<div class="price">' + money(v.price) + ' <small>/ giờ</small></div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      var heading = document.querySelector('.page-head h1');
+      if (heading) heading.textContent = 'Kho xe · ' + items.length + ' xe';
+      var statStrong = document.querySelectorAll('.stats-grid .stat-card strong');
+      if (statStrong.length >= 4) {
+        statStrong[0].textContent = String(items.length);
+        statStrong[1].textContent = String(items.filter(function (x) { return x.status === 'Sẵn sàng'; }).length);
+        statStrong[2].textContent = String(items.filter(function (x) { return x.status === 'Đang thuê'; }).length);
+        statStrong[3].textContent = String(items.filter(function (x) { return x.status === 'Bảo dưỡng'; }).length);
+      }
+      bindCardHandlers();
+    }
+
+    async function loadVehiclesFromApi() {
+      var token = getToken();
+      if (!token) return;
+      try {
+        var res = await fetch(API_BASE + '/vehicles/my-store', { headers: getAuthHeaders(), cache: 'no-store' });
+        if (!res.ok) return;
+        var rows = await res.json();
+        if (Array.isArray(rows)) {
+          list = rows.map(function (v) {
+            return normalize({
+              id: v.vehicle_id,
+              isApi: true,
+              name: [v.brand, v.model].filter(Boolean).join(' ').trim() || v.brand || 'Xe thuê',
+              plate: v.license_plate,
+              status: mapStatusFromApi(v.status),
+              price: Number(v.price) || 25000,
+              image: (Array.isArray(v.images) && v.images[0]) ? v.images[0] : FALLBACK_IMG
+            });
+          });
+          renderDynamicGrid(list);
+        }
+      } catch (err) {}
+    }
+
+    window.__vrpReloadInventory = loadVehiclesFromApi;
+    bindCardHandlers();
+    loadVehiclesFromApi();
 
     document.getElementById('closeVehicleModal').addEventListener('click', close);
     document.getElementById('cancelVehicleEdit').addEventListener('click', close);
     modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 
-    document.getElementById('vehicleEditForm').addEventListener('submit', function (e) {
+    document.getElementById('vehicleEditForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      list = load();
+      var current = list[selected];
+      if (!current) return;
+      var nextName = document.getElementById('editVehicleName').value.trim();
+      var nextPlate = document.getElementById('editVehiclePlate').value.trim();
+      var nextStatus = document.getElementById('editVehicleStatus').value;
       var price = Math.max(0, Number(document.getElementById('editVehiclePrice').value) || 0);
-      list[selected] = Object.assign({}, list[selected], {
-        name: document.getElementById('editVehicleName').value.trim(),
-        plate: document.getElementById('editVehiclePlate').value.trim(),
-        status: document.getElementById('editVehicleStatus').value,
-        price: price,
-        regularPrice: price
-      });
-      save(list);
-      updateCards(list);
-      close();
-      toast('Đã cập nhật thông tin xe.');
+
+      var token = getToken();
+      var saveBtn = this.querySelector('button[type="submit"]');
+      var origSaveText = saveBtn ? saveBtn.textContent : 'Lưu thay đổi';
+
+      if (!token) {
+        toast('Vui lòng đăng nhập tài khoản cửa hàng để lưu thay đổi & ảnh lên Cloudinary!');
+        return;
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = pendingEditImageFile ? 'Đang tải ảnh lên Cloudinary...' : 'Đang lưu...';
+      }
+      try {
+        var bm = parseBrandAndModel(nextName);
+        if (current.isApi) {
+          var res = await fetch(API_BASE + '/vehicles/' + current.id, {
+            method: 'PUT',
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+              brand: bm.brand,
+              model: bm.model,
+              license_plate: nextPlate,
+              status: mapStatusToApi(nextStatus),
+              price: price
+            })
+          });
+          var errJson = await res.json().catch(function () { return {}; });
+          if (!res.ok) {
+            throw new Error(errJson.detail || errJson.error || 'Không thể cập nhật thông tin xe');
+          }
+
+          var updatedImageUrl = current.image;
+          if (pendingEditImageFile) {
+            var imgForm = new FormData();
+            imgForm.append('replace', 'true');
+            imgForm.append('files', pendingEditImageFile);
+            var imgRes = await fetch(API_BASE + '/vehicles/' + current.id + '/images', {
+              method: 'POST',
+              headers: getAuthHeaders(),
+              body: imgForm
+            });
+            var imgJson = await imgRes.json().catch(function () { return {}; });
+            if (!imgRes.ok) {
+              throw new Error(imgJson.detail || imgJson.error || 'Không thể tải ảnh xe mới lên Cloudinary');
+            }
+            if (Array.isArray(imgJson.images) && imgJson.images[0]) {
+              updatedImageUrl = imgJson.images[0];
+            }
+          }
+
+          list[selected] = Object.assign({}, current, {
+            name: nextName,
+            plate: nextPlate,
+            status: nextStatus,
+            price: price,
+            regularPrice: price,
+            image: updatedImageUrl
+          });
+          renderDynamicGrid(list);
+          close();
+          toast(pendingEditImageFile ? 'Đã cập nhật xe và lưu ảnh mới lên Cloudinary!' : 'Đã cập nhật thông tin xe lên hệ thống.');
+          return;
+        }
+
+        // Trường hợp xe mẫu chưa có trên DB: tạo mới xe lên DB + upload ảnh lên Cloudinary
+        if (!pendingEditImageFile) {
+          throw new Error('Xe mẫu chưa có trên máy chủ. Vui lòng chọn 1 ảnh xe để lưu lên Cloudinary!');
+        }
+        var createForm = new FormData();
+        createForm.append('brand', bm.brand);
+        createForm.append('model', bm.model);
+        createForm.append('license_plate', nextPlate);
+        createForm.append('manufacture_year', '2025');
+        createForm.append('type', 'Xe tay ga');
+        createForm.append('engine_capacity', '125');
+        createForm.append('description', 'Xe cập nhật từ Kho xe');
+        createForm.append('price', String(price));
+        createForm.append('status', mapStatusToApi(nextStatus));
+        createForm.append('files', pendingEditImageFile);
+
+        var createRes = await fetch(API_BASE + '/vehicles', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: createForm
+        });
+        var createJson = await createRes.json().catch(function () { return {}; });
+        if (!createRes.ok) {
+          throw new Error(createJson.detail || createJson.error || 'Không thể lưu xe và ảnh lên Cloudinary');
+        }
+        list[selected] = normalize({
+          id: createJson.vehicle_id,
+          isApi: true,
+          name: [createJson.brand, createJson.model].filter(Boolean).join(' ').trim() || nextName,
+          plate: createJson.license_plate || nextPlate,
+          status: mapStatusFromApi(createJson.status),
+          price: Number(createJson.price) || price,
+          image: (Array.isArray(createJson.images) && createJson.images[0]) ? createJson.images[0] : current.image
+        });
+        renderDynamicGrid(list);
+        close();
+        toast('Đã lưu xe và tải ảnh lên Cloudinary thành công!');
+        return;
+      } catch (err) {
+        toast(err.message || 'Lỗi cập nhật xe');
+        return;
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = origSaveText;
+        }
+      }
     });
   }
 
@@ -1038,6 +1275,9 @@ window.showToast = function (msg) {
   });
   window.addEventListener('message', function (e) {
     var m = e.data || {};
+    if (m.vrp === 'vehicleAdded' && typeof window.__vrpReloadInventory === 'function') {
+      window.__vrpReloadInventory();
+    }
     if (m.vrp === 'closeAddVehicleModal') close();
   });
 })();
