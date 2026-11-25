@@ -26,6 +26,10 @@ class Order(Base):
     store_responded_at = Column(DateTime, nullable=True)
     rejection_reason = Column(Text, nullable=True)
     escalated_at = Column(DateTime, nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+    cancel_reason = Column(Text, nullable=True)
+    refund_rate = Column(Numeric(5, 2), default=0)
+    refund_amount = Column(Numeric(12, 2), default=0)
 
     renter = relationship("User", back_populates="rented_orders", foreign_keys=[renter_id])
     vehicle = relationship("Vehicle", back_populates="orders")

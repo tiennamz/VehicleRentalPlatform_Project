@@ -285,3 +285,9 @@ ADD COLUMN confirmation_deadline DATETIME NULL,
 ADD COLUMN store_responded_at DATETIME NULL,
 ADD COLUMN rejection_reason TEXT NULL,
 ADD COLUMN escalated_at DATETIME NULL;
+
+ALTER TABLE orders
+ADD COLUMN cancelled_at DATETIME NULL,
+ADD COLUMN cancel_reason TEXT NULL,
+ADD COLUMN refund_rate DECIMAL(5,2) DEFAULT 0.00,
+ADD COLUMN refund_amount DECIMAL(12,2) DEFAULT 0.00;

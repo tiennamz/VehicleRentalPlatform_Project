@@ -1,10 +1,10 @@
-from sqlalchemy import Column, BigInteger, DateTime, Numeric, String, ForeignKey, Enum
+from sqlalchemy import Column, BigInteger, Integer, DateTime, Numeric, String, ForeignKey, Enum
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
 class Transaction(Base):
     __tablename__ = "transactions"
-    transaction_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    transaction_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     order_id = Column(BigInteger, ForeignKey("orders.order_id"))
     transaction_code = Column(String(255))
     payment_method = Column(
