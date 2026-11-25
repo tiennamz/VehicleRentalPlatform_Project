@@ -2,8 +2,7 @@
 <html lang="vi">
 <head>
   <script src="../js/auth-guard.js"></script>
-
-
+  <script src="../js/vehicle-api.js" defer></script>
   <script src="../js/vehicle-search.js" defer></script>
 
 
@@ -44,12 +43,15 @@
     <div class="page-head">
       <p class="breadcrumb"><a href="index.html">Trang chủ</a> / Thuê xe</p>
       <h1>Tìm xe còn trống</h1>
-      <p>Chỉ hiển thị xe trống toàn bộ khoảng thời gian bạn chọn. Lọc theo loại, giá, hãng.</p>
+      <p>Chỉ hiển thị xe trống toàn bộ khoảng thời gian bạn chọn. Lọc theo loại xe, giá, hãng, hình thức giao nhận, đánh giá và sắp xếp linh hoạt.</p>
     </div>
 
     <div class="vehicle-layout">
       <aside class="filter-panel">
-        <h3>Bộ lọc</h3>
+        <div class="filter-panel-head">
+          <h3>Bộ lọc</h3>
+          <button type="button" class="btn-reset-filter" id="resetFiltersBtn">Đặt lại</button>
+        </div>
         <div class="filter-group filter-dates">
           <p>Ngày nhận</p>
           <div class="date-row">
@@ -106,15 +108,30 @@
         </div>
         <div class="filter-group">
           <p>Giá / ngày</p>
-          <label><input type="radio" name="price" value="under-200"> Dưới 200k</label>
-          <label><input type="radio" name="price" value="mid-300"> 150k – 300k</label>
-          <label><input type="radio" name="price" value="over-300"> Trên 300k</label>
+          <label><input type="radio" name="price" value="" checked> Tất cả mức giá</label>
+          <label><input type="radio" name="price" value="under-200"> Dưới 200.000đ</label>
+          <label><input type="radio" name="price" value="200-400"> 200.000đ – 400.000đ</label>
+          <label><input type="radio" name="price" value="over-400"> Trên 400.000đ</label>
         </div>
         <div class="filter-group">
           <p>Hãng</p>
           <label><input type="checkbox" name="brand" value="honda"> Honda</label>
           <label><input type="checkbox" name="brand" value="yamaha"> Yamaha</label>
           <label><input type="checkbox" name="brand" value="vinfast"> VinFast</label>
+          <label><input type="checkbox" name="brand" value="hyundai"> Hyundai</label>
+          <label><input type="checkbox" name="brand" value="toyota"> Toyota</label>
+        </div>
+        <div class="filter-group">
+          <p>Hình thức giao nhận</p>
+          <label><input type="checkbox" name="delivery" value="tai-cua-hang"> Nhận tại cửa hàng</label>
+          <label><input type="checkbox" name="delivery" value="giao-tan-noi"> Giao tận nơi</label>
+        </div>
+        <div class="filter-group">
+          <p>Điểm đánh giá</p>
+          <label><input type="radio" name="rating" value="" checked> Tất cả đánh giá</label>
+          <label><input type="radio" name="rating" value="4"> Từ 4.0 sao trở lên</label>
+          <label><input type="radio" name="rating" value="4.5"> Từ 4.5 sao trở lên</label>
+          <label><input type="radio" name="rating" value="4.8"> Từ 4.8 sao trở lên</label>
         </div>
       </aside>
 
@@ -124,8 +141,25 @@
         data-empty-icon="🔍"
         data-empty-title="Không tìm thấy xe phù hợp"
         data-empty-text="Thử bỏ bớt bộ lọc hoặc chọn khoảng giá rộng hơn.">
+        <div class="results-toolbar">
+          <div class="results-toolbar-left">
+            <span class="results-count" id="resultsCount">Hiển thị 8 xe</span>
+            <button type="button" class="btn-locate" id="locateUserBtn" title="Dùng vị trí hiện tại để tính khoảng cách">📍 Vị trí của tôi</button>
+            <span class="location-status" id="locationStatus">Mặc định: Trung tâm Đà Nẵng</span>
+          </div>
+          <div class="vehicle-sort-box">
+            <label for="vehicleSort">Sắp xếp theo</label>
+            <select id="vehicleSort" name="sort">
+              <option value="default">Mặc định</option>
+              <option value="price-asc">Giá thấp đến cao</option>
+              <option value="price-desc">Giá cao đến thấp</option>
+              <option value="rating-desc">Đánh giá cao nhất</option>
+              <option value="distance-asc">Khoảng cách gần nhất</option>
+            </select>
+          </div>
+        </div>
         <div class="vehicle-grid">
-        <article class="vehicle-card">
+        <article class="vehicle-card" data-type="xe-may" data-brand="honda" data-price="150000" data-rating="4.9" data-reviews="128" data-delivery="tai-cua-hang,giao-tan-noi" data-lat="16.0678" data-lng="108.2208" data-location="Hải Châu, Đà Nẵng">
           <div class="img-wrap">
             <button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>
             <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=80" alt="Vision">
@@ -134,16 +168,20 @@
             <p class="type">Xe máy · Tay ga</p>
             <h3>Honda Vision 2024</h3>
             <p class="meta">★ 4.9 (128) · Hải Châu, Đà Nẵng</p>
+            <div class="delivery-tags">
+              <span class="delivery-tag">Nhận tại cửa hàng</span>
+              <span class="delivery-tag is-delivery">Giao tận nơi</span>
+            </div>
             <div class="bottom">
               <p class="price">150.000đ <span>/ ngày</span></p>
               <div class="vehicle-actions">
-              <a href="vehicle-detail.html" class="btn btn-outline btn-sm">Chi tiết</a>
+              <a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>
               <a href="weekly-vehicle-schedule.html?xe=Honda%20Vision%202024" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>
             </div>
             </div>
           </div>
         </article>
-        <article class="vehicle-card">
+        <article class="vehicle-card" data-type="xe-may" data-brand="yamaha" data-price="160000" data-rating="4.8" data-reviews="96" data-delivery="tai-cua-hang" data-lat="16.0598" data-lng="108.2450" data-location="Sơn Trà, Đà Nẵng">
           <div class="img-wrap">
             <button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>
             <img src="https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=700&q=80" alt="Janus">
@@ -151,17 +189,20 @@
           <div class="body">
             <p class="type">Xe máy · Tay ga</p>
             <h3>Yamaha Janus 2023</h3>
-            <p class="meta">★ 4.8 · Đà Nẵng</p>
+            <p class="meta">★ 4.8 (96) · Sơn Trà, Đà Nẵng</p>
+            <div class="delivery-tags">
+              <span class="delivery-tag">Nhận tại cửa hàng</span>
+            </div>
             <div class="bottom">
               <p class="price">160.000đ <span>/ ngày</span></p>
               <div class="vehicle-actions">
-              <a href="vehicle-detail.html" class="btn btn-outline btn-sm">Chi tiết</a>
+              <a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>
               <a href="weekly-vehicle-schedule.html?xe=Yamaha%20Janus%202023" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>
             </div>
             </div>
           </div>
         </article>
-        <article class="vehicle-card">
+        <article class="vehicle-card" data-type="xe-may" data-brand="honda" data-price="180000" data-rating="4.9" data-reviews="66" data-delivery="tai-cua-hang,giao-tan-noi" data-lat="16.0544" data-lng="108.2022" data-location="Thanh Khê, Đà Nẵng">
           <div class="img-wrap">
             <button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>
             <img src="https://images.unsplash.com/photo-1609630875171-b1321377ee65?auto=format&fit=crop&w=700&q=80" alt="AB">
@@ -169,17 +210,21 @@
           <div class="body">
             <p class="type">Xe máy · Tay ga</p>
             <h3>Honda Air Blade 160</h3>
-            <p class="meta">★ 4.9 · Đà Nẵng</p>
+            <p class="meta">★ 4.9 (66) · Thanh Khê, Đà Nẵng</p>
+            <div class="delivery-tags">
+              <span class="delivery-tag">Nhận tại cửa hàng</span>
+              <span class="delivery-tag is-delivery">Giao tận nơi</span>
+            </div>
             <div class="bottom">
               <p class="price">180.000đ <span>/ ngày</span></p>
               <div class="vehicle-actions">
-              <a href="vehicle-detail.html" class="btn btn-outline btn-sm">Chi tiết</a>
+              <a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>
               <a href="weekly-vehicle-schedule.html?xe=Honda%20Air%20Blade%20160" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>
             </div>
             </div>
           </div>
         </article>
-        <article class="vehicle-card">
+        <article class="vehicle-card" data-type="xe-may" data-brand="yamaha" data-price="220000" data-rating="4.7" data-reviews="64" data-delivery="tai-cua-hang,giao-tan-noi" data-lat="16.0319" data-lng="108.2215" data-location="Cẩm Lệ, Đà Nẵng">
           <div class="img-wrap">
             <button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>
             <img src="https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?auto=format&fit=crop&w=700&q=80" alt="Exciter">
@@ -187,17 +232,21 @@
           <div class="body">
             <p class="type">Xe máy · Côn tay</p>
             <h3>Yamaha Exciter 155</h3>
-            <p class="meta">★ 4.8 · Đà Nẵng</p>
+            <p class="meta">★ 4.7 (64) · Cẩm Lệ, Đà Nẵng</p>
+            <div class="delivery-tags">
+              <span class="delivery-tag">Nhận tại cửa hàng</span>
+              <span class="delivery-tag is-delivery">Giao tận nơi</span>
+            </div>
             <div class="bottom">
               <p class="price">220.000đ <span>/ ngày</span></p>
               <div class="vehicle-actions">
-              <a href="vehicle-detail.html" class="btn btn-outline btn-sm">Chi tiết</a>
+              <a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>
               <a href="weekly-vehicle-schedule.html?xe=Yamaha%20Exciter%20155" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>
             </div>
             </div>
           </div>
         </article>
-        <article class="vehicle-card">
+        <article class="vehicle-card" data-type="xe-dien" data-brand="vinfast" data-price="180000" data-rating="4.4" data-reviews="41" data-delivery="tai-cua-hang" data-lat="16.0471" data-lng="108.2485" data-location="Ngũ Hành Sơn, Đà Nẵng">
           <div class="img-wrap">
             <button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>
             <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=700&q=80" alt="Feliz">
@@ -205,17 +254,20 @@
           <div class="body">
             <p class="type">Xe điện</p>
             <h3>VinFast Feliz S</h3>
-            <p class="meta">★ 4.7 · Đà Nẵng</p>
+            <p class="meta">★ 4.4 (41) · Ngũ Hành Sơn, Đà Nẵng</p>
+            <div class="delivery-tags">
+              <span class="delivery-tag">Nhận tại cửa hàng</span>
+            </div>
             <div class="bottom">
               <p class="price">180.000đ <span>/ ngày</span></p>
               <div class="vehicle-actions">
-              <a href="vehicle-detail.html" class="btn btn-outline btn-sm">Chi tiết</a>
+              <a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>
               <a href="weekly-vehicle-schedule.html?xe=VinFast%20Feliz%20S" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>
             </div>
             </div>
           </div>
         </article>
-        <article class="vehicle-card">
+        <article class="vehicle-card" data-type="xe-may" data-brand="honda" data-price="280000" data-rating="5.0" data-reviews="71" data-delivery="tai-cua-hang,giao-tan-noi" data-lat="16.0745" data-lng="108.2155" data-location="Hải Châu, Đà Nẵng">
           <div class="img-wrap">
             <button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>
             <img src="https://images.unsplash.com/photo-1558981852-426c6c22a060?auto=format&fit=crop&w=700&q=80" alt="SH">
@@ -223,12 +275,59 @@
           <div class="body">
             <p class="type">Xe máy · Cao cấp</p>
             <h3>Honda SH 150i</h3>
-            <p class="meta">★ 4.9 · Đà Nẵng</p>
+            <p class="meta">★ 5.0 (71) · Hải Châu, Đà Nẵng</p>
+            <div class="delivery-tags">
+              <span class="delivery-tag">Nhận tại cửa hàng</span>
+              <span class="delivery-tag is-delivery">Giao tận nơi</span>
+            </div>
             <div class="bottom">
               <p class="price">280.000đ <span>/ ngày</span></p>
               <div class="vehicle-actions">
-              <a href="vehicle-detail.html" class="btn btn-outline btn-sm">Chi tiết</a>
+              <a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>
               <a href="weekly-vehicle-schedule.html?xe=Honda%20SH%20150i" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>
+            </div>
+            </div>
+          </div>
+        </article>
+        <article class="vehicle-card" data-type="o-to" data-brand="hyundai" data-price="1350000" data-rating="4.9" data-reviews="40" data-delivery="tai-cua-hang,giao-tan-noi" data-lat="16.0862" data-lng="108.1554" data-location="Liên Chiểu, Đà Nẵng">
+          <div class="img-wrap">
+            <button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>
+            <img src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=700&q=80" alt="Santafe">
+          </div>
+          <div class="body">
+            <p class="type">Ô tô 7 chỗ</p>
+            <h3>Hyundai Santafe 2024</h3>
+            <p class="meta">★ 4.9 (40) · Liên Chiểu, Đà Nẵng</p>
+            <div class="delivery-tags">
+              <span class="delivery-tag">Nhận tại cửa hàng</span>
+              <span class="delivery-tag is-delivery">Giao tận nơi</span>
+            </div>
+            <div class="bottom">
+              <p class="price">1.350.000đ <span>/ ngày</span></p>
+              <div class="vehicle-actions">
+              <a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>
+              <a href="weekly-vehicle-schedule.html?xe=Hyundai%20Santafe%202024" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>
+            </div>
+            </div>
+          </div>
+        </article>
+        <article class="vehicle-card" data-type="o-to" data-brand="toyota" data-price="750000" data-rating="4.3" data-reviews="29" data-delivery="tai-cua-hang" data-lat="16.0405" data-lng="108.1982" data-location="Hòa Xuân, Đà Nẵng">
+          <div class="img-wrap">
+            <button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>
+            <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=700&q=80" alt="Toyota Vios">
+          </div>
+          <div class="body">
+            <p class="type">Ô tô 4 chỗ</p>
+            <h3>Toyota Vios 2024</h3>
+            <p class="meta">★ 4.3 (29) · Hòa Xuân, Đà Nẵng</p>
+            <div class="delivery-tags">
+              <span class="delivery-tag">Nhận tại cửa hàng</span>
+            </div>
+            <div class="bottom">
+              <p class="price">750.000đ <span>/ ngày</span></p>
+              <div class="vehicle-actions">
+              <a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>
+              <a href="weekly-vehicle-schedule.html?xe=Toyota%20Vios%202024" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>
             </div>
             </div>
           </div>

@@ -980,34 +980,101 @@ document.querySelectorAll(".btn-rent-vrp").forEach(function (btn) {
   }
 
   if (PAGE === "index.html") {
-    document.querySelectorAll(".vehicles-grid .vehicle-card").forEach(function (card) {
-      var h = card.querySelector("h3");
-      if (!h) return;
-      var name = h.textContent.trim();
-      var fallbackCar = {
-        name: name,
-        type: card.querySelector(".type") ? card.querySelector(".type").textContent.trim() : "Xe máy",
-        price: card.querySelector(".price") ? card.querySelector(".price").childNodes[0].textContent.trim() : "150.000đ",
-        image: card.querySelector("img") ? card.querySelector("img").src : "",
-        location: "Đà Nẵng",
-        rating: "4.8"
-      };
-      var c = findCar(name) || fallbackCar;
-      var detail = card.querySelector('a[href="vehicle-detail.html"]');
-      var rent = card.querySelector(".btn-rent-vrp");
-      if (detail) {
-        detail.setAttribute("href", "#chi-tiet-xe");
-        detail.addEventListener("click", function (e) {
-          e.preventDefault();
-          save(c);
-          openVehiclePreviewModal(c);
+    var featuredGrid = document.querySelector(".vehicles-grid");
+    var api = window.VRPVehicleAPI;
+
+    function bindStaticFeaturedCards() {
+      document.querySelectorAll(".vehicles-grid .vehicle-card").forEach(function (card) {
+        var h = card.querySelector("h3");
+        if (!h) return;
+        var name = h.textContent.trim();
+        var fallbackCar = {
+          name: name,
+          type: card.querySelector(".type") ? card.querySelector(".type").textContent.trim() : "Xe máy",
+          price: card.querySelector(".price") ? card.querySelector(".price").childNodes[0].textContent.trim() : "150.000đ",
+          image: card.querySelector("img") ? card.querySelector("img").src : "",
+          location: "Đà Nẵng",
+          rating: "4.8"
+        };
+        var c = findCar(name) || fallbackCar;
+        var detail = card.querySelector('a[href="vehicle-detail.html"]');
+        var rent = card.querySelector(".btn-rent-vrp");
+        if (detail) {
+          detail.setAttribute("href", "#chi-tiet-xe");
+          detail.addEventListener("click", function (e) {
+            e.preventDefault();
+            save(c);
+            openVehiclePreviewModal(c);
+          });
+        }
+        if (rent) {
+          rent.setAttribute("href", "weekly-vehicle-schedule.html?xe=" + encodeURIComponent(name));
+          rent.addEventListener("click", function () { save(c); });
+        }
+      });
+    }
+
+    bindStaticFeaturedCards();
+
+    if (featuredGrid && api) {
+      api.fetchVehicles({ sort: "rating-desc" }, 2200).then(function (items) {
+        if (!items || !items.length) return;
+        var topItems = items.slice(0, 6);
+        var map = Object.create(null);
+        featuredGrid.innerHTML = topItems.map(function (v) {
+          map[String(v.vehicle_id)] = v;
+          var fullName = [v.brand, v.model].filter(Boolean).join(" ").trim() || v.brand;
+          var ratingStr = Number(v.rating || 0).toFixed(1);
+          var locText = v.store_address || v.city_name || "Đà Nẵng";
+          var priceStr = api.formatPrice(v.price_per_day);
+          var imgUrl = v.image_url || api.FALLBACK_IMG;
+          return (
+            '<article class="vehicle-card" data-vehicle-id="' + api.escapeHtml(v.vehicle_id) + '">' +
+              '<div class="thumb">' +
+                '<span class="badge-avail">Có thể thuê</span>' +
+                '<button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>' +
+                '<img src="' + api.escapeHtml(imgUrl) + '" alt="' + api.escapeHtml(fullName) + '">' +
+              "</div>" +
+              '<div class="body">' +
+                '<p class="type">' + api.escapeHtml(v.type) + "</p>" +
+                "<h3>" + api.escapeHtml(fullName) + "</h3>" +
+                '<div class="meta">★ ' + ratingStr + " · " + api.escapeHtml(locText) + "</div>" +
+                '<div class="price">' + api.escapeHtml(priceStr) + ' <small>/ ngày</small></div>' +
+                '<div class="vehicle-actions">' +
+                  '<a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>' +
+                  '<a href="weekly-vehicle-schedule.html?xe=' + encodeURIComponent(fullName) + '" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>' +
+                "</div>" +
+              "</div>" +
+            "</article>"
+          );
+        }).join("");
+
+        featuredGrid.addEventListener("click", function (ev) {
+          var dBtn = ev.target.closest(".btn-detail-vrp");
+          if (dBtn) {
+            ev.preventDefault();
+            var card = dBtn.closest(".vehicle-card");
+            var v = card ? map[card.dataset.vehicleId] : null;
+            if (v) {
+              api.saveSelectedVehicle(v);
+              api.openVehicleModal(v);
+            }
+            return;
+          }
+          var rBtn = ev.target.closest(".btn-rent-vrp");
+          if (rBtn) {
+            var rCard = rBtn.closest(".vehicle-card");
+            var rv = rCard ? map[rCard.dataset.vehicleId] : null;
+            if (rv) api.saveSelectedVehicle(rv);
+          }
         });
-      }
-      if (rent) {
-        rent.setAttribute("href", "weekly-vehicle-schedule.html?xe=" + encodeURIComponent(name));
-        rent.addEventListener("click", function () { save(c); });
-      }
-    });
+
+        var area = featuredGrid.closest("[data-data-area]");
+        if (window.VRPDataState && area) window.VRPDataState.refresh(area);
+      }).catch(function () {
+        /* Giữ nguyên thẻ tĩnh mặc định khi backend chưa chạy */
+      });
+    }
   }
 
   if (PAGE === "vehicle-search.html") {

@@ -20,6 +20,10 @@ def register_store(db: Session, owner_id: int, store_data: dict, business_licens
         bank_account_number=store_data["bank_account_number"],
         bank_name=store_data["bank_name"],
         account_holder=store_data["account_holder"],
+        latitude=store_data.get("latitude"),
+        longitude=store_data.get("longitude"),
+        allow_store_pickup=store_data.get("allow_store_pickup", True),
+        allow_home_delivery=store_data.get("allow_home_delivery", True),
         status="Đang chờ duyệt"
     )
     db.add(store)

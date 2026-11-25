@@ -112,6 +112,10 @@ async def register_store_api(
     bank_account_number: str = Form(...),
     bank_name: str = Form(...),
     account_holder: str = Form(...),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    allow_store_pickup: bool = Form(True),
+    allow_home_delivery: bool = Form(True),
     business_license: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -148,7 +152,11 @@ async def register_store_api(
             "city_id": city_id,
             "bank_account_number": bank_account_number,
             "bank_name": bank_name,
-            "account_holder": account_holder
+            "account_holder": account_holder,
+            "latitude": latitude,
+            "longitude": longitude,
+            "allow_store_pickup": allow_store_pickup,
+            "allow_home_delivery": allow_home_delivery,
         }
         store = register_store(
             db=db,

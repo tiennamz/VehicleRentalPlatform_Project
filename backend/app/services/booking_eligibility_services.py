@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import math
-from typing import Optional, List
+from typing import Optional, List, Sequence
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -16,7 +16,9 @@ from app.schemas.booking_eligibility_schemas import (
     DriverLicenseSubmitSchema,
     OrderCreateSchema,
 )
+from app.schemas.vehicle_search_schemas import VehicleSearchItem
 from app.services.delivery_services import calculate_and_validate_delivery_fee
+from app.services.vehicle_search_services import search_and_sort_vehicles
 
 
 MOTORBIKE_TYPES = {"Xe tay ga", "Xe số"}
@@ -158,26 +160,49 @@ def submit_driver_license(
 
 def search_vehicles(
     db: Session,
-    vehicle_type: Optional[str] = None,
-    brand: Optional[str] = None,
-    status_filter: Optional[str] = "Available",
+    vehicle_type: Optional[Sequence[str] | str] = None,
+    brand: Optional[Sequence[str] | str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    delivery_method: Optional[Sequence[str] | str] = None,
+    min_rating: Optional[float] = None,
+    city: Optional[str] = None,
+    city_id: Optional[int] = None,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
+    user_lat: Optional[float] = None,
+    user_lng: Optional[float] = None,
+    max_distance_km: Optional[float] = None,
+    sort_by: Optional[str] = "default",
+    sort_order: Optional[str] = None,
+    status_filter: Optional[str] = None,
     user_id: Optional[int] = None,
-) -> List[Vehicle]:
+) -> List[VehicleSearchItem]:
     """
     Tìm kiếm danh sách phương tiện.
     Theo đặc tả TF13D97 (TC33): Tài khoản chưa nộp hoặc chưa duyệt GPLX
     vẫn được phép tìm kiếm và xem danh sách xe bình thường.
     """
-    query = db.query(Vehicle)
-
-    if vehicle_type:
-        query = query.filter(Vehicle.type == vehicle_type)
-    if brand:
-        query = query.filter(Vehicle.brand.ilike(f"%{brand}%"))
-    if status_filter:
-        query = query.filter(Vehicle.status == status_filter)
-
-    return query.order_by(Vehicle.vehicle_id.asc()).all()
+    return search_and_sort_vehicles(
+        db=db,
+        vehicle_type=vehicle_type,
+        brand=brand,
+        min_price=min_price,
+        max_price=max_price,
+        delivery_method=delivery_method,
+        min_rating=min_rating,
+        city=city,
+        city_id=city_id,
+        start_time=start_time,
+        end_time=end_time,
+        user_lat=user_lat,
+        user_lng=user_lng,
+        max_distance_km=max_distance_km,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        status_filter=status_filter,
+        user_id=user_id,
+    )
 
 
 def create_rental_order(

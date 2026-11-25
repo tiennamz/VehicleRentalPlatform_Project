@@ -675,7 +675,8 @@ window.showToast = function (msg) {
     list: list,
     toggle: toggle,
     remove: remove,
-    isFav: isFav
+    isFav: isFav,
+    refresh: paintHearts
   };
 
   function cardToItem(card) {
@@ -854,21 +855,113 @@ window.showToast = function (msg) {
   });
 })();
 
-/* Lọc xe theo loại, giá, hãng */
+/* Lọc xe theo loại, giá, hãng, hình thức giao nhận, điểm đánh giá & sắp xếp theo giá, đánh giá, khoảng cách */
 (function () {
   const grid = document.querySelector(".vehicle-grid");
   const panel = document.querySelector(".filter-panel");
   if (!grid || !panel) return;
 
-  const cards = Array.from(grid.querySelectorAll(".vehicle-card"));
+  const api = window.VRPVehicleAPI;
+  const sortSelect = document.getElementById("vehicleSort");
+  const resetBtn = document.getElementById("resetFiltersBtn");
+  const resultsCountEl = document.getElementById("resultsCount");
+  const locateBtn = document.getElementById("locateUserBtn");
+  const locationStatusEl = document.getElementById("locationStatus");
+  const pickupDateEl = panel.querySelector('input[name="pickup-date"]');
+  const pickupHourEl = panel.querySelector('select[name="pickup-hour"]');
+  const returnDateEl = panel.querySelector('input[name="return-date"]');
+  const returnHourEl = panel.querySelector('select[name="return-hour"]');
+
+  const DEFAULT_COORDS = api ? api.DEFAULT_COORDS : { lat: 16.0678, lng: 108.2208, label: "Mặc định: Trung tâm Đà Nẵng" };
+  let userCoords = { lat: DEFAULT_COORDS.lat, lng: DEFAULT_COORDS.lng, isCustom: false };
+  let apiMode = null; // null = chưa kiểm tra, true = dùng API backend, false = fallback dữ liệu cục bộ
+  let apiVehicleMap = Object.create(null);
+
+  const localCards = Array.from(grid.querySelectorAll(".vehicle-card"));
+  const FALLBACK_IMG = api ? api.FALLBACK_IMG : "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=80";
+
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    return api ? api.haversineKm(lat1, lon1, lat2, lon2) : 0;
+  }
+
+  function escapeHtml(value) {
+    return api ? api.escapeHtml(value) : String(value == null ? "" : value);
+  }
+
+  function formatPrice(amount) {
+    return api ? api.formatPrice(amount) : (String(amount || 0) + "đ");
+  }
+
+  function hydrateFiltersFromUrl() {
+    const q = new URLSearchParams(window.location.search || "");
+    const applyChecks = function (paramName, inputName) {
+      const vals = q.getAll(paramName).join(",").split(",").map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+      if (!vals.length) return;
+      panel.querySelectorAll('input[name="' + inputName + '"]').forEach(function (cb) {
+        if (vals.indexOf(cb.value.toLowerCase()) !== -1) cb.checked = true;
+      });
+    };
+    applyChecks("type", "type");
+    applyChecks("vehicle_type", "type");
+    applyChecks("brand", "brand");
+    applyChecks("delivery", "delivery");
+    applyChecks("delivery_method", "delivery");
+
+    const priceParam = q.get("price");
+    if (priceParam) {
+      const r = panel.querySelector('input[name="price"][value="' + priceParam + '"]');
+      if (r) r.checked = true;
+    }
+    const ratingParam = q.get("rating") || q.get("min_rating");
+    if (ratingParam) {
+      const r = panel.querySelector('input[name="rating"][value="' + ratingParam + '"]');
+      if (r) r.checked = true;
+    }
+    const sortParam = q.get("sort") || q.get("sort_by");
+    if (sortParam && sortSelect) {
+      const normalized = sortParam.replace("_", "-");
+      const opt = Array.from(sortSelect.options).find(function (o) { return o.value === normalized; });
+      if (opt) sortSelect.value = opt.value;
+    }
+  }
 
   function cardData(card) {
-    const type = (card.querySelector(".type")?.textContent || "").toLowerCase();
-    const name = (card.querySelector("h3")?.textContent || "").toLowerCase();
+    const typeText = (card.querySelector(".type")?.textContent || "").toLowerCase();
+    const nameText = (card.querySelector("h3")?.textContent || "").toLowerCase();
+    const metaText = card.querySelector(".meta")?.textContent || "";
+    const priceText = card.querySelector(".price")?.textContent || "";
+    const rawDelivery = (card.dataset.delivery || "tai-cua-hang").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    const ratingMatch = metaText.match(/([0-9]+(?:[.,][0-9]+)?)/);
+
+    const type = card.dataset.type || (typeText.includes("ô tô") ? "o-to" : typeText.includes("xe điện") ? "xe-dien" : "xe-may");
+    const brand = card.dataset.brand || (
+      nameText.includes("honda") ? "honda"
+        : nameText.includes("yamaha") ? "yamaha"
+        : nameText.includes("vinfast") ? "vinfast"
+        : nameText.includes("hyundai") ? "hyundai"
+        : nameText.includes("toyota") ? "toyota" : ""
+    );
+    const price = Number(card.dataset.price || priceText.replace(/[^\d]/g, "")) || 0;
+    const rating = Number(card.dataset.rating || (ratingMatch ? ratingMatch[1].replace(",", ".") : 0)) || 0;
+    const lat = card.dataset.lat !== undefined && card.dataset.lat !== "" ? Number(card.dataset.lat) : NaN;
+    const lng = card.dataset.lng !== undefined && card.dataset.lng !== "" ? Number(card.dataset.lng) : NaN;
+    const distance = Number.isFinite(lat) && Number.isFinite(lng)
+      ? haversineKm(userCoords.lat, userCoords.lng, lat, lng)
+      : Infinity;
+
     return {
-      type: type.includes("ô tô") ? "o-to" : type.includes("xe điện") ? "xe-dien" : "xe-may",
-      brand: name.includes("honda") ? "honda" : name.includes("yamaha") ? "yamaha" : name.includes("vinfast") ? "vinfast" : "",
-      price: Number((card.querySelector(".price")?.textContent || "").replace(/[^\d]/g, "")) || 0
+      name: card.querySelector("h3")?.textContent.trim() || "",
+      typeLabel: card.querySelector(".type")?.textContent.trim() || "",
+      type: type,
+      brand: brand,
+      price: price,
+      rating: rating,
+      reviews: Number(card.dataset.reviews || 0),
+      location: card.dataset.location || "Đà Nẵng",
+      image: card.querySelector("img")?.src || FALLBACK_IMG,
+      delivery: rawDelivery,
+      deliveryLabels: rawDelivery.map(function (d) { return d === "giao-tan-noi" ? "Giao tận nơi" : "Nhận tại cửa hàng"; }),
+      distance: distance
     };
   }
 
@@ -878,32 +971,264 @@ window.showToast = function (msg) {
     });
   }
 
-  function applyFilters() {
-    const types = checkedValues("type");
-    const brands = checkedValues("brand");
-    const priceInput = panel.querySelector('input[name="price"]:checked');
-    const price = priceInput ? priceInput.value : "";
+  function getSelectedFilters() {
+    const priceVal = panel.querySelector('input[name="price"]:checked')?.value || "";
+    const ratingVal = Number(panel.querySelector('input[name="rating"]:checked')?.value || 0);
+    const startTime = (pickupDateEl && pickupDateEl.value)
+      ? (pickupDateEl.value + "T" + ((pickupHourEl && pickupHourEl.value) || "08:00") + ":00")
+      : "";
+    const endTime = (returnDateEl && returnDateEl.value)
+      ? (returnDateEl.value + "T" + ((returnHourEl && returnHourEl.value) || "17:00") + ":00")
+      : "";
+    return {
+      types: checkedValues("type"),
+      brands: checkedValues("brand"),
+      deliveries: checkedValues("delivery"),
+      price: priceVal,
+      minRating: ratingVal,
+      sort: sortSelect ? sortSelect.value : "default",
+      userLat: userCoords.lat,
+      userLng: userCoords.lng,
+      startTime: startTime,
+      endTime: endTime
+    };
+  }
 
-    cards.forEach(function (card) {
+  function updateResultCount(count) {
+    if (resultsCountEl) {
+      resultsCountEl.textContent = "Hiển thị " + count + " xe";
+    }
+  }
+
+  function updateCardDistanceText(card, distKm) {
+    const metaEl = card.querySelector(".meta");
+    if (!metaEl) return;
+    const baseLocation = card.dataset.location || "Đà Nẵng";
+    const ratingVal = card.dataset.rating || "4.8";
+    const reviewsVal = card.dataset.reviews;
+    const ratingPart = reviewsVal ? ("★ " + ratingVal + " (" + reviewsVal + ")") : ("★ " + ratingVal);
+    const distPart = Number.isFinite(distKm) ? (" · " + distKm.toFixed(1) + " km") : "";
+    metaEl.textContent = ratingPart + " · " + baseLocation + distPart;
+  }
+
+  function applyLocalFiltersAndSort() {
+    const f = getSelectedFilters();
+    let visibleCount = 0;
+
+    localCards.forEach(function (card) {
       const data = cardData(card);
       let match = true;
 
-      if (types.length && types.indexOf(data.type) === -1) match = false;
-      if (brands.length && brands.indexOf(data.brand) === -1) match = false;
-      if (price === "under-200" && data.price >= 200000) match = false;
-      if (price === "mid-300" && (data.price < 150000 || data.price > 300000)) match = false;
-      if (price === "over-300" && data.price <= 300000) match = false;
+      if (f.types.length && f.types.indexOf(data.type) === -1) match = false;
+      if (f.brands.length && f.brands.indexOf(data.brand) === -1) match = false;
+      if (f.deliveries.length && !f.deliveries.some(function (d) { return data.delivery.indexOf(d) !== -1; })) match = false;
+      if (f.price === "under-200" && data.price >= 200000) match = false;
+      if (f.price === "200-400" && (data.price < 200000 || data.price > 400000)) match = false;
+      if (f.price === "over-400" && data.price <= 400000) match = false;
+      if (f.minRating && data.rating < f.minRating) match = false;
 
       card.hidden = !match;
+      updateCardDistanceText(card, data.distance);
+      if (match) visibleCount++;
     });
 
+    const visibleCards = localCards.filter(function (c) { return !c.hidden; });
+    const hiddenCards = localCards.filter(function (c) { return c.hidden; });
+
+    if (f.sort === "price-asc") {
+      visibleCards.sort(function (a, b) { return cardData(a).price - cardData(b).price; });
+    } else if (f.sort === "price-desc") {
+      visibleCards.sort(function (a, b) { return cardData(b).price - cardData(a).price; });
+    } else if (f.sort === "rating-desc") {
+      visibleCards.sort(function (a, b) { return cardData(b).rating - cardData(a).rating; });
+    } else if (f.sort === "distance-asc") {
+      visibleCards.sort(function (a, b) { return cardData(a).distance - cardData(b).distance; });
+    }
+
+    const ordered = f.sort === "default" ? localCards : visibleCards.concat(hiddenCards);
+    ordered.forEach(function (card) { grid.appendChild(card); });
+
+    updateResultCount(visibleCount);
     const area = grid.closest("[data-data-area]");
     if (window.VRPDataState && area) window.VRPDataState.refresh(area);
+    if (window.VRPFavorites && window.VRPFavorites.refresh) window.VRPFavorites.refresh();
   }
 
-  panel.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(function (input) {
-    input.addEventListener("change", applyFilters);
+  function renderApiCards(items) {
+    apiVehicleMap = Object.create(null);
+    grid.innerHTML = items.map(function (v) {
+      apiVehicleMap[String(v.vehicle_id)] = v;
+      const fullName = [v.brand, v.model].filter(Boolean).join(" ").trim() || v.brand;
+      const priceStr = v.price_per_day != null ? formatPrice(v.price_per_day) : "Liên hệ";
+      const ratingStr = Number(v.rating || 0).toFixed(1);
+      const countPart = v.review_count ? (" (" + v.review_count + ")") : "";
+      const locText = v.store_address || v.city_name || "Đà Nẵng";
+      const distPart = v.distance_km != null ? (" · " + Number(v.distance_km).toFixed(1) + " km") : "";
+      const imgUrl = v.image_url || FALLBACK_IMG;
+      const deliveryTagsHtml = (v.delivery_methods || []).map(function (m) {
+        const isHome = m.toLowerCase().includes("tận nơi");
+        return '<span class="delivery-tag' + (isHome ? " is-delivery" : "") + '">' + escapeHtml(m) + "</span>";
+      }).join("");
+      const pickupDay = (pickupDateEl && pickupDateEl.value) || "";
+      const pickupHr = (pickupHourEl && pickupHourEl.value) || "08:00";
+      const rentHref = "weekly-vehicle-schedule.html?xe=" + encodeURIComponent(fullName) +
+        (pickupDay ? "&date=" + encodeURIComponent(pickupDay) + "&hour=" + encodeURIComponent(pickupHr) : "");
+
+      return (
+        '<article class="vehicle-card" data-vehicle-id="' + escapeHtml(v.vehicle_id) + '">' +
+          '<div class="img-wrap">' +
+            '<button type="button" class="favorite-btn" aria-label="Thêm vào xe yêu thích">♡</button>' +
+            '<img src="' + escapeHtml(imgUrl) + '" alt="' + escapeHtml(fullName) + '">' +
+          "</div>" +
+          '<div class="body">' +
+            '<p class="type">' + escapeHtml(v.type) + "</p>" +
+            "<h3>" + escapeHtml(fullName) + "</h3>" +
+            '<p class="meta">★ ' + ratingStr + countPart + " · " + escapeHtml(locText) + distPart + "</p>" +
+            (deliveryTagsHtml ? '<div class="delivery-tags">' + deliveryTagsHtml + "</div>" : "") +
+            '<div class="bottom">' +
+              '<p class="price">' + escapeHtml(priceStr) + ' <span>/ ngày</span></p>' +
+              '<div class="vehicle-actions">' +
+                '<a href="#chi-tiet-xe" class="btn btn-outline btn-sm btn-detail-vrp">Chi tiết</a>' +
+                '<a href="' + rentHref + '" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>' +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+        "</article>"
+      );
+    }).join("");
+
+    updateResultCount(items.length);
+    const area = grid.closest("[data-data-area]");
+    if (window.VRPDataState && area) window.VRPDataState.refresh(area);
+    if (window.VRPFavorites && window.VRPFavorites.refresh) window.VRPFavorites.refresh();
+  }
+
+  function resolveCardVehicle(card) {
+    const vid = card && card.dataset ? card.dataset.vehicleId : null;
+    if (vid && apiVehicleMap[vid]) return apiVehicleMap[vid];
+    const d = cardData(card);
+    return {
+      name: d.name,
+      type: d.typeLabel || d.type,
+      rating: d.rating,
+      reviews: d.reviews,
+      location: d.location,
+      distance_km: Number.isFinite(d.distance) ? d.distance : null,
+      delivery_methods: d.deliveryLabels,
+      price: formatPrice(d.price),
+      price_per_day: d.price,
+      image: d.image
+    };
+  }
+
+  let activeRequestId = 0;
+  async function applyFiltersAndSort() {
+    if (!api || apiMode === false) {
+      applyLocalFiltersAndSort();
+      return;
+    }
+
+    const requestId = ++activeRequestId;
+    try {
+      const items = await api.fetchVehicles(getSelectedFilters(), 2200);
+      if (requestId !== activeRequestId) return;
+
+      if (apiMode === null && items.length === 0) {
+        apiMode = false;
+        applyLocalFiltersAndSort();
+        return;
+      }
+
+      apiMode = true;
+      renderApiCards(items);
+    } catch (err) {
+      if (requestId !== activeRequestId) return;
+      if (apiMode === null) apiMode = false;
+      applyLocalFiltersAndSort();
+    }
+  }
+
+  // Event delegation cho cả nút Chi tiết (mở modal) và Thuê xe (lưu dữ liệu xe thật)
+  grid.addEventListener("click", function (event) {
+    const detailBtn = event.target.closest(".btn-detail-vrp");
+    if (detailBtn) {
+      event.preventDefault();
+      const card = detailBtn.closest(".vehicle-card");
+      if (card && api) {
+        const extra = {
+          date: (pickupDateEl && pickupDateEl.value) || "",
+          hour: (pickupHourEl && pickupHourEl.value) || "08:00"
+        };
+        const vehicleObj = resolveCardVehicle(card);
+        api.saveSelectedVehicle(vehicleObj, extra);
+        api.openVehicleModal(vehicleObj, extra);
+      }
+      return;
+    }
+
+    const rentBtn = event.target.closest(".btn-rent-vrp");
+    if (!rentBtn) return;
+    const card = rentBtn.closest(".vehicle-card");
+    if (!card || !api) return;
+    api.saveSelectedVehicle(resolveCardVehicle(card), {
+      date: (pickupDateEl && pickupDateEl.value) || "",
+      hour: (pickupHourEl && pickupHourEl.value) || "08:00"
+    });
   });
+
+  if (locateBtn) {
+    locateBtn.addEventListener("click", function () {
+      if (!navigator.geolocation) {
+        if (window.showToast) window.showToast("Trình duyệt không hỗ trợ định vị. Đang dùng trung tâm Đà Nẵng.");
+        return;
+      }
+      if (locationStatusEl) locationStatusEl.textContent = "Đang lấy vị trí...";
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          userCoords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            isCustom: true
+          };
+          if (locationStatusEl) {
+            locationStatusEl.textContent = "Vị trí của bạn (" + userCoords.lat.toFixed(3) + ", " + userCoords.lng.toFixed(3) + ")";
+          }
+          if (sortSelect && sortSelect.value !== "distance-asc") {
+            sortSelect.value = "distance-asc";
+          }
+          applyFiltersAndSort();
+        },
+        function () {
+          userCoords = { lat: DEFAULT_COORDS.lat, lng: DEFAULT_COORDS.lng, isCustom: false };
+          if (locationStatusEl) locationStatusEl.textContent = DEFAULT_COORDS.label;
+          if (window.showToast) window.showToast("Không truy cập được vị trí, đang tính theo trung tâm Đà Nẵng.");
+          applyFiltersAndSort();
+        },
+        { enableHighAccuracy: false, timeout: 6000 }
+      );
+    });
+  }
+
+  panel.querySelectorAll('input[type="checkbox"], input[type="radio"], input[type="date"], select').forEach(function (input) {
+    input.addEventListener("change", applyFiltersAndSort);
+  });
+
+  if (sortSelect) {
+    sortSelect.addEventListener("change", applyFiltersAndSort);
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener("click", function () {
+      panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+      panel.querySelectorAll('input[type="radio"]').forEach(function (r) { r.checked = r.value === ""; });
+      if (sortSelect) sortSelect.value = "default";
+      applyFiltersAndSort();
+    });
+  }
+
+  hydrateFiltersFromUrl();
+  applyLocalFiltersAndSort();
+  applyFiltersAndSort();
 })();
 
 

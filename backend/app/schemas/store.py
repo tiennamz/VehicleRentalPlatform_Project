@@ -19,6 +19,10 @@ class StoreResponse(BaseModel):
     bank_account_number: str | None = None
     bank_name: str | None = None
     account_holder: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    allow_store_pickup: bool = True
+    allow_home_delivery: bool = True
     model_config = ConfigDict(from_attributes=True)
 
 class PublicStoreResponse(BaseModel):
@@ -26,4 +30,8 @@ class PublicStoreResponse(BaseModel):
     store_name: str
     address: str
     contact: str
+    latitude: float | None = None
+    longitude: float | None = None
+    allow_store_pickup: bool = True
+    allow_home_delivery: bool = True
     model_config = ConfigDict(from_attributes=True)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
 from sqlalchemy.orm import Session
@@ -93,9 +94,22 @@ def submit_license_endpoint(
 @router.get("/vehicles", status_code=status.HTTP_200_OK)
 def search_vehicles_endpoint(
     request: Request,
-    vehicle_type: Optional[str] = Query(None, description="Loại xe: Xe tay ga, Xe số, Ô tô 4 chỗ..."),
-    brand: Optional[str] = Query(None, description="Thương hiệu xe"),
-    status_filter: Optional[str] = Query("Available", alias="status"),
+    vehicle_type: Optional[list[str]] = Query(None, description="Loại xe: Xe tay ga, Xe số, Xe điện, Ô tô 4 chỗ... hoặc slug xe-may, xe-dien, o-to"),
+    brand: Optional[list[str]] = Query(None, description="Thương hiệu xe (có thể truyền nhiều hãng)"),
+    min_price: Optional[float] = Query(None, description="Giá thuê tối thiểu mỗi ngày (VNĐ)"),
+    max_price: Optional[float] = Query(None, description="Giá thuê tối đa mỗi ngày (VNĐ)"),
+    delivery_method: Optional[list[str]] = Query(None, description="Hình thức giao nhận: Nhận tại cửa hàng, Giao tận nơi"),
+    min_rating: Optional[float] = Query(None, description="Điểm đánh giá tối thiểu (0 - 5)"),
+    city: Optional[str] = Query(None, description="Tên thành phố hoặc khu vực"),
+    city_id: Optional[int] = Query(None, description="ID thành phố"),
+    start_time: Optional[datetime] = Query(None, description="Thời gian nhận xe (ISO-8601)"),
+    end_time: Optional[datetime] = Query(None, description="Thời gian trả xe (ISO-8601)"),
+    user_lat: Optional[float] = Query(None, description="Vĩ độ người dùng để tính khoảng cách"),
+    user_lng: Optional[float] = Query(None, description="Kinh độ người dùng để tính khoảng cách"),
+    max_distance_km: Optional[float] = Query(None, description="Khoảng cách tối đa tính bằng km"),
+    sort_by: Optional[str] = Query("default", description="Sắp xếp theo: default, price_asc, price_desc, rating_desc, rating_asc, distance_asc, distance_desc"),
+    sort_order: Optional[str] = Query(None, description="Thứ tự sắp xếp: asc hoặc desc"),
+    status_filter: Optional[str] = Query(None, alias="status"),
     user_id: Optional[int] = Query(None, description="ID người dùng tìm xe (tài khoản chưa duyệt GPLX vẫn tìm xe được)"),
     db: Session = Depends(get_db),
 ):
@@ -103,20 +117,23 @@ def search_vehicles_endpoint(
         db=db,
         vehicle_type=vehicle_type,
         brand=brand,
+        min_price=min_price,
+        max_price=max_price,
+        delivery_method=delivery_method,
+        min_rating=min_rating,
+        city=city,
+        city_id=city_id,
+        start_time=start_time,
+        end_time=end_time,
+        user_lat=user_lat,
+        user_lng=user_lng,
+        max_distance_km=max_distance_km,
+        sort_by=sort_by,
+        sort_order=sort_order,
         status_filter=status_filter,
         user_id=user_id,
     )
-    data = [
-        {
-            "vehicle_id": v.vehicle_id,
-            "store_id": v.store_id,
-            "brand": v.brand,
-            "license_plate": v.license_plate,
-            "type": v.type,
-            "status": v.status,
-        }
-        for v in vehicles
-    ]
+    data = [v.model_dump() for v in vehicles]
     return create_response(request, status.HTTP_200_OK, "Tìm kiếm phương tiện thành công", data)
 
 
