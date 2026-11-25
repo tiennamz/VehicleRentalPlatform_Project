@@ -560,8 +560,8 @@ window.showToast = function (msg) {
       rating: 5.0,
       trips: 1,
       location: "Hải Châu, Đà Nẵng",
-      price: "150K",
-      period: "/ngày",
+      price: "20K",
+      period: "/giờ",
       owner: "Hoàng Long",
       ownerAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120",
       image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=600",
@@ -577,8 +577,8 @@ window.showToast = function (msg) {
       rating: 4.9,
       trips: 12,
       location: "Mỹ Khê, Đà Nẵng",
-      price: "160K",
-      period: "/ngày",
+      price: "20K",
+      period: "/giờ",
       owner: "Minh Thư",
       ownerAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120",
       image: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=600",
@@ -594,8 +594,8 @@ window.showToast = function (msg) {
       rating: 5.0,
       trips: 40,
       location: "Hải Châu, Đà Nẵng",
-      price: "1.350K",
-      period: "/ngày",
+      price: "150K",
+      period: "/giờ",
       owner: "Đức Mạnh",
       ownerAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=120",
       image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600",
@@ -710,7 +710,7 @@ window.showToast = function (msg) {
       trips: 0,
       location: location.replace(/^★\s*/, "").trim(),
       price: priceNumber ? Math.round(priceNumber / 1000) + "K" : priceText,
-      period: "/ngày",
+      period: "/giờ",
       owner: "VRP-GO",
       ownerAvatar: DEFAULT_AVATAR,
       image: card.querySelector("img") ? card.querySelector("img").src : "",
@@ -1025,6 +1025,9 @@ window.showToast = function (msg) {
       if (f.price === "under-200" && data.price >= 200000) match = false;
       if (f.price === "200-400" && (data.price < 200000 || data.price > 400000)) match = false;
       if (f.price === "over-400" && data.price <= 400000) match = false;
+      if (f.price === "under-25" && data.price >= 25000) match = false;
+      if (f.price === "mid-35" && (data.price < 25000 || data.price > 35000)) match = false;
+      if (f.price === "over-35" && data.price <= 35000) match = false;
       if (f.minRating && data.rating < f.minRating) match = false;
 
       card.hidden = !match;
