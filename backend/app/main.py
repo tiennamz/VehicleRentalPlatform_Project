@@ -15,6 +15,7 @@ from app.routers.store import router as store_router
 from app.routers.vehicle import router as vehicle_router
 from app.routers.store_order_confirmation_routers import router as store_order_confirmation_routers
 from app.routers.order_cancellation_history_routers import router as order_cancellation_history_routers
+from app.routers.handover_confirmation_routers import router as handover_confirmation_routers
 
 app = FastAPI(
     title='Vehicle Rental Platfrom',
@@ -78,6 +79,7 @@ app.include_router(user_routers)
 app.include_router(verification_routers)
 app.include_router(audit_routers)
 app.include_router(order_cancellation_history_routers)
+app.include_router(handover_confirmation_routers)
 app.include_router(booking_eligibility_routers)
 app.include_router(delivery_routers)
 app.include_router(store_router)

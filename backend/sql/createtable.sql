@@ -291,3 +291,9 @@ ADD COLUMN cancelled_at DATETIME NULL,
 ADD COLUMN cancel_reason TEXT NULL,
 ADD COLUMN refund_rate DECIMAL(5,2) DEFAULT 0.00,
 ADD COLUMN refund_amount DECIMAL(12,2) DEFAULT 0.00;
+
+ALTER TABLE handover_records
+ADD COLUMN staff_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+ADD COLUMN staff_confirmed_at DATETIME NULL,
+ADD COLUMN customer_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+ADD COLUMN customer_confirmed_at DATETIME NULL;
