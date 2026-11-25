@@ -13,7 +13,7 @@ const storeVehicles = [
     yearColor: "Đời 2025 • Đen Nhám",
     plate: "29F1 - 889.26",
     type: "Xe tay ga",
-    price: 180000,
+    price: 25000,
     status: "available",
     desc: "Xe mới bảo dưỡng định kỳ, ODO 4.200km. Tặng kèm 02 mũ bảo hiểm + 02 áo mưa.",
     photo: makeVehicleSVG("#d1fae5", "#065f46", "Ảnh toàn diện Honda Air Blade 160")
@@ -24,7 +24,7 @@ const storeVehicles = [
     yearColor: "Pin LFP • Trắng Ngọc Trai",
     plate: "29MĐ1 - 452.10",
     type: "Xe máy điện",
-    price: 150000,
+    price: 20000,
     status: "rented",
     desc: "Pin LFP chạy 190km/lần sạc, kèm bộ sạc nhanh chính hãng VinFast.",
     photo: makeVehicleSVG("#fef3c7", "#b45309", "Ảnh toàn diện VinFast Klara S2")
@@ -35,7 +35,7 @@ const storeVehicles = [
     yearColor: "Đời 2024 • Xám Xi Măng",
     plate: "29B2 - 119.04",
     type: "Xe tay ga",
-    price: 140000,
+    price: 20000,
     status: "available",
     desc: "Khóa Smartkey, tiết kiệm xăng, phù hợp di chuyển nội thành.",
     photo: makeVehicleSVG("#d1fae5", "#065f46", "Ảnh toàn diện Honda Vision Thể Thao")
@@ -46,7 +46,7 @@ const storeVehicles = [
     yearColor: "Đời 2024 • Xanh GP",
     plate: "29D2 - 773.81",
     type: "Xe côn tay",
-    price: 220000,
+    price: 30000,
     status: "maintenance",
     desc: "Đang thay nhông sên dĩa và kiểm tra phanh định kỳ.",
     photo: makeVehicleSVG("#fee2e2", "#b91c1c", "Ảnh toàn diện Yamaha Exciter 155")
@@ -168,7 +168,7 @@ document.getElementById("fillSampleBtn").addEventListener("click", () => {
   document.getElementById("licensePlate").value = "29E2 - 668.99";
   document.getElementById("yearColor").value = "2025 • Đỏ Đen Thể Thao";
   document.getElementById("vehicleDesc").value = "Xe mới 99%, ODO 1.800km, phanh ABS 2 kênh, tặng kèm 02 mũ bảo hiểm.";
-  document.getElementById("dailyPrice").value = "200000";
+  document.getElementById("dailyPrice").value = "28000";
   document.getElementById("depositAmount").value = "1.500.000 đ (Hoặc giữ CCCD gốc)";
   document.getElementById("fuelType").value = "Xăng RON 95 (Đầy bình khi giao)";
   document.getElementById("listingStatus").value = "available";
@@ -238,7 +238,7 @@ const renderVehicleTable = () => {
     btn.addEventListener("click", () => {
       const vehicle = storeVehicles.find((item) => item.id === Number(btn.dataset.id));
       if (!vehicle) return;
-      document.getElementById("modalPlate").textContent = `${vehicle.plate} • ${vehicle.type} • ${formatVND(vehicle.price)}/ngày`;
+      document.getElementById("modalPlate").textContent = `${vehicle.plate} • ${vehicle.type} • ${formatVND(vehicle.price)}/giờ`;
       document.getElementById("modalTitle").textContent = vehicle.name;
       document.getElementById("modalDesc").textContent = vehicle.desc;
       document.getElementById("modalGallery").innerHTML = `<img src="${vehicle.photo}" alt="${vehicle.name}" />`;
