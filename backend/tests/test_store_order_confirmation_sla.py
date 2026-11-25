@@ -214,3 +214,73 @@ def test_api_store_orders_confirm_reject_and_operator_escalation():
     finally:
         app.dependency_overrides.clear()
         db.close()
+
+
+def test_booking_blocked_when_vehicle_status_rented_and_released_after_rejection():
+    from datetime import date
+    from app.models.drivers_license import DriverLicense
+    from app.schemas.booking_eligibility_schemas import OrderCreateSchema
+    from app.services.booking_eligibility_services import create_rental_order
+
+    db, _ = _setup_db()
+    # Cập nhật đủ tuổi 18+ và GPLX hợp lệ cho khách thuê
+    renter = db.query(User).filter(User.user_id == 20).first()
+    renter.date_of_birth = date(1998, 5, 10)
+    db.add(
+        DriverLicense(
+            user_id=20,
+            license_number="720199800001",
+            license_class="A1",
+            verification_status="Đã xác thực",
+            expiry_date=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=365),
+        )
+    )
+    db.commit()
+
+    start_t = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=2)
+    end_t = start_t + timedelta(days=2)
+
+    # 1. Xe đang có trạng thái vật lý 'Đang thuê' -> chặn tạo đơn (409)
+    vehicle = db.query(Vehicle).filter(Vehicle.vehicle_id == 200).first()
+    vehicle.status = "Đang thuê"
+    db.commit()
+    with pytest.raises(Exception) as exc_rented:
+        create_rental_order(
+            db,
+            OrderCreateSchema(
+                renter_id=20,
+                vehicle_id=200,
+                start_time=start_t,
+                end_time=end_t,
+                delivery_method="Nhận tại cửa hàng",
+            ),
+        )
+    assert getattr(exc_rented.value, "status_code", None) == 409
+
+    # 2. Mở lại xe 'Sẵn sàng', tạo đơn 1 -> bị cửa hàng từ chối -> lịch được giải phóng để đặt đơn 2
+    vehicle.status = "Sẵn sàng"
+    db.commit()
+    order1 = create_rental_order(
+        db,
+        OrderCreateSchema(
+            renter_id=20,
+            vehicle_id=200,
+            start_time=start_t,
+            end_time=end_t,
+            delivery_method="Nhận tại cửa hàng",
+        ),
+    )
+    reject_store_order(db, order_id=order1.order_id, owner_id=10, rejection_reason="Xe cần kiểm tra nhanh")
+
+    order2 = create_rental_order(
+        db,
+        OrderCreateSchema(
+            renter_id=20,
+            vehicle_id=200,
+            start_time=start_t,
+            end_time=end_t,
+            delivery_method="Nhận tại cửa hàng",
+        ),
+    )
+    assert order2.order_id != order1.order_id
+    db.close()

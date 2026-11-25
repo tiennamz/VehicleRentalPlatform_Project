@@ -26,7 +26,16 @@ from app.services.vehicle_search_services import search_and_sort_vehicles
 DEPOSIT_RATE_DEFAULT = Decimal("30")
 DEPOSIT_MIN_VND = Decimal("200000.00")
 DEPOSIT_MAX_VND = Decimal("1000000.00")
-INACTIVE_ORDER_STATUSES = {"Đã hủy", "Hoàn thành", "Cancelled", "Completed"}
+INACTIVE_ORDER_STATUSES = {
+    "Đã hủy",
+    "Hoàn thành",
+    "Cửa hàng từ chối",
+    "Từ chối",
+    "Cancelled",
+    "Completed",
+    "Rejected",
+}
+AVAILABLE_VEHICLE_STATUSES = {"Sẵn sàng", "Available"}
 
 
 MOTORBIKE_TYPES = {"Xe tay ga", "Xe số"}
@@ -392,6 +401,13 @@ def create_rental_order(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Hạng giấy phép lái xe ({license_record.license_class}) không phù hợp để thuê loại xe '{vehicle.type}'.",
+        )
+
+    # 3b. Kiểm tra trạng thái vật lý của xe (chặn nếu xe đang thuê, đang bảo trì hoặc đã xóa)
+    if vehicle.status is not None and vehicle.status not in AVAILABLE_VEHICLE_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Phương tiện hiện ở trạng thái '{vehicle.status}', không thể tạo đơn thuê.",
         )
 
     # 4. Kiểm tra trùng lịch đặt xe
