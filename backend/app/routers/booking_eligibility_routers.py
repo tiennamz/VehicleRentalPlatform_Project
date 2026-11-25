@@ -17,7 +17,11 @@ from app.services.booking_eligibility_services import (
     search_vehicles,
     create_rental_order,
 )
+from app.routers.user_routers import _get_optional_user
+from app.schemas.user_schemas import PersonalProfileUpdateSchema
+from app.services.user_services import get_personal_profile, update_personal_profile
 from app.utils.response import create_response
+from dependencies.middleware import RoleID
 
 router = APIRouter(tags=["Booking Eligibility & Vehicle Search (TF13D97)"])
 
@@ -26,32 +30,23 @@ router = APIRouter(tags=["Booking Eligibility & Vehicle Search (TF13D97)"])
 def get_profile_endpoint(
     request: Request,
     user_id: int,
+    current_user: Optional[User] = Depends(_get_optional_user),
     db: Session = Depends(get_db),
 ):
-    user = db.query(User).filter(User.user_id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy người dùng với ID {user_id}",
+    can_view_docs = False
+    if current_user is not None:
+        is_Privileged = any(
+            getattr(ur, "role_id", None) in {RoleID.ADMIN, RoleID.STAFF, RoleID.STORE_OWNER}
+            for ur in current_user.user_roles
         )
-    lic = db.query(DriverLicense).filter(DriverLicense.user_id == user_id).first()
-    data = {
-        "user_id": user.user_id,
-        "fullname": user.fullname,
-        "email": user.email,
-        "phone_number": user.phone_number,
-        "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
-        "address": user.address,
-        "driver_license": {
-            "drivers_license_id": lic.drivers_license_id,
-            "license_number": lic.license_number,
-            "license_class": lic.license_class,
-            "issue_date": lic.issue_date.isoformat() if lic.issue_date else None,
-            "expiry_date": lic.expiry_date.isoformat() if lic.expiry_date else None,
-            "verification_status": lic.verification_status,
-            "rejected_reason": lic.rejected_reason,
-        } if lic else None,
-    }
+        if current_user.user_id == user_id or is_Privileged:
+            can_view_docs = True
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không có quyền xem hồ sơ của người dùng khác.",
+            )
+    data = get_personal_profile(db=db, user_id=user_id, include_sensitive_docs=can_view_docs)
     return create_response(request, status.HTTP_200_OK, "Lấy thông tin hồ sơ cá nhân thành công", data)
 
 
@@ -59,19 +54,19 @@ def get_profile_endpoint(
 def update_profile_endpoint(
     request: Request,
     user_id: int,
-    profile_data: UserProfileUpdateSchema,
+    profile_data: PersonalProfileUpdateSchema,
     db: Session = Depends(get_db),
 ):
-    user = update_user_profile(db, user_id=user_id, profile_data=profile_data)
-    data = {
-        "user_id": user.user_id,
-        "fullname": user.fullname,
-        "email": user.email,
-        "phone_number": user.phone_number,
-        "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
-        "age": calculate_age(user.date_of_birth) if user.date_of_birth else None,
-        "address": user.address,
-    }
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    data = update_personal_profile(
+        db=db,
+        user_id=user_id,
+        profile_data=profile_data,
+        accessor_id=user_id,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
     return create_response(request, status.HTTP_200_OK, "Cập nhật hồ sơ cá nhân thành công", data)
 
 

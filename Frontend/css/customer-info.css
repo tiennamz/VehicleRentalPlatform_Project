@@ -785,6 +785,17 @@ body {
     align-items: center;
     justify-content: center;
     border: 2px solid #059669;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.profile-big-avatar img,
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
 }
 
 .btn-change-avatar {
@@ -1216,6 +1227,17 @@ body {
     align-items: center;
     justify-content: center;
     border: 2px solid #059669;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.profile-big-avatar img,
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
 }
 
 .btn-change-avatar {

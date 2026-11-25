@@ -165,21 +165,22 @@
 
                 <div class="profile-layout">
                     <div class="profile-avatar-box">
-                        <div class="profile-big-avatar">VU</div>
-                        <button class="btn-change-avatar">
+                        <div class="profile-big-avatar" id="profileBigAvatar" onclick="document.getElementById('avatarFileInput').click()" title="Bấm để đổi ảnh đại diện">VU</div>
+                        <input type="file" id="avatarFileInput" accept="image/*" onchange="handleAvatarChange(event)" hidden>
+                        <button type="button" class="btn-change-avatar" id="changeAvatarBtn" onclick="document.getElementById('avatarFileInput').click()">
                             <i class="fa-solid fa-camera"></i> Đổi ảnh
                         </button>
                     </div>
 
-                    <form class="profile-form" onsubmit="saveProfile(event)">
+                    <form class="profile-form" method="post" onsubmit="saveProfile(event)" novalidate>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="profileNameInput">Họ và tên</label>
-                                <input type="text" id="profileNameInput" value="Vũ Đức" class="form-input" placeholder="Nhập họ và tên">
+                                <input type="text" id="profileNameInput" value="Vũ Đức" class="form-input" placeholder="Nhập họ và tên" required>
                             </div>
                             <div class="form-group">
                                 <label for="profilePhoneInput">Số điện thoại</label>
-                                <input type="tel" id="profilePhoneInput" value="0987 654 321" class="form-input" placeholder="Nhập số điện thoại">
+                                <input type="tel" id="profilePhoneInput" value="0987 654 321" class="form-input" placeholder="Nhập số điện thoại" required>
                             </div>
                         </div>
 
@@ -190,8 +191,13 @@
                             </div>
                             <div class="form-group">
                                 <label for="profileDobInput">Ngày sinh</label>
-                                <input type="date" id="profileDobInput" value="1998-08-15" class="form-input">
+                                <input type="date" id="profileDobInput" value="1998-08-15" class="form-input" required>
                             </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileAddressInput">Địa chỉ</label>
+                            <input type="text" id="profileAddressInput" value="" class="form-input" placeholder="Nhập số nhà, tên đường, quận/huyện, tỉnh/thành phố" required>
                         </div>
 
                         <div class="form-row">
@@ -204,11 +210,11 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="licenseNumberInput">Giấy phép lái xe (GPLX)</label>
+                                <label for="licenseNumberInput">Giấy phép lái xe (GPLX) <span class="req">*</span></label>
                                 <div class="license-input-row">
                                     <input type="text" id="licenseNumberInput" class="form-input" placeholder="Nhập số GPLX (VD: 079098001234)" maxlength="20" autocomplete="off">
                                     <select id="licenseClassSelect" class="form-input license-class-select" aria-label="Hạng giấy phép lái xe">
-                                        <option value="A1">Hạng A1</option>
+                                        <option value="A1" selected>Hạng A1</option>
                                         <option value="A">Hạng A</option>
                                         <option value="B1">Hạng B1</option>
                                         <option value="C">Hạng C</option>
@@ -222,7 +228,7 @@
                         </div>
 
                         <div class="form-group license-upload-group">
-                            <label>Ảnh giấy phép lái xe</label>
+                            <label>Ảnh giấy phép lái xe <span class="req">*</span></label>
                             <label class="license-upload" for="licenseFileInput">
                                 <span class="license-upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
                                 <span class="license-upload-text">
@@ -233,17 +239,18 @@
                             </label>
                             <input type="file" id="licenseFileInput" accept="image/*" onchange="previewDoc(event, 'license')" hidden>
                             <div class="license-preview" id="licensePreview" hidden>
-                                <img id="licensePreviewImg" alt="Ảnh giấy phép lái xe đã tải">
+                                <img id="licensePreviewImg" alt="Ảnh giấy phép lái xe đã tải" style="cursor:zoom-in" title="Bấm để xem ảnh lớn" onclick="openDocLightbox('license', 'Ảnh giấy phép lái xe của tôi')">
                                 <div class="license-preview-info">
-                                    <strong>Đã tải ảnh GPLX</strong>
+                                    <strong>Ảnh GPLX của bạn</strong>
                                     <span id="licenseFileName"></span>
+                                    <button type="button" class="license-view-btn" onclick="openDocLightbox('license', 'Ảnh giấy phép lái xe của tôi')" style="margin-top:4px;align-self:flex-start;padding:4px 10px;border-radius:6px;border:1px solid #059669;background:#ecfdf5;color:#047857;font-size:12px;font-weight:600;cursor:pointer"><i class="fa-solid fa-eye"></i> Xem ảnh</button>
                                 </div>
                                 <button type="button" class="license-remove" onclick="removeDoc('license')" aria-label="Xoá ảnh">&times;</button>
                             </div>
                         </div>
 
                         <div class="form-group license-upload-group">
-                            <label>Ảnh CCCD (mặt trước &amp; mặt sau)</label>
+                            <label>Ảnh CCCD (mặt trước &amp; mặt sau) <span class="req">*</span></label>
                             <div class="doc-upload-grid">
                                 <div>
                                     <label class="license-upload" for="cccdFrontFileInput">
@@ -256,10 +263,11 @@
                                     </label>
                                     <input type="file" id="cccdFrontFileInput" accept="image/*" onchange="previewDoc(event, 'cccdFront')" hidden>
                                     <div class="license-preview" id="cccdFrontPreview" hidden>
-                                        <img id="cccdFrontPreviewImg" alt="CCCD mặt trước">
+                                        <img id="cccdFrontPreviewImg" alt="CCCD mặt trước" style="cursor:zoom-in" title="Bấm để xem ảnh lớn" onclick="openDocLightbox('cccdFront', 'Ảnh CCCD mặt trước của tôi')">
                                         <div class="license-preview-info">
-                                            <strong>Đã tải mặt trước</strong>
+                                            <strong>CCCD mặt trước của bạn</strong>
                                             <span id="cccdFrontFileName"></span>
+                                            <button type="button" class="license-view-btn" onclick="openDocLightbox('cccdFront', 'Ảnh CCCD mặt trước của tôi')" style="margin-top:4px;align-self:flex-start;padding:4px 10px;border-radius:6px;border:1px solid #059669;background:#ecfdf5;color:#047857;font-size:12px;font-weight:600;cursor:pointer"><i class="fa-solid fa-eye"></i> Xem ảnh</button>
                                         </div>
                                         <button type="button" class="license-remove" onclick="removeDoc('cccdFront')" aria-label="Xoá ảnh">&times;</button>
                                     </div>
@@ -275,10 +283,11 @@
                                     </label>
                                     <input type="file" id="cccdBackFileInput" accept="image/*" onchange="previewDoc(event, 'cccdBack')" hidden>
                                     <div class="license-preview" id="cccdBackPreview" hidden>
-                                        <img id="cccdBackPreviewImg" alt="CCCD mặt sau">
+                                        <img id="cccdBackPreviewImg" alt="CCCD mặt sau" style="cursor:zoom-in" title="Bấm để xem ảnh lớn" onclick="openDocLightbox('cccdBack', 'Ảnh CCCD mặt sau của tôi')">
                                         <div class="license-preview-info">
-                                            <strong>Đã tải mặt sau</strong>
+                                            <strong>CCCD mặt sau của bạn</strong>
                                             <span id="cccdBackFileName"></span>
+                                            <button type="button" class="license-view-btn" onclick="openDocLightbox('cccdBack', 'Ảnh CCCD mặt sau của tôi')" style="margin-top:4px;align-self:flex-start;padding:4px 10px;border-radius:6px;border:1px solid #059669;background:#ecfdf5;color:#047857;font-size:12px;font-weight:600;cursor:pointer"><i class="fa-solid fa-eye"></i> Xem ảnh</button>
                                         </div>
                                         <button type="button" class="license-remove" onclick="removeDoc('cccdBack')" aria-label="Xoá ảnh">&times;</button>
                                     </div>

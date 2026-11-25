@@ -13,6 +13,8 @@ class User(Base):
     phone_number = Column(String(15), unique=True)
     date_of_birth = Column(Date, nullable=True)
     address = Column(String(255), nullable=True)
+    gender = Column(String(20), nullable=True)
+    avatar_url = Column(String(255), nullable=True)
     status = Column(Enum("Hoạt động", "Không hoạt động"), default="Hoạt động")
     created_at = Column(DateTime)
 

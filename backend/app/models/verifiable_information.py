@@ -6,8 +6,8 @@ from sqlalchemy.orm import relationship
 class VerifiableInformation(Base):
     __tablename__ = "verifiable_information"
     information_id = Column(BigInteger, ForeignKey("users.user_id"), primary_key=True, autoincrement=False)
-    img_id_card_before = Column(String(255), unique=True)
-    img_id_card_after = Column(String(255), unique=True)
+    img_id_card_before = Column(String(255), unique=True, nullable=True)
+    img_id_card_after = Column(String(255), unique=True, nullable=True)
     status = Column(
         Enum(
             "Đang chờ",
