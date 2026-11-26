@@ -38,22 +38,12 @@ def _now_utc_naive() -> datetime:
 
 def get_confirmation_timeout_minutes(db: Session) -> int:
     """
-    Đọc cấu hình số phút tối đa cửa hàng được phép xác nhận đơn từ bảng system_config.
-    Nếu chưa cấu hình hoặc giá trị không hợp lệ thì dùng mặc định 15 phút.
+    Đọc cấu hình số phút giữ chỗ / hạn cửa hàng xác nhận đơn từ dịch vụ cấu hình tập trung
+    (đồng bộ `hold_time_minutes` và `store_confirmation_timeout_minutes`, mặc định 15 phút).
     """
-    row = (
-        db.query(SystemConfig)
-        .filter(SystemConfig.config_key == "store_confirmation_timeout_minutes")
-        .first()
-    )
-    if row and row.config_value:
-        try:
-            val = int(str(row.config_value).strip())
-            if val > 0:
-                return val
-        except Exception:
-            pass
-    return STORE_CONFIRMATION_TIMEOUT_MINUTES_DEFAULT
+    from app.services.system_config_services import get_hold_time_minutes
+
+    return get_hold_time_minutes(db)
 
 
 def get_effective_deadline(order: Order, timeout_minutes: int) -> Optional[datetime]:

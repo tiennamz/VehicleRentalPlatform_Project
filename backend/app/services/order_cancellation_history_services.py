@@ -59,14 +59,24 @@ def calculate_refund_br04(
     deposit_amount: Decimal,
     cancelled_at: Optional[datetime] = None,
     order_status: Optional[str] = None,
+    db: Optional[Session] = None,
 ) -> Dict[str, Any]:
     """
-    Tính số tiền hoàn cọc theo quy tắc BR-04:
-    - >= 24 giờ trước giờ nhận xe: hoàn 100% tiền cọc.
-    - Từ 6 đến dưới 24 giờ trước giờ nhận xe: hoàn 50% tiền cọc.
-    - Dưới 6 giờ trước giờ nhận xe: hoàn 0% tiền cọc.
+    Tính số tiền hoàn cọc theo chính sách hủy đọc từ `system_config` (mặc định BR-04):
+    - >= cancel_full_refund_hours (24h): hoàn cancel_full_refund_rate (100%) tiền cọc.
+    - Từ cancel_partial_refund_hours (6h) đến < cancel_full_refund_hours: hoàn cancel_partial_refund_rate (50%).
+    - Dưới cancel_partial_refund_hours: hoàn cancel_late_refund_rate (0%).
     - Nếu đơn chưa thanh toán cọc (Chờ thanh toán hoặc deposit <= 0): không phát sinh hoàn tiền.
     """
+    from app.services.system_config_services import get_system_config
+
+    cfg = get_system_config(db)
+    full_hours = float(cfg["cancel_full_refund_hours"])
+    full_rate = cfg["cancel_full_refund_rate"]
+    partial_hours = float(cfg["cancel_partial_refund_hours"])
+    partial_rate = cfg["cancel_partial_refund_rate"]
+    late_rate = cfg["cancel_late_refund_rate"]
+
     now = (cancelled_at or _now_utc_naive()).replace(tzinfo=None)
     pickup = start_time.replace(tzinfo=None)
     hours_before_pickup = round((pickup - now).total_seconds() / 3600.0, 2)
@@ -81,15 +91,19 @@ def calculate_refund_br04(
             "policy_note": "Đơn chưa thanh toán tiền cọc nên không phát sinh khoản hoàn cọc.",
         }
 
-    if hours_before_pickup >= 24.0:
-        rate = Decimal("100.00")
-        policy_note = "Hủy trước giờ nhận xe từ 24 giờ trở lên — hoàn 100% tiền cọc (BR-04)."
-    elif hours_before_pickup >= 6.0:
-        rate = Decimal("50.00")
-        policy_note = "Hủy trước giờ nhận xe từ 6 đến dưới 24 giờ — hoàn 50% tiền cọc (BR-04)."
+    if hours_before_pickup >= full_hours:
+        rate = full_rate
+        policy_note = f"Hủy trước giờ nhận xe từ {full_hours:g} giờ trở lên — hoàn {rate:g}% tiền cọc (BR-04)."
+    elif hours_before_pickup >= partial_hours:
+        rate = partial_rate
+        policy_note = f"Hủy trước giờ nhận xe từ {partial_hours:g} đến dưới {full_hours:g} giờ — hoàn {rate:g}% tiền cọc (BR-04)."
     else:
-        rate = Decimal("0.00")
-        policy_note = "Hủy trước giờ nhận xe dưới 6 giờ — không hoàn tiền cọc (BR-04)."
+        rate = late_rate
+        policy_note = (
+            f"Hủy trước giờ nhận xe dưới {partial_hours:g} giờ — hoàn {rate:g}% tiền cọc (BR-04)."
+            if rate > Decimal("0.00")
+            else f"Hủy trước giờ nhận xe dưới {partial_hours:g} giờ — không hoàn tiền cọc (BR-04)."
+        )
 
     refund_amount = (deposit * rate / Decimal("100")).quantize(Decimal("0.01"))
     return {
@@ -189,6 +203,7 @@ def serialize_customer_order(db: Session, order: Order, now_utc: Optional[dateti
             deposit_amount=order.deposit_amount or Decimal("0.00"),
             cancelled_at=now,
             order_status=order.order_status,
+            db=db,
         )
         if (can_cancel and order.start_time)
         else None
@@ -255,6 +270,7 @@ def preview_order_cancellation(
         deposit_amount=order.deposit_amount or Decimal("0.00"),
         cancelled_at=now,
         order_status=order.order_status,
+        db=db,
     )
     return {
         "order_id": order.order_id,
@@ -295,6 +311,7 @@ def cancel_order_with_br04(
         deposit_amount=order.deposit_amount or Decimal("0.00"),
         cancelled_at=now,
         order_status=order.order_status,
+        db=db,
     )
 
     order.order_status = "Đã hủy"
