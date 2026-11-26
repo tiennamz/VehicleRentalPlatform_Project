@@ -8,6 +8,10 @@ from app.models.image import Image
 from app.models.price_table import PriceTable
 from app.models.user import User
 from app.models.user_role import UserRole
+from sqlalchemy import func
+from app.models.review import Review
+from app.models.city import City
+from app.models.order import Order
 
 VEHICLE_TYPE_MAP = {
     "xe tay ga": "Xe tay ga",
@@ -235,3 +239,139 @@ def pause_vehicle_service(vehicle_id: int, db: Session):
     db.refresh(vehicle)
 
     return serialize_vehicle(vehicle)
+
+
+def get_vehicle_detail(db: Session,vehicle_id: int,start_time: datetime = None,end_time: datetime = None):
+    vehicle = (
+        db.query(Vehicle)
+        .options(
+            joinedload(Vehicle.images),
+            joinedload(Vehicle.price_tables),
+            joinedload(Vehicle.store).joinedload(Store.city),
+        )
+        .filter(Vehicle.vehicle_id == vehicle_id)
+        .first()
+    )
+    if not vehicle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy xe"
+        )
+    if vehicle.status in ("Đã xóa", "Bị từ chối"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Xe hiện không khả dụng"
+        )
+    now = datetime.now()
+    valid_prices = [
+        price for price in vehicle.price_tables
+        if price.amount is not None
+        and price.price_type == "HOURLY"
+        and (price.effective_from is None or price.effective_from <= now)
+        and (price.effective_to is None or price.effective_to >= now)
+    ]
+    valid_prices.sort(
+        key=lambda price: price.effective_from or datetime.min,
+        reverse=True
+    )
+    current_price = valid_prices[0] if valid_prices else None
+    hourly_price = float(current_price.amount) if current_price else None
+    pricing = {
+        "price_type": "HOURLY",
+        "price_per_hour": hourly_price,
+        "start_time": start_time,
+        "end_time": end_time,
+        "rental_hours": None,
+        "estimated_total": None
+    }
+    if start_time and end_time:
+        if start_time <= now:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Thời gian bắt đầu thuê phải ở tương lai"
+            )
+        if end_time <= start_time:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Thời gian kết thúc phải sau thời gian bắt đầu"
+            )
+        if hourly_price is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Xe chưa có giá thuê theo giờ"
+            )
+        seconds = (end_time - start_time).total_seconds()
+        rental_hours = seconds / 3600
+        from math import ceil
+        billed_hours = ceil(rental_hours)
+        pricing["rental_hours"] = rental_hours
+        pricing["billed_hours"] = billed_hours
+        pricing["estimated_total"] = billed_hours * hourly_price
+    store = vehicle.store
+    store_data = None
+    if store:
+        store_data = {
+            "store_id": store.store_id,
+            "store_name": store.store_name,
+            "address": store.address,
+            "contact": store.contact,
+            "city": store.city.city_name if store.city else None,
+            "latitude": store.latitude,
+            "longitude": store.longitude,
+            "allow_store_pickup": store.allow_store_pickup,
+            "allow_home_delivery": store.allow_home_delivery
+        }
+    review_rows = (
+        db.query(Review)
+        .join(Order, Review.order_id == Order.order_id)
+        .options(
+            joinedload(Review.reviewer),
+            joinedload(Review.images)
+        )
+        .filter(Order.vehicle_id == vehicle_id)
+        .order_by(Review.created_at.desc())
+        .all()
+    )
+    ratings = [review.rating for review in review_rows if review.rating is not None]
+    average_rating = (
+        sum(ratings) / len(ratings)
+        if ratings else 0
+    )
+    review_data = []
+    for review in review_rows:
+        review_data.append({
+            "review_id": review.review_id,
+            "reviewer_name": (
+                review.reviewer.fullname
+                if review.reviewer else None
+            ),
+            "reviewer_avatar": (
+                review.reviewer.avatar_url
+                if review.reviewer else None
+            ),
+            "rating": review.rating,
+            "comment": review.comment,
+            "created_at": review.created_at,
+            "images": [
+                image.img_url
+                for image in review.images
+                if image.img_url
+            ]
+        })
+    cancellation_policy = {
+        "before_24_hours": "Hoàn 100% tiền cọc",
+        "from_6_to_24_hours": "Hoàn 50% tiền cọc",
+        "under_6_hours": "Không hoàn tiền cọc",
+        "unpaid_deposit": "Không hoàn tiền cọc"
+    }
+    return {
+        "vehicle": serialize_vehicle(vehicle),
+        "pricing": pricing,
+        "store": store_data,
+        "rating": {
+            "average": round(average_rating, 2),
+            "total_reviews": len(ratings)
+        },
+        "reviews": review_data,
+        "cancellation_policy": cancellation_policy
+    }
