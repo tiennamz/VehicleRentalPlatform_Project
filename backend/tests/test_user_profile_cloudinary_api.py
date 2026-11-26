@@ -52,6 +52,8 @@ def setup_db():
     db.add_all([
         Role(role_id=1, role_name="Admin", description="Admin"),
         Role(role_id=2, role_name="Khách hàng", description="Customer"),
+        Role(role_id=3, role_name="Nhân viên", description="Staff"),
+        Role(role_id=4, role_name="Chủ cửa hàng", description="Store Owner"),
     ])
     user1 = User(
         user_id=10,
@@ -71,11 +73,21 @@ def setup_db():
         address="Sơn Trà, Đà Nẵng",
         status="Hoạt động",
     )
-    db.add_all([user1, user2])
+    store_owner = User(
+        user_id=30,
+        fullname="Chủ Cửa Hàng",
+        email="owner30@gmail.com",
+        phone_number="0908888888",
+        date_of_birth=date(1990, 1, 1),
+        address="Thanh Khê, Đà Nẵng",
+        status="Hoạt động",
+    )
+    db.add_all([user1, user2, store_owner])
     db.flush()
     db.add_all([
         UserRole(user_id=10, role_id=2),
         UserRole(user_id=20, role_id=2),
+        UserRole(user_id=30, role_id=4),
     ])
     db.commit()
     db.close()
@@ -109,9 +121,56 @@ def test_private_cloudinary_signed_view_url():
     assert "signature=" in signed_view and "expires_at=" in signed_view
 
 
+def test_upload_kyc_image_uses_private_delivery_type():
+    from app.utils import cloudinary_helper
+
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+        text = "ok"
+
+        def json(self):
+            return {
+                "secure_url": "https://res.cloudinary.com/testcloud/image/private/v1/kyc/u_10/cccd_front_1.png",
+                "public_id": "kyc/u_10/cccd_front_1",
+                "format": "png",
+            }
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def post(self, url, data=None, files=None):
+            captured["url"] = url
+            captured["data"] = data
+            return FakeResponse()
+
+    with patch.object(cloudinary_helper, "CLOUDINARY_CLOUD_NAME", "testcloud"), \
+         patch.object(cloudinary_helper, "CLOUDINARY_API_KEY", "testkey"), \
+         patch.object(cloudinary_helper, "CLOUDINARY_API_SECRET", "testsecret"), \
+         patch.object(cloudinary_helper.httpx, "Client", FakeClient):
+        result = cloudinary_helper.upload_kyc_image_to_cloudinary(
+            content=PNG_BYTES,
+            filename="cccd.png",
+            content_type="image/png",
+            user_id=10,
+            doc_tag="cccd_front",
+        )
+
+    assert captured["data"]["type"] == "private"
+    assert "/image/private/" in result["secure_url"]
+
+
 @patch("app.services.user_services.delete_cloudinary_image_by_url")
 @patch("app.services.user_services.upload_kyc_image_to_cloudinary")
-def test_owner_can_view_own_saved_private_images_while_others_cannot(mock_upload, mock_delete):
+def test_kyc_document_urls_are_strictly_hidden_from_non_operators(mock_upload, mock_delete):
     counter = {"n": 0}
 
     def fake_upload(content, filename, content_type, user_id, doc_tag):
@@ -126,8 +185,9 @@ def test_owner_can_view_own_saved_private_images_while_others_cannot(mock_upload
         }
 
     mock_upload.side_effect = fake_upload
-    headers_owner = _make_auth_headers(10, "customer10@gmail.com")
-    headers_other = _make_auth_headers(20, "customer20@gmail.com")
+    headers_owner = _make_auth_headers(10, "customer10@gmail.com", role_id=2)
+    headers_other = _make_auth_headers(20, "customer20@gmail.com", role_id=2)
+    headers_store_owner = _make_auth_headers(30, "owner30@gmail.com", role_id=4)
 
     # 1. Update personal profile
     prof_res = client.put(
@@ -142,7 +202,7 @@ def test_owner_can_view_own_saved_private_images_while_others_cannot(mock_upload
     )
     assert prof_res.status_code == 200
 
-    # 2. Owner saves CCCD -> immediately receives viewable signed URLs of their own images
+    # 2. Owner saves CCCD -> URLs are strictly hidden (None), only boolean upload flags returned
     id_res = client.post(
         "/users/me/documents/id-card",
         headers=headers_owner,
@@ -153,10 +213,12 @@ def test_owner_can_view_own_saved_private_images_while_others_cannot(mock_upload
     )
     assert id_res.status_code == 200
     id_data = id_res.json()["data"]
-    assert "signature=" in id_data["img_id_card_before"]
-    assert "signature=" in id_data["img_id_card_after"]
+    assert id_data["img_id_card_before"] is None
+    assert id_data["img_id_card_after"] is None
+    assert id_data["has_front_image"] is True
+    assert id_data["has_back_image"] is True
 
-    # 3. Owner saves Driver License -> immediately receives viewable signed URL of their own GPLX
+    # 3. Owner saves Driver License -> URLs are strictly hidden (None), metadata & flags returned
     lic_res = client.post(
         "/users/me/documents/driver-license",
         headers=headers_owner,
@@ -169,24 +231,39 @@ def test_owner_can_view_own_saved_private_images_while_others_cannot(mock_upload
         },
     )
     assert lic_res.status_code == 200
-    assert "signature=" in lic_res.json()["data"]["img_license_front"]
+    lic_data = lic_res.json()["data"]
+    assert lic_data["img_license_front"] is None
+    assert lic_data["img_license_back"] is None
+    assert lic_data["has_front_image"] is True
+    assert lic_data["has_back_image"] is False
 
-    # 4. Owner reloads GET /users/me/profile -> still sees all their own signed image URLs
+    # 4. Owner reloads GET /users/me/profile -> still never receives document image URLs
     me_res = client.get("/users/me/profile", headers=headers_owner)
     assert me_res.status_code == 200
     me_data = me_res.json()["data"]
-    assert "signature=" in me_data["id_card"]["img_id_card_before"]
-    assert "signature=" in me_data["driver_license"]["img_license_front"]
+    assert me_data["id_card"]["img_id_card_before"] is None
+    assert me_data["id_card"]["img_id_card_after"] is None
+    assert me_data["id_card"]["has_front_image"] is True
+    assert me_data["driver_license"]["img_license_front"] is None
+    assert me_data["driver_license"]["has_front_image"] is True
 
-    # 5. Another logged-in user trying to view user 10's profile/images gets 403 Forbidden
+    # 5. Another logged-in customer trying to view user 10's profile gets 403 Forbidden
     other_res = client.get("/users/10/profile", headers=headers_other)
     assert other_res.status_code == 403
 
-    # 6. Unauthenticated request to /users/10/profile hides sensitive KYC documents
+    # 6. Store owner trying to view customer 10's profile/documents gets 403 Forbidden
+    owner_res = client.get("/users/10/profile", headers=headers_store_owner)
+    assert owner_res.status_code == 403
+
+    # 7. Unauthenticated requests to /users/10/profile and /users/10/documents/id-card get 401
     anon_res = client.get("/users/10/profile")
-    assert anon_res.status_code == 200
-    assert anon_res.json()["data"]["id_card"] is None
-    assert anon_res.json()["data"]["driver_license"] is None
+    assert anon_res.status_code == 401
+
+    anon_upload = client.post(
+        "/users/10/documents/id-card",
+        files={"front_image": ("cccd_front.png", PNG_BYTES, "image/png")},
+    )
+    assert anon_upload.status_code == 401
 
     db = TestingSessionLocal()
     logs = db.query(PersonalDataAccessLog).filter(PersonalDataAccessLog.target_user_id == 10).all()

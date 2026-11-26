@@ -333,8 +333,14 @@ def api_client():
 
 
 def test_api_update_and_get_delivery_config(api_client):
+    from app.core.security import create_access_token
+
+    admin_headers = {
+        "Authorization": f"Bearer {create_access_token({'sub': 'delivery@example.com', 'email': 'delivery@example.com', 'user_id': 1, 'role_id': [1]})}"
+    }
     res_put = api_client.put(
         "/admin/delivery-config",
+        headers=admin_headers,
         json={
             "allow_store_pickup": True,
             "allow_home_delivery": True,
@@ -352,6 +358,11 @@ def test_api_update_and_get_delivery_config(api_client):
 
 
 def test_api_calculate_delivery_fee_and_create_order(api_client):
+    from app.core.security import create_access_token
+
+    cust_headers = {
+        "Authorization": f"Bearer {create_access_token({'sub': 'delivery@example.com', 'email': 'delivery@example.com', 'user_id': 1, 'role_id': [2]})}"
+    }
     # 1. Tính thử phí giao xe tận nơi 6km (30,000 + 6 * 10,000 = 90,000)
     res_calc = api_client.post(
         "/delivery-config/calculate-fee",
@@ -368,6 +379,7 @@ def test_api_calculate_delivery_fee_and_create_order(api_client):
     base_time = utc_now()
     res_order = api_client.post(
         "/orders",
+        headers=cust_headers,
         json={
             "renter_id": 1,
             "vehicle_id": 10,

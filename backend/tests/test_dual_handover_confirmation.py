@@ -167,9 +167,17 @@ def test_api_dual_handover_confirmation_flow():
     app.dependency_overrides[get_db] = override_get_db
     try:
         client = TestClient(app)
+        from app.core.security import create_access_token
+
+        staff_headers = {
+            "Authorization": f"Bearer {create_access_token({'sub': 'nv_a@vrp.vn', 'email': 'nv_a@vrp.vn', 'user_id': 10, 'role_id': [4]})}"
+        }
+        renter_headers = {
+            "Authorization": f"Bearer {create_access_token({'sub': 'khach@vrp.vn', 'email': 'khach@vrp.vn', 'user_id': 20, 'role_id': [2]})}"
+        }
 
         # 1. Xem trạng thái ban đầu: chưa bên nào xác nhận
-        r0 = client.get(f"/orders/{order.order_id}/handover")
+        r0 = client.get(f"/orders/{order.order_id}/handover", headers=renter_headers)
         assert r0.status_code == 200
         assert r0.json()["data"]["both_confirmed"] is False
         assert r0.json()["data"]["order_status"] == STATUS_CONFIRMED
@@ -177,7 +185,7 @@ def test_api_dual_handover_confirmation_flow():
         # 2. Nhân viên xác nhận -> vẫn Đã xác nhận
         r1 = client.post(
             f"/orders/{order.order_id}/handover/staff-confirm",
-            headers={"X-User-Id": "10"},
+            headers=staff_headers,
             json={"condition_note": "Đầy xăng, không trầy xước"},
         )
         assert r1.status_code == 200
@@ -187,7 +195,7 @@ def test_api_dual_handover_confirmation_flow():
         # 3. Khách xác nhận -> chuyển sang Đang thuê
         r2 = client.post(
             f"/orders/{order.order_id}/handover/customer-confirm",
-            headers={"X-User-Id": "20"},
+            headers=renter_headers,
             json={"condition_note": "Đồng ý tình trạng xe"},
         )
         assert r2.status_code == 200

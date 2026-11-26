@@ -146,10 +146,19 @@ def test_api_generate_and_query_weekly_reconciliation():
     app.dependency_overrides[get_db] = override_get_db
     try:
         client = TestClient(app)
+        from app.core.security import create_access_token
+
+        admin_headers = {
+            "Authorization": f"Bearer {create_access_token({'sub': 'a@vrp.vn', 'email': 'a@vrp.vn', 'user_id': 10, 'role_id': [1]})}"
+        }
+        owner_headers = {
+            "Authorization": f"Bearer {create_access_token({'sub': 'a@vrp.vn', 'email': 'a@vrp.vn', 'user_id': 10, 'role_id': [4]})}"
+        }
 
         # 1. Chốt đối soát tuần cho cửa hàng 100
         res_gen = client.post(
             "/reconciliation/weekly/generate",
+            headers=admin_headers,
             json={"store_id": 100, "week_start": "2026-11-16"},
         )
         assert res_gen.status_code == 200
@@ -169,6 +178,7 @@ def test_api_generate_and_query_weekly_reconciliation():
         # 2. Xem đối soát tuần của cửa hàng 100
         res_store = client.get(
             "/stores/100/reconciliation/weekly",
+            headers=owner_headers,
             params={"week_start": "2026-11-16", "weeks": 1},
         )
         assert res_store.status_code == 200

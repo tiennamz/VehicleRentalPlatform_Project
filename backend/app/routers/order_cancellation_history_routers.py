@@ -3,10 +3,11 @@ Router API cho chức năng hoàn cọc theo BR-04, danh sách đơn và lịch 
 """
 
 from typing import Optional
-from fastapi import APIRouter, Body, Depends, Header, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
+from app.models.user import User
 from app.schemas.order_cancellation_history_schemas import OrderCancelSchema
 from app.services.order_cancellation_history_services import (
     cancel_order_with_br04,
@@ -15,26 +16,33 @@ from app.services.order_cancellation_history_services import (
     serialize_customer_order,
 )
 from app.utils.response import create_response
+from dependencies.middleware import get_current_user, is_operator
 
 router = APIRouter(tags=["Order Refund BR-04 & History (TF14841)"])
 
 
-def _resolve_renter_id(x_user_id: Optional[int], explicit_renter_id: Optional[int]) -> Optional[int]:
-    """Ưu tiên lấy ID khách thuê từ tham số truyền tường minh, fallback sang header X-User-Id."""
-    return explicit_renter_id if explicit_renter_id is not None else x_user_id
+def _resolve_authorized_renter_id(current_user: User, explicit_renter_id: Optional[int]) -> int:
+    if explicit_renter_id is None:
+        return current_user.user_id
+    if explicit_renter_id != current_user.user_id and not is_operator(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền truy cập hoặc thao tác trên đơn thuê của người dùng khác.",
+        )
+    return explicit_renter_id
 
 
 @router.get("/orders/my", status_code=status.HTTP_200_OK)
 def get_my_orders_and_history_endpoint(
     request: Request,
-    renter_id: Optional[int] = Query(None, description="ID khách thuê (tùy chọn nếu truyền qua header X-User-Id)"),
+    renter_id: Optional[int] = Query(None, description="ID khách thuê (chỉ vận hành viên mới được lọc theo người dùng khác)"),
     scope: str = Query("all", description="Phạm vi lọc: all (tất cả), active (đơn hiện tại), history (lịch sử)"),
     order_status: Optional[str] = Query(None, description="Lọc chính xác theo trạng thái đơn"),
-    x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Lấy danh sách đơn hiện tại, lịch sử thuê xe và thống kê tổng quan của khách hàng."""
-    resolved_renter = _resolve_renter_id(x_user_id, renter_id)
+    resolved_renter = _resolve_authorized_renter_id(current_user, renter_id)
     data = list_customer_orders(
         db=db,
         renter_id=resolved_renter,
@@ -49,11 +57,11 @@ def preview_cancel_order_br04_endpoint(
     request: Request,
     order_id: int,
     renter_id: Optional[int] = Query(None, description="ID khách thuê"),
-    x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Xem trước tỷ lệ và số tiền hoàn cọc theo quy tắc BR-04 trước khi hủy đơn."""
-    resolved_renter = _resolve_renter_id(x_user_id, renter_id)
+    resolved_renter = _resolve_authorized_renter_id(current_user, renter_id)
     data = preview_order_cancellation(db=db, order_id=order_id, renter_id=resolved_renter)
     return create_response(request, status.HTTP_200_OK, "Tính thử mức hoàn cọc BR-04 thành công", data)
 
@@ -63,11 +71,11 @@ def cancel_order_br04_endpoint(
     request: Request,
     order_id: int,
     payload: Optional[OrderCancelSchema] = Body(default=None),
-    x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Hủy đơn thuê và thực hiện hoàn cọc theo BR-04 (100% >= 24h, 50% từ 6h đến <24h, 0% <6h)."""
-    resolved_renter = _resolve_renter_id(x_user_id, payload.renter_id if payload else None)
+    resolved_renter = _resolve_authorized_renter_id(current_user, payload.renter_id if payload else None)
     order = cancel_order_with_br04(
         db=db,
         order_id=order_id,
