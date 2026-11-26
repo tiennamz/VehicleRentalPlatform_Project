@@ -443,6 +443,9 @@ def create_rental_order(
         ),
     )
 
+    from app.services.system_config_services import get_hold_time_minutes
+
+    hold_minutes = get_hold_time_minutes(db)
     new_order = Order(
         renter_id=order_data.renter_id,
         vehicle_id=order_data.vehicle_id,
@@ -460,7 +463,7 @@ def create_rental_order(
         note=order_data.note,
         order_status="Chờ thanh toán",
         created_at=now_utc,
-        confirmation_deadline=now_utc + timedelta(minutes=15),
+        confirmation_deadline=now_utc + timedelta(minutes=hold_minutes),
     )
 
     try:

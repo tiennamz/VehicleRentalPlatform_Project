@@ -34,19 +34,12 @@ def _now_utc_naive() -> datetime:
 
 def get_commission_rate(db: Optional[Session] = None) -> Decimal:
     """
-    Đọc tỷ lệ hoa hồng nền tảng từ bảng system_config (key = 'commission_rate').
+    Đọc tỷ lệ hoa hồng nền tảng từ dịch vụ cấu hình hệ thống tập trung (system_config.commission_rate).
     Nếu không cấu hình hoặc không truyền db thì dùng mặc định 12% theo BR-09.
     """
-    if db is not None:
-        row = db.query(SystemConfig).filter(SystemConfig.config_key == "commission_rate").first()
-        if row and row.config_value:
-            try:
-                rate = Decimal(str(row.config_value).strip())
-                if Decimal("0") <= rate <= Decimal("100"):
-                    return rate.quantize(Decimal("0.01"))
-            except Exception:
-                pass
-    return COMMISSION_RATE_DEFAULT
+    from app.services.system_config_services import get_system_config
+
+    return get_system_config(db)["commission_rate"]
 
 
 def calculate_commission_br09(

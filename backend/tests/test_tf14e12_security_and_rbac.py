@@ -278,6 +278,7 @@ def test_all_protected_routes_require_authentication():
         ("GET", "/stores/public"),
         ("GET", "/delivery-config"),
         ("POST", "/delivery-config/calculate-fee"),
+        ("GET", "/system-config"),
         ("POST", "/orders/calculate"),
     }
 
