@@ -170,7 +170,6 @@ def update_vehicle(db: Session, user_id: int, vehicle_id: int, data):
 
     for key, value in update_data.items():
         setattr(vehicle, key, value)
-
     if new_price is not None:
         pt = (
             db.query(PriceTable)
