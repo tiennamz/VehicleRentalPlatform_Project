@@ -18,6 +18,7 @@ from app.routers.order_cancellation_history_routers import router as order_cance
 from app.routers.handover_confirmation_routers import router as handover_confirmation_routers
 from app.routers.reconciliation_routers import router as reconciliation_routers
 from app.routers.system_config_routers import router as system_config_routers
+from app.routers.city_analytics_routers import router as city_analytics_routers
 
 app = FastAPI(
     title='Vehicle Rental Platfrom',
@@ -89,3 +90,4 @@ app.include_router(store_router)
 app.include_router(vehicle_router)
 app.include_router(store_order_confirmation_routers)
 app.include_router(system_config_routers)
+app.include_router(city_analytics_routers)

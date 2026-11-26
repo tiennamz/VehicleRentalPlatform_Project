@@ -56,7 +56,7 @@ def update_vehicle(db: Session,user_id: int,vehicle_id: int,data):
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(vehicle, key, value)
-    try:
+    try: 
         db.commit()
         db.refresh(vehicle)
         return vehicle
