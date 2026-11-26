@@ -6,15 +6,12 @@ from fastapi import (
     Depends,
     File,
     Form,
-    HTTPException,
     Request,
     UploadFile,
     status,
 )
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.core.security import decode_access_token
 from app.database.database import get_db
 from app.models.user import User
 from app.schemas.user_schemas import PersonalProfileUpdateSchema
@@ -26,44 +23,22 @@ from app.services.user_services import (
     upload_user_avatar,
 )
 from app.utils.response import create_response
-from dependencies.middleware import get_current_user, RoleID
+from dependencies.middleware import get_current_user, ensure_owner_or_roles, RoleID
 
 router = APIRouter(prefix="/users", tags=["Personal Profile & KYC Documents"])
 
-optional_bearer = HTTPBearer(auto_error=False)
 
-
-def _get_optional_user(
-    request: Request,
-    cred: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer),
-    db: Session = Depends(get_db),
-) -> Optional[User]:
-    token = (cred.credentials if cred and cred.credentials else None) or request.cookies.get("access_token")
-    if not token:
-        return None
-    try:
-        payload = decode_access_token(token)
-        email = payload.get("email") or payload.get("sub")
-        if not isinstance(email, str):
-            return None
-        return db.query(User).filter(User.email == email).first()
-    except Exception:
-        return None
-
-
-def _ensure_owner_or_admin(target_user_id: int, current_user: Optional[User]) -> Optional[int]:
+def _ensure_owner_or_admin(target_user_id: int, current_user: User) -> int:
     """
-    Nếu request có đính kèm JWT/cookie đăng nhập thì chỉ cho phép chính chủ tài khoản
-    hoặc Admin (role_id = 1) thao tác trên hồ sơ/giấy tờ của `target_user_id`.
+    Chỉ cho phép chính chủ tài khoản hoặc Admin (role_id = 1)
+    thao tác trên hồ sơ/giấy tờ của `target_user_id`.
     """
-    if current_user is None:
-        return None
-    is_admin = any(getattr(ur, "role_id", None) == RoleID.ADMIN for ur in current_user.user_roles)
-    if current_user.user_id != target_user_id and not is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn không có quyền truy cập hoặc chỉnh sửa hồ sơ của người dùng khác.",
-        )
+    ensure_owner_or_roles(
+        current_user=current_user,
+        owner_user_id=target_user_id,
+        allowed_role_ids={RoleID.ADMIN},
+        detail="Bạn không có quyền truy cập hoặc chỉnh sửa hồ sơ của người dùng khác.",
+    )
     return current_user.user_id
 
 
@@ -126,7 +101,7 @@ async def upload_user_avatar_endpoint(
     request: Request,
     user_id: int,
     avatar: UploadFile = File(..., description="Ảnh đại diện (JPG/PNG/WEBP, tối đa 5MB)"),
-    current_user: Optional[User] = Depends(_get_optional_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     accessor_id = _ensure_owner_or_admin(user_id, current_user)
@@ -205,7 +180,7 @@ async def upload_user_id_card_endpoint(
     user_id: int,
     front_image: Optional[UploadFile] = File(None, description="Ảnh CCCD mặt trước (JPG/PNG/WEBP, tối đa 5MB)"),
     back_image: Optional[UploadFile] = File(None, description="Ảnh CCCD mặt sau (JPG/PNG/WEBP, tối đa 5MB)"),
-    current_user: Optional[User] = Depends(_get_optional_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     accessor_id = _ensure_owner_or_admin(user_id, current_user)
@@ -233,7 +208,7 @@ async def upload_user_driver_license_endpoint(
     expiry_date: Optional[date] = Form(None, description="Ngày hết hạn GPLX (YYYY-MM-DD)"),
     front_image: Optional[UploadFile] = File(None, description="Ảnh mặt trước GPLX (JPG/PNG/WEBP, tối đa 5MB)"),
     back_image: Optional[UploadFile] = File(None, description="Ảnh mặt sau GPLX (tuỳ chọn)"),
-    current_user: Optional[User] = Depends(_get_optional_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     accessor_id = _ensure_owner_or_admin(user_id, current_user)

@@ -253,8 +253,14 @@ def test_api_calculate_and_create_order_with_br03_and_note(api_client):
     assert calc_data["remaining_amount"] == 1449000.0
 
     # 2. Tạo đơn thật kèm ghi chú
+    from app.core.security import create_access_token
+
+    car_headers = {
+        "Authorization": f"Bearer {create_access_token({'sub': 'br03-car@example.com', 'email': 'br03-car@example.com', 'user_id': 2, 'role_id': [2]})}"
+    }
     res_create = api_client.post(
         "/orders",
+        headers=car_headers,
         json={
             "renter_id": 2,
             "vehicle_id": 2,
@@ -277,7 +283,7 @@ def test_api_calculate_and_create_order_with_br03_and_note(api_client):
     assert created["remaining_amount"] == 1449000.0
 
     # 3. Xem lại chi tiết đơn vừa tạo
-    res_get = api_client.get(f"/orders/{created['order_id']}")
+    res_get = api_client.get(f"/orders/{created['order_id']}", headers=car_headers)
     assert res_get.status_code == 200
     assert res_get.json()["data"]["deposit_amount"] == 621000.0
     assert res_get.json()["data"]["note"] == "Giao ở cổng ga quốc nội"

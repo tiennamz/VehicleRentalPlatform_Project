@@ -82,18 +82,22 @@ def serialize_user_profile(
     id_card: Optional[VerifiableInformation],
     lic: Optional[DriverLicense],
     include_sensitive_docs: bool = True,
+    include_doc_urls: bool = False,
 ) -> Dict[str, Any]:
     """
-    Trả về hồ sơ người dùng. Khi `include_sensitive_docs=True` (chính chủ hoặc Admin/Nhân viên),
-    hệ thống trả về đầy đủ URL xem ảnh CCCD & GPLX để người dùng xem được
-    ảnh của chính mình ngay sau khi lưu cũng như những lần truy cập sau.
+    Trả về hồ sơ người dùng.
+    Theo quy định TF14E12: URL ảnh giấy tờ (CCCD & GPLX) tuyệt đối CHỈ trả cho vận hành viên
+    qua endpoint KYC riêng (`/admin/verification/customers/{user_id}/kyc`).
+    Các endpoint hồ sơ người dùng chỉ trả metadata trạng thái xác thực và cờ `has_front_image`/`has_back_image`.
     """
     id_card_payload = None
     if include_sensitive_docs and id_card:
         id_card_payload = {
             "information_id": id_card.information_id,
-            "img_id_card_before": build_viewable_kyc_url(id_card.img_id_card_before),
-            "img_id_card_after": build_viewable_kyc_url(id_card.img_id_card_after),
+            "img_id_card_before": build_viewable_kyc_url(id_card.img_id_card_before) if include_doc_urls else None,
+            "img_id_card_after": build_viewable_kyc_url(id_card.img_id_card_after) if include_doc_urls else None,
+            "has_front_image": bool(id_card.img_id_card_before),
+            "has_back_image": bool(id_card.img_id_card_after),
             "status": id_card.status,
             "rejected_reason": id_card.rejected_reason,
             "verified_at": id_card.verified_at.isoformat() if id_card.verified_at else None,
@@ -107,8 +111,10 @@ def serialize_user_profile(
             "license_class": lic.license_class,
             "issue_date": lic.issue_date.isoformat() if lic.issue_date else None,
             "expiry_date": lic.expiry_date.isoformat() if lic.expiry_date else None,
-            "img_license_front": build_viewable_kyc_url(lic.img_license_front),
-            "img_license_back": build_viewable_kyc_url(lic.img_license_back),
+            "img_license_front": build_viewable_kyc_url(lic.img_license_front) if include_doc_urls else None,
+            "img_license_back": build_viewable_kyc_url(lic.img_license_back) if include_doc_urls else None,
+            "has_front_image": bool(lic.img_license_front),
+            "has_back_image": bool(lic.img_license_back),
             "verification_status": lic.verification_status,
             "rejected_reason": lic.rejected_reason,
             "verified_at": lic.verified_at.isoformat() if lic.verified_at else None,
@@ -320,7 +326,7 @@ async def upload_id_card_images(
             uploaded_public_ids.append(back_upload["public_id"])
     except Exception:
         for pid in uploaded_public_ids:
-            delete_cloudinary_image_by_public_id(pid)
+            delete_cloudinary_image_by_public_id(pid, delivery_type="private")
         raise
 
     old_urls = []
@@ -350,7 +356,7 @@ async def upload_id_card_images(
     except Exception as exc:
         db.rollback()
         for pid in uploaded_public_ids:
-            delete_cloudinary_image_by_public_id(pid)
+            delete_cloudinary_image_by_public_id(pid, delivery_type="private")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Không thể lưu thông tin ảnh CCCD vào cơ sở dữ liệu: {str(exc)}",
@@ -377,8 +383,10 @@ async def upload_id_card_images(
 
     return {
         "information_id": record.information_id,
-        "img_id_card_before": build_viewable_kyc_url(record.img_id_card_before),
-        "img_id_card_after": build_viewable_kyc_url(record.img_id_card_after),
+        "img_id_card_before": None,
+        "img_id_card_after": None,
+        "has_front_image": bool(record.img_id_card_before),
+        "has_back_image": bool(record.img_id_card_after),
         "status": record.status,
         "rejected_reason": record.rejected_reason,
         "verified_at": record.verified_at.isoformat() if record.verified_at else None,
@@ -504,7 +512,7 @@ async def upload_driver_license_images(
             uploaded_public_ids.append(back_upload["public_id"])
     except Exception:
         for pid in uploaded_public_ids:
-            delete_cloudinary_image_by_public_id(pid)
+            delete_cloudinary_image_by_public_id(pid, delivery_type="private")
         raise
 
     old_urls = []
@@ -543,7 +551,7 @@ async def upload_driver_license_images(
     except Exception as exc:
         db.rollback()
         for pid in uploaded_public_ids:
-            delete_cloudinary_image_by_public_id(pid)
+            delete_cloudinary_image_by_public_id(pid, delivery_type="private")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Không thể lưu thông tin giấy phép lái xe: {str(exc)}",
@@ -575,8 +583,10 @@ async def upload_driver_license_images(
         "license_class": lic_record.license_class,
         "issue_date": lic_record.issue_date.isoformat() if lic_record.issue_date else None,
         "expiry_date": lic_record.expiry_date.isoformat() if lic_record.expiry_date else None,
-        "img_license_front": build_viewable_kyc_url(lic_record.img_license_front),
-        "img_license_back": build_viewable_kyc_url(lic_record.img_license_back),
+        "img_license_front": None,
+        "img_license_back": None,
+        "has_front_image": bool(lic_record.img_license_front),
+        "has_back_image": bool(lic_record.img_license_back),
         "verification_status": lic_record.verification_status,
         "rejected_reason": lic_record.rejected_reason,
     }

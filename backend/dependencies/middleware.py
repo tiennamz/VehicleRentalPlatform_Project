@@ -56,6 +56,61 @@ ROLE_NAMES = {
     RoleID.STORE_OWNER: "Chủ cửa hàng",
 }
 
+OPERATOR_ROLE_IDS = {RoleID.ADMIN, RoleID.STAFF}
+
+
+def get_user_role_ids(user: User, token: Optional[str] = None) -> set[int]:
+    """Lấy tập role_id của user từ DB (fallback sang JWT payload nếu user_roles trống)."""
+    user_role_ids = {
+        ur.role_id
+        for ur in getattr(user, "user_roles", [])
+        if getattr(ur, "role_id", None) is not None
+    }
+
+    if not user_role_ids and token:
+        payload = decode_access_token(token)
+        token_roles = payload.get("role_id") or payload.get("role") or []
+        if isinstance(token_roles, (int, str)):
+            try:
+                user_role_ids.add(int(token_roles))
+            except (ValueError, TypeError):
+                pass
+        elif isinstance(token_roles, list):
+            for r in token_roles:
+                try:
+                    user_role_ids.add(int(r))
+                except (ValueError, TypeError):
+                    pass
+
+    if not user_role_ids:
+        user_role_ids.add(RoleID.CUSTOMER)
+
+    return user_role_ids
+
+
+def is_admin(user: User) -> bool:
+    return RoleID.ADMIN in get_user_role_ids(user)
+
+
+def is_operator(user: User) -> bool:
+    return bool(get_user_role_ids(user).intersection(OPERATOR_ROLE_IDS))
+
+
+def ensure_owner_or_roles(
+    current_user: User,
+    owner_user_id: int,
+    allowed_role_ids: set[int],
+    detail: str = "Bạn không có quyền truy cập hoặc chỉnh sửa tài nguyên của người dùng khác.",
+) -> User:
+    if current_user.user_id == owner_user_id:
+        return current_user
+    if get_user_role_ids(current_user).intersection(allowed_role_ids):
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=detail,
+    )
+
 
 def require_roles(*allowed_role_ids: int):
     """
@@ -69,28 +124,7 @@ def require_roles(*allowed_role_ids: int):
         user: User = Depends(get_current_user),
         token: str = Depends(_get_token)
     ) -> User:
-        # Lấy danh sách role_id trực tiếp từ bảng user_roles của user
-        user_role_ids = {ur.role_id for ur in user.user_roles if getattr(ur, "role_id", None) is not None}
-
-        # Nếu DB chưa có dòng user_role, lấy từ token payload
-        if not user_role_ids:
-            payload = decode_access_token(token)
-            token_roles = payload.get('role_id') or payload.get('role') or []
-            if isinstance(token_roles, (int, str)):
-                try:
-                    user_role_ids.add(int(token_roles))
-                except (ValueError, TypeError):
-                    pass
-            elif isinstance(token_roles, list):
-                for r in token_roles:
-                    try:
-                        user_role_ids.add(int(r))
-                    except (ValueError, TypeError):
-                        pass
-
-        # Mặc định nếu vẫn rỗng thì là Khách hàng (role_id = 2)
-        if not user_role_ids:
-            user_role_ids.add(RoleID.CUSTOMER)
+        user_role_ids = get_user_role_ids(user, token=token)
 
         # Kiểm tra xem user có ít nhất một role hợp lệ không
         if not user_role_ids.intersection(allowed_role_ids):
@@ -112,6 +146,7 @@ check_staff = require_roles(RoleID.STAFF)
 check_store_owner = require_roles(RoleID.STORE_OWNER)
 
 # Các dependency phân quyền theo nhóm tiện ích
+check_operator = require_roles(RoleID.ADMIN, RoleID.STAFF)
 check_store_manager = require_roles(RoleID.ADMIN, RoleID.STORE_OWNER)
 check_store_staff_or_admin = require_roles(RoleID.ADMIN, RoleID.STORE_OWNER, RoleID.STAFF)
 

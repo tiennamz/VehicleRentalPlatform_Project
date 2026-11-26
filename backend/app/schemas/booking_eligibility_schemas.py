@@ -82,7 +82,7 @@ class OrderCalculateRequestSchema(BaseModel):
 
 
 class OrderCreateSchema(BaseModel):
-    renter_id: int
+    renter_id: Optional[int] = None
     vehicle_id: int
     price_id: Optional[int] = None
     start_time: datetime
