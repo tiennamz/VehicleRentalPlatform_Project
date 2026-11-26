@@ -404,11 +404,19 @@ def api_client():
     app.dependency_overrides.clear()
 
 
+def _jwt_headers(user_id: int, email: str, role_id: int = 2) -> dict:
+    from app.core.security import create_access_token
+
+    token = create_access_token({"sub": email, "email": email, "user_id": user_id, "role_id": [role_id]})
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_api_update_profile_under_18_returns_422(api_client):
     today = date.today()
     under_18 = date(today.year - 16, today.month, today.day).isoformat()
     res = api_client.put(
         "/users/1/profile",
+        headers=_jwt_headers(1, "u1@example.com"),
         json={
             "fullname": "Khách Nhỏ Tuổi",
             "date_of_birth": under_18,
@@ -421,6 +429,7 @@ def test_api_update_profile_under_18_returns_422(api_client):
 def test_api_update_profile_valid_18_plus_returns_200(api_client):
     res = api_client.put(
         "/users/1/profile",
+        headers=_jwt_headers(1, "u1@example.com"),
         json={
             "fullname": "Khách Hợp Lệ",
             "date_of_birth": "2001-08-15",
@@ -445,6 +454,7 @@ def test_api_create_order_with_pending_license_returns_403(api_client):
     end = (utc_now() + timedelta(days=2)).isoformat()
     res = api_client.post(
         "/orders",
+        headers=_jwt_headers(1, "u1@example.com"),
         json={
             "renter_id": 1,
             "vehicle_id": 100,
@@ -462,6 +472,7 @@ def test_api_create_order_with_verified_license_returns_201(api_client):
     end = (utc_now() + timedelta(days=3)).isoformat()
     res = api_client.post(
         "/orders",
+        headers=_jwt_headers(2, "u2@example.com"),
         json={
             "renter_id": 2,
             "vehicle_id": 100,

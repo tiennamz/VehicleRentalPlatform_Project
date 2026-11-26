@@ -134,6 +134,7 @@ def upload_kyc_image_to_cloudinary(
         "overwrite": "true",
         "public_id": public_id,
         "timestamp": str(timestamp),
+        "type": "private",
     }
     signature = generate_cloudinary_signature(sign_params, CLOUDINARY_API_SECRET)
 

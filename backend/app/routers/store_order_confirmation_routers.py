@@ -4,10 +4,12 @@ và chuyển đơn quá hạn sang vận hành viên xử lý (Task TF14679).
 """
 
 from typing import Optional
-from fastapi import APIRouter, Body, Depends, Header, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
+from app.models.store import Store
+from app.models.user import User
 from app.schemas.store_order_confirmation_schemas import (
     StoreOrderConfirmSchema,
     StoreOrderRejectSchema,
@@ -21,13 +23,13 @@ from app.services.store_order_confirmation_services import (
     serialize_store_order,
 )
 from app.utils.response import create_response
+from dependencies.middleware import (
+    check_operator,
+    check_store_staff_or_admin,
+    is_operator,
+)
 
 router = APIRouter(tags=["Store Order Confirmation SLA (TF14679)"])
-
-
-def _resolve_owner_id(x_user_id: Optional[int], body_owner_id: Optional[int]) -> Optional[int]:
-    """Ưu tiên lấy ID chủ cửa hàng từ header X-User-Id, nếu không có thì lấy từ body."""
-    return x_user_id if x_user_id is not None else body_owner_id
 
 
 @router.get("/stores/orders", status_code=status.HTTP_200_OK)
@@ -36,11 +38,27 @@ def get_store_orders_endpoint(
     store_id: Optional[int] = Query(None, description="ID cửa hàng"),
     owner_id: Optional[int] = Query(None, description="ID chủ cửa hàng"),
     order_status: Optional[str] = Query(None, description="Lọc theo trạng thái đơn"),
-    x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
+    current_user: User = Depends(check_store_staff_or_admin),
     db: Session = Depends(get_db),
 ):
     """Lấy danh sách đơn thuê của cửa hàng kèm đồng hồ đếm ngược 15 phút (tự động chuyển đơn quá hạn)."""
-    resolved_owner = owner_id if owner_id is not None else (x_user_id if store_id is None else None)
+    if is_operator(current_user):
+        resolved_owner = owner_id
+    else:
+        if owner_id is not None and owner_id != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không có quyền xem đơn hàng của chủ cửa hàng khác.",
+            )
+        if store_id is not None:
+            store = db.query(Store).filter(Store.store_id == store_id).first()
+            if store and store.owner_id != current_user.user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn không có quyền xem đơn hàng của cửa hàng khác.",
+                )
+        resolved_owner = current_user.user_id if store_id is None else None
+
     data = list_store_orders(
         db=db,
         store_id=store_id,
@@ -55,11 +73,11 @@ def confirm_store_order_endpoint(
     request: Request,
     order_id: int,
     payload: Optional[StoreOrderConfirmSchema] = Body(default=None),
-    x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
+    current_user: User = Depends(check_store_staff_or_admin),
     db: Session = Depends(get_db),
 ):
     """Cửa hàng xác nhận đơn thuê trong thời hạn 15 phút (quá hạn sẽ tự động chuyển VHV và trả 409)."""
-    owner_id = _resolve_owner_id(x_user_id, payload.owner_id if payload else None)
+    owner_id = None if is_operator(current_user) else current_user.user_id
     order = confirm_store_order(db=db, order_id=order_id, owner_id=owner_id)
     return create_response(
         request,
@@ -74,11 +92,11 @@ def reject_store_order_endpoint(
     request: Request,
     order_id: int,
     payload: StoreOrderRejectSchema,
-    x_user_id: Optional[int] = Header(None, alias="X-User-Id"),
+    current_user: User = Depends(check_store_staff_or_admin),
     db: Session = Depends(get_db),
 ):
     """Cửa hàng từ chối đơn thuê trong hạn 15 phút, bắt buộc đính kèm lý do từ chối."""
-    owner_id = _resolve_owner_id(x_user_id, payload.owner_id)
+    owner_id = None if is_operator(current_user) else current_user.user_id
     order = reject_store_order(
         db=db,
         order_id=order_id,
@@ -96,6 +114,7 @@ def reject_store_order_endpoint(
 @router.post("/orders/escalate-overdue", status_code=status.HTTP_200_OK)
 def escalate_overdue_orders_endpoint(
     request: Request,
+    current_user: User = Depends(check_operator),
     db: Session = Depends(get_db),
 ):
     """Quét và chuyển toàn bộ đơn quá hạn 15 phút sang trạng thái 'Chờ vận hành viên xử lý'."""
@@ -115,6 +134,7 @@ def escalate_overdue_orders_endpoint(
 @router.get("/operator/orders/escalated", status_code=status.HTTP_200_OK)
 def get_escalated_orders_for_operator_endpoint(
     request: Request,
+    current_user: User = Depends(check_operator),
     db: Session = Depends(get_db),
 ):
     """Lấy danh sách các đơn quá hạn 15 phút đang chờ vận hành viên tiếp nhận xử lý."""
