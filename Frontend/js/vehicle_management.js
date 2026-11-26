@@ -53,7 +53,79 @@ const storeVehicles = [
   }
 ];
 
+const API_BASE = (window.VRP_API_BASE || "http://127.0.0.1:8000").replace(/\/+$/, "");
+
+function getAccessToken() {
+  const m = document.cookie.match(/(?:^|;\s*)access_token=([^;]*)/);
+  if (m && m[1]) return decodeURIComponent(m[1]);
+  try {
+    return localStorage.getItem("access_token") || sessionStorage.getItem("access_token") || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function getAuthHeaders(extra) {
+  const h = Object.assign({}, extra || {});
+  const t = getAccessToken();
+  if (t) h["Authorization"] = "Bearer " + t;
+  return h;
+}
+
+function parseBrandAndModel(fullName) {
+  const cleaned = String(fullName || "").trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return { brand: cleaned || "Khác", model: cleaned || "Mẫu chuẩn" };
+  return { brand: parts[0], model: parts.slice(1).join(" ") };
+}
+
+function parseYearFromText(text) {
+  const m = String(text || "").match(/\b(19\d{2}|20\d{2})\b/);
+  return m ? Number(m[1]) : 2025;
+}
+
+function parseEngineCapacity(name, type) {
+  if (/điện/i.test(type || "")) return 1500;
+  const m = String(name || "").match(/\b(50|110|115|125|135|150|155|160|175|250|300|350)\b/);
+  return m ? Number(m[1]) : 125;
+}
+
+function mapApiStatusToUi(statusText) {
+  const s = String(statusText || "").toLowerCase();
+  if (s.includes("thuê")) return "rented";
+  if (s.includes("bảo")) return "maintenance";
+  return "available";
+}
+
+function mapUiStatusToApi(uiStatus) {
+  if (uiStatus === "maintenance") return "Bảo trì";
+  if (uiStatus === "rented") return "Đang thuê";
+  return "Sẵn sàng";
+}
+
+function mapApiVehicleToRow(v) {
+  const fullName = [v.brand, v.model].filter(Boolean).join(" ").trim() || v.brand || "Xe thuê";
+  const yearStr = v.manufacture_year ? `Đời ${v.manufacture_year}` : "Đời 2025";
+  const ccStr = v.engine_capacity ? `${v.engine_capacity}cc` : "";
+  const photo = Array.isArray(v.images) && v.images.length
+    ? v.images[0]
+    : makeVehicleSVG("#d1fae5", "#065f46", fullName);
+  return {
+    id: v.vehicle_id,
+    isApi: true,
+    name: fullName,
+    yearColor: [yearStr, ccStr].filter(Boolean).join(" • "),
+    plate: v.license_plate,
+    type: v.type || "Xe tay ga",
+    price: Number(v.price) || 25000,
+    status: mapApiStatusToUi(v.status),
+    desc: v.description || "Xe sẵn sàng cho thuê tại cửa hàng.",
+    photo: photo,
+  };
+}
+
 let vehicleFullPhoto = "";
+let vehicleFullPhotoFile = null;
 let newestVehicleId = 1;
 
 const statusLabelMap = {
@@ -123,6 +195,7 @@ const clearPreview = () => {
   dropArea.classList.remove("has-image");
   fileInput.value = "";
   vehicleFullPhoto = "";
+  vehicleFullPhotoFile = null;
   updatePhotoCounter();
 };
 
@@ -133,6 +206,7 @@ dropArea.addEventListener("click", (e) => {
 fileInput.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  vehicleFullPhotoFile = file;
   const reader = new FileReader();
   reader.onload = (ev) => setPreview(ev.target.result);
   reader.readAsDataURL(file);
@@ -150,6 +224,7 @@ dropArea.addEventListener("drop", (e) => {
   dropArea.classList.remove("dragover");
   const file = e.dataTransfer.files[0];
   if (!file) return;
+  vehicleFullPhotoFile = file;
   const reader = new FileReader();
   reader.onload = (ev) => setPreview(ev.target.result);
   reader.readAsDataURL(file);
@@ -248,14 +323,32 @@ const renderVehicleTable = () => {
 
   // Sự kiện khóa / mở bảo dưỡng nhanh
   tbody.querySelectorAll(".btn-toggle-status").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const vehicle = storeVehicles.find((item) => item.id === Number(btn.dataset.id));
       if (!vehicle) return;
       if (vehicle.status === "rented") {
         showToast("Xe đang có khách thuê, không thể khóa lúc này!");
         return;
       }
-      vehicle.status = vehicle.status === "maintenance" ? "available" : "maintenance";
+      const nextStatus = vehicle.status === "maintenance" ? "available" : "maintenance";
+      const token = getAccessToken();
+      if (vehicle.isApi && token) {
+        try {
+          const res = await fetch(`${API_BASE}/vehicles/${vehicle.id}`, {
+            method: "PUT",
+            headers: getAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ status: mapUiStatusToApi(nextStatus) })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || "Không thể cập nhật trạng thái xe");
+          }
+        } catch (err) {
+          showToast(err.message || "Lỗi cập nhật trạng thái xe");
+          return;
+        }
+      }
+      vehicle.status = nextStatus;
       updateKPIs();
       renderVehicleTable();
       showToast(`Đã cập nhật trạng thái xe ${vehicle.plate}: ${statusLabelMap[vehicle.status]}`);
@@ -271,24 +364,121 @@ document.getElementById("previewModal").addEventListener("click", (e) => {
   if (e.target.id === "previewModal") document.getElementById("previewModal").hidden = true;
 });
 
-// Submit form thêm xe mới
-document.getElementById("vehicleForm").addEventListener("submit", (e) => {
+async function loadVehiclesFromApi() {
+  const token = getAccessToken();
+  if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE}/vehicles/my-store`, {
+      headers: getAuthHeaders(),
+      cache: "no-store"
+    });
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (Array.isArray(rows)) {
+      storeVehicles.length = 0;
+      rows.map(mapApiVehicleToRow).forEach((item) => storeVehicles.push(item));
+      newestVehicleId = storeVehicles.length ? storeVehicles[0].id : null;
+      updateKPIs();
+      renderVehicleTable();
+    }
+  } catch (err) {}
+}
+
+// Submit form thêm xe mới (tải ảnh lên Cloudinary + lưu DB qua API)
+document.getElementById("vehicleForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!vehicleFullPhoto) {
     showToast("Vui lòng tải lên 1 ảnh toàn diện của xe!");
     return;
   }
 
+  const name = document.getElementById("vehicleName").value.trim();
+  const yearColor = document.getElementById("yearColor").value.trim();
+  const plate = document.getElementById("licensePlate").value.trim().toUpperCase();
+  const type = document.getElementById("vehicleType").value;
+  const price = Number(document.getElementById("dailyPrice").value);
+  const statusVal = document.getElementById("listingStatus").value;
+  const desc = document.getElementById("vehicleDesc").value.trim();
+
+  const token = getAccessToken();
+  const submitBtn = e.target.querySelector("button[type='submit']");
+  const origBtnText = submitBtn ? submitBtn.textContent : "";
+
+  if (!token) {
+    showToast("Vui lòng đăng nhập tài khoản cửa hàng để lưu xe & ảnh lên Cloudinary!");
+    return;
+  }
+
+  if (token) {
+    if (!vehicleFullPhotoFile) {
+      showToast("Vui lòng chọn file ảnh thật (JPG/PNG/WEBP) để lưu lên Cloudinary!");
+      return;
+    }
+
+    const { brand, model } = parseBrandAndModel(name);
+    const manufactureYear = parseYearFromText(yearColor);
+    const engineCapacity = parseEngineCapacity(name, type);
+
+    const formData = new FormData();
+    formData.append("brand", brand);
+    formData.append("model", model);
+    formData.append("license_plate", plate);
+    formData.append("manufacture_year", String(manufactureYear));
+    formData.append("type", type);
+    formData.append("engine_capacity", String(engineCapacity));
+    formData.append("description", desc);
+    formData.append("price", String(price));
+    formData.append("status", mapUiStatusToApi(statusVal));
+    formData.append("files", vehicleFullPhotoFile);
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Đang tải ảnh lên Cloudinary & lưu xe...";
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/vehicles`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: formData
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.detail || json.error || "Không thể đăng xe lên máy chủ");
+      }
+
+      const newVehicle = mapApiVehicleToRow(json);
+      storeVehicles.unshift(newVehicle);
+      newestVehicleId = newVehicle.id;
+
+      e.target.reset();
+      clearPreview();
+
+      updateKPIs();
+      renderVehicleTable();
+      switchTab("vehicle-list");
+      showToast(`Đã đăng xe ${newVehicle.name} (${newVehicle.plate}) & lưu ảnh lên Cloudinary!`);
+    } catch (err) {
+      showToast(err.message || "Không thể lưu xe, vui lòng thử lại.");
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = origBtnText;
+      }
+    }
+    return;
+  }
+
   const newId = Date.now();
   const newVehicle = {
     id: newId,
-    name: document.getElementById("vehicleName").value.trim(),
-    yearColor: document.getElementById("yearColor").value.trim(),
-    plate: document.getElementById("licensePlate").value.trim().toUpperCase(),
-    type: document.getElementById("vehicleType").value,
-    price: Number(document.getElementById("dailyPrice").value),
-    status: document.getElementById("listingStatus").value,
-    desc: document.getElementById("vehicleDesc").value.trim(),
+    name: name,
+    yearColor: yearColor,
+    plate: plate,
+    type: type,
+    price: price,
+    status: statusVal,
+    desc: desc,
     photo: vehicleFullPhoto
   };
 
@@ -307,6 +497,8 @@ document.getElementById("vehicleForm").addEventListener("submit", (e) => {
 document.getElementById("searchInput").addEventListener("input", renderVehicleTable);
 document.getElementById("typeFilter").addEventListener("change", renderVehicleTable);
 document.getElementById("statusFilter").addEventListener("change", renderVehicleTable);
+
+loadVehiclesFromApi();
 
 // Khởi tạo
 updateKPIs();

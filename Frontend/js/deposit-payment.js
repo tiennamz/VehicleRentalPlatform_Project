@@ -188,12 +188,8 @@ const rentalHours = computeRentalHoursFromSlot(
     sessionStorage.getItem("selectedVehicleHour") || "",
     sessionStorage.getItem("selectedVehicleEnd") || ""
 );
-let rentalDays = 2;
-let deliveryFeeValue = 30000;
-let totalValue = 110000;
-
 if (pendingOrder && typeof pendingOrder.total_amount === "number") {
-    rentalDays = pendingOrder.duration_days || 1;
+    const orderHours = pendingOrder.duration_hours || pendingOrder.duration_days || rentalHours;
     deliveryFeeValue = pendingOrder.delivery_fee || 0;
     totalValue = pendingOrder.total_amount;
     depositAmount = pendingOrder.deposit_amount;
@@ -204,15 +200,15 @@ if (pendingOrder && typeof pendingOrder.total_amount === "number") {
     if (infoStrongs.length >= 4) {
         if (pendingOrder.start_display) infoStrongs[0].textContent = pendingOrder.start_display;
         if (pendingOrder.end_display) infoStrongs[1].textContent = pendingOrder.end_display;
-        infoStrongs[2].textContent = rentalDays + " ngày";
+        infoStrongs[2].textContent = orderHours + " giờ";
         infoStrongs[3].textContent = pendingOrder.delivery_method +
             (pendingOrder.delivery_address ? " · " + pendingOrder.delivery_address : "");
     }
 
     const durLabelEl = document.getElementById("rentalDurationLabel") || document.querySelector(".cost-panel .cost-row span");
-    if (durLabelEl) durLabelEl.textContent = "Tiền thuê xe (" + rentalDays + " ngày)";
+    if (durLabelEl) durLabelEl.textContent = "Tiền thuê xe (" + orderHours + " giờ)";
     const durTextEl = document.getElementById("rentalDurationText");
-    if (durTextEl) durTextEl.textContent = rentalDays + " ngày";
+    if (durTextEl) durTextEl.textContent = orderHours + " giờ";
 
     document.getElementById("rentalTotal").textContent = formatMoney(rentalTotalValue);
     document.getElementById("deliveryFee").textContent = formatMoney(deliveryFeeValue);

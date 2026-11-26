@@ -39,13 +39,18 @@
     (f.brands || []).forEach(function (b) { if (b) qs.append("brand", b); });
     (f.deliveries || []).forEach(function (d) { if (d) qs.append("delivery_method", d); });
 
-    if (f.price === "under-200") {
-      qs.set("max_price", "199999");
-    } else if (f.price === "200-400") {
-      qs.set("min_price", "200000");
-      qs.set("max_price", "400000");
-    } else if (f.price === "over-400") {
-      qs.set("min_price", "400001");
+    if (f.price === "under-25") {
+      qs.set("max_price", "24999");
+    } else if (f.price === "mid-35") {
+      qs.set("min_price", "25000");
+      qs.set("max_price", "35000");
+    } else if (f.price === "over-35") {
+      qs.set("min_price", "35001");
+    } else if (f.price === "25-50") {
+      qs.set("min_price", "25000");
+      qs.set("max_price", "50000");
+    } else if (f.price === "over-50") {
+      qs.set("min_price", "50001");
     } else {
       if (f.minPrice != null && f.minPrice !== "") qs.set("min_price", String(f.minPrice));
       if (f.maxPrice != null && f.maxPrice !== "") qs.set("max_price", String(f.maxPrice));
@@ -213,7 +218,7 @@
             '<div class="vrp-vp-spec">Biển số tham chiếu<strong>' + escapeHtml(car.plate) + "</strong></div>" +
           "</div>" +
           '<div class="vrp-vp-foot">' +
-            '<div class="vrp-vp-price">' + escapeHtml(car.price) + ' <small>/ ngày</small></div>' +
+            '<div class="vrp-vp-price">' + escapeHtml(car.price) + ' <small>/ giờ</small></div>' +
             '<div class="vrp-vp-actions">' +
               '<button type="button" class="btn btn-outline btn-sm vrp-vp-cancel">Đóng</button>' +
               '<a href="' + rentHref + '" class="btn btn-primary btn-sm btn-rent-vrp">Thuê xe</a>' +

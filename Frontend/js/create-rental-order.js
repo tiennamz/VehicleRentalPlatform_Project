@@ -607,7 +607,7 @@ window.showToast = function (msg) {
     if (typeof raw === "number" && !isNaN(raw) && raw > 0) return raw;
     var digits = String(raw || "").replace(/\D/g, "");
     var n = parseInt(digits, 10);
-    return isNaN(n) || n <= 0 ? 150000 : n;
+    return isNaN(n) || n <= 0 ? 20000 : n;
   }
 
   function formatDisplayDateTime(dateStr, hourStr) {
@@ -641,8 +641,8 @@ window.showToast = function (msg) {
       return { error: "Thời gian trả xe phải sau thời gian nhận xe." };
     }
     var diffMs = end.getTime() - start.getTime();
-    var durationDays = Math.max(1, Math.ceil(diffMs / 86400000));
-    var rentalAmount = state.unitPrice * durationDays;
+    var durationHours = Math.max(1, Math.ceil(diffMs / 3600000));
+    var rentalAmount = state.unitPrice * durationHours;
     var deliveryFee = 0;
 
     if (state.deliveryMethod === "Giao tận nơi") {
@@ -665,7 +665,8 @@ window.showToast = function (msg) {
 
     return {
       source: "local",
-      duration_days: durationDays,
+      duration_hours: durationHours,
+      duration_days: Math.max(1, Math.ceil(durationHours / 24)),
       unit_price: state.unitPrice,
       rental_amount: rentalAmount,
       delivery_fee: deliveryFee,
@@ -695,7 +696,7 @@ window.showToast = function (msg) {
   var vehicleName = (params.get("xe") || (storedVehicle && storedVehicle.name) || stored.name || "Honda Vision 2024").trim();
   var vehicleType = (storedVehicle && storedVehicle.vehicle_type) || stored.type || "XE MÁY";
   var vehicleImage = (storedVehicle && storedVehicle.image_url) || stored.image || DEFAULT_IMG;
-  var unitPrice = parsePriceNumber((storedVehicle && storedVehicle.price_per_day) || stored.price || 150000);
+  var unitPrice = parsePriceNumber((storedVehicle && storedVehicle.price_per_day) || stored.price || 20000);
   var storeName = (storedVehicle && storedVehicle.store_name) || "";
   var vehicleRating = stored.rating || ((storedVehicle && storedVehicle.avg_rating) ? (storedVehicle.avg_rating + " (" + (storedVehicle.review_count || 0) + ")") : "");
   var vehicleSpecs = stored.specs || (storeName ? ("Cửa hàng " + storeName) : "");
@@ -733,7 +734,7 @@ window.showToast = function (msg) {
     bkImgEl.src = vehicleImage;
     bkImgEl.onerror = function () { bkImgEl.src = DEFAULT_IMG; };
   }
-  if (bkUnitPriceEl) bkUnitPriceEl.textContent = formatVnd(unitPrice) + " / ngày";
+  if (bkUnitPriceEl) bkUnitPriceEl.textContent = formatVnd(unitPrice) + " / giờ";
 
   var today = new Date();
   var defaultStartDate = (params.get("date") || stored.date || "").slice(0, 10);
@@ -741,12 +742,10 @@ window.showToast = function (msg) {
     var tomorrow = new Date(today.getTime() + 86400000);
     defaultStartDate = toDateInputValue(tomorrow);
   }
-  var startDateObj = new Date(defaultStartDate + "T00:00:00");
-  var defaultEndDateObj = new Date(startDateObj.getTime() + 2 * 86400000);
-  var defaultEndDate = toDateInputValue(defaultEndDateObj);
+  var defaultEndDate = defaultStartDate;
 
   var rawStartHour = (params.get("hour") || stored.hour || "08:00").slice(0, 5);
-  var rawEndHour = (params.get("end") || rawStartHour || "08:00").slice(0, 5);
+  var rawEndHour = (params.get("end") || "12:00").slice(0, 5);
   if (!/^\d{2}:00$/.test(rawStartHour)) rawStartHour = "08:00";
   if (!/^\d{2}:00$/.test(rawEndHour)) rawEndHour = "08:00";
 
@@ -830,8 +829,9 @@ window.showToast = function (msg) {
     showError("");
     if (btnPayEl) btnPayEl.disabled = false;
 
-    if (durationBadgeEl) durationBadgeEl.textContent = pricing.duration_days + " ngày";
-    if (sumRentalLabelEl) sumRentalLabelEl.textContent = "Tiền thuê xe (" + pricing.duration_days + " ngày)";
+    var hoursCount = pricing.duration_hours || pricing.duration_days || 1;
+    if (durationBadgeEl) durationBadgeEl.textContent = hoursCount + " giờ";
+    if (sumRentalLabelEl) sumRentalLabelEl.textContent = "Tiền thuê xe (" + hoursCount + " giờ)";
     if (sumRentalAmountEl) sumRentalAmountEl.textContent = formatVnd(pricing.rental_amount);
     if (sumDeliveryLabelEl) {
       sumDeliveryLabelEl.textContent = state.deliveryMethod === "Giao tận nơi"
@@ -1010,7 +1010,7 @@ window.showToast = function (msg) {
         sessionStorage.setItem("selectedVehicleName", vehicleName);
         sessionStorage.setItem("selectedVehicleType", vehicleType);
         sessionStorage.setItem("selectedVehicleImage", vehicleImage);
-        sessionStorage.setItem("selectedVehiclePrice", formatVnd(unitPrice) + "/ngày");
+        sessionStorage.setItem("selectedVehiclePrice", formatVnd(unitPrice) + "/giờ");
         if (vehicleRating) sessionStorage.setItem("selectedVehicleRating", vehicleRating);
         if (vehicleSpecs) sessionStorage.setItem("selectedVehicleSpecs", vehicleSpecs);
         sessionStorage.setItem("vrpScheduleLabel", pendingOrder.start_display + " → " + pendingOrder.end_display);

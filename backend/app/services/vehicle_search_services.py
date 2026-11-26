@@ -40,6 +40,7 @@ DELIVERY_METHOD_ALIASES = {
     "giao xe tận nơi": DeliveryMethodEnum.HOME_DELIVERY.value,
 }
 
+HOURLY_PRICE_TYPES = {"HOURLY", "HOUR", "GIỜ", "THEO GIỜ"}
 DAILY_PRICE_TYPES = {"DAILY", "DAY", "NGÀY", "THEO NGÀY"}
 INACTIVE_ORDER_STATUSES = {
     "Đã hủy",
@@ -163,17 +164,17 @@ def _pick_daily_price(price_rows: list[PriceTable], now_naive: datetime) -> Opti
         eff_to = _strip_tz(row.effective_to)
         return (eff_from is None or eff_from <= now_naive) and (eff_to is None or eff_to >= now_naive)
 
-    def _is_daily(row: PriceTable) -> bool:
-        return row.price_type is None or row.price_type.strip().upper() in DAILY_PRICE_TYPES
+    def _is_hourly(row: PriceTable) -> bool:
+        return row.price_type is None or row.price_type.strip().upper() in HOURLY_PRICE_TYPES
 
     def _sort_key(row: PriceTable) -> tuple[datetime, int]:
         eff_from = _strip_tz(row.effective_from) or datetime.min
         return (eff_from, int(row.price_id or 0))
 
     candidates = (
-        [r for r in price_rows if _is_active(r) and _is_daily(r)]
+        [r for r in price_rows if _is_active(r) and _is_hourly(r)]
         or [r for r in price_rows if _is_active(r)]
-        or [r for r in price_rows if _is_daily(r)]
+        or [r for r in price_rows if _is_hourly(r)]
         or list(price_rows)
     )
     chosen = max(candidates, key=_sort_key)
@@ -226,6 +227,11 @@ def _validate_search_inputs(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cần cung cấp tọa độ người dùng (user_lat, user_lng) để sắp xếp theo khoảng cách.",
+        )
+    if (start_time is None) != (end_time is None):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Vui lòng cung cấp đầy đủ cả thời gian nhận xe (start_time) và thời gian trả xe (end_time).",
         )
     if start_time is not None and end_time is not None:
         if _strip_tz(start_time) >= _strip_tz(end_time):
@@ -291,7 +297,8 @@ def search_and_sort_vehicles(
         )
     )
 
-    if status_filter is None or status_filter.strip().lower() in {"available", "sẵn sàng"}:
+    # Khi tìm xe theo khoảng thời gian, luôn chỉ lấy xe đang sẵn sàng (loại xe tạm ngưng/bảo trì, đang thuê, đã xóa).
+    if (start_time is not None and end_time is not None) or status_filter is None or status_filter.strip().lower() in {"available", "sẵn sàng"}:
         query = query.filter(Vehicle.status.in_(["Sẵn sàng", "Available"]))
     elif status_filter.strip().lower() == "all":
         query = query.filter(Vehicle.status != "Đã xóa")
@@ -311,17 +318,17 @@ def search_and_sort_vehicles(
     if start_time is not None and end_time is not None:
         start_naive = _strip_tz(start_time)
         end_naive = _strip_tz(end_time)
-        busy_vehicle_ids = (
-            db.query(Order.vehicle_id)
+        has_overlapping_order = (
+            db.query(Order.order_id)
             .filter(
-                Order.vehicle_id.isnot(None),
+                Order.vehicle_id == Vehicle.vehicle_id,
                 or_(Order.order_status.is_(None), ~Order.order_status.in_(INACTIVE_ORDER_STATUSES)),
                 Order.start_time < end_naive,
                 Order.end_time > start_naive,
             )
-            .distinct()
+            .exists()
         )
-        query = query.filter(~Vehicle.vehicle_id.in_(busy_vehicle_ids))
+        query = query.filter(~has_overlapping_order)
 
     vehicles = query.order_by(Vehicle.vehicle_id.asc()).all()
     if not vehicles:

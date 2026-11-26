@@ -490,3 +490,53 @@ def test_api_sort_distance_without_coords_returns_400(api_client):
 def test_api_invalid_sort_by_returns_400(api_client):
     res = api_client.get("/vehicles?sort_by=invalid_sort")
     assert res.status_code == 400
+
+
+def test_time_search_excludes_booked_held_and_paused_vehicles(db_session):
+    now = utc_now()
+    # Tạo thêm đơn "Chờ thanh toán" (đang giữ chỗ) cho xe v3 trong khoảng [now + 20d, now + 22d]
+    hold_order = Order(
+        renter_id=2,
+        vehicle_id=3,
+        price_id=3,
+        start_time=now + timedelta(days=20),
+        end_time=now + timedelta(days=22),
+        total_amount=Decimal("220000.00"),
+        order_status="Chờ thanh toán",
+        created_at=now,
+    )
+    db_session.add(hold_order)
+    db_session.commit()
+
+    # Tìm xe trong khoảng [now + 19d, now + 21d] (chỉ trùng một phần với đơn giữ chỗ của v3)
+    # => v3 (đang giữ chỗ) và v7 (Bảo trì/tạm ngưng) đều phải bị loại, kể cả khi truyền status_filter="all"
+    res = search_and_sort_vehicles(
+        db_session,
+        start_time=now + timedelta(days=19),
+        end_time=now + timedelta(days=21),
+        status_filter="all",
+    )
+    ids = [v.vehicle_id for v in res]
+    assert 3 not in ids
+    assert 7 not in ids
+    assert 1 in ids
+    assert 2 in ids
+
+    # Tìm sát mép trước [now + 18d, now + 20d] => v3 trống toàn bộ khoảng này nên được trả về
+    res_before = search_and_sort_vehicles(
+        db_session,
+        start_time=now + timedelta(days=18),
+        end_time=now + timedelta(days=20),
+    )
+    assert 3 in [v.vehicle_id for v in res_before]
+
+
+def test_time_search_partial_time_range_returns_400(db_session):
+    now = utc_now()
+    with pytest.raises(HTTPException) as exc1:
+        search_and_sort_vehicles(db_session, start_time=now + timedelta(days=1))
+    assert exc1.value.status_code == 400
+
+    with pytest.raises(HTTPException) as exc2:
+        search_and_sort_vehicles(db_session, end_time=now + timedelta(days=2))
+    assert exc2.value.status_code == 400

@@ -262,7 +262,7 @@ if (vehicleSection) {
                   </div>
                   <p class="vehicle-specs">${esc(locText)}${esc(distPart)}${esc(deliveryPart)}</p>
                   <div class="vehicle-card-bottom">
-                    <p class="vehicle-price">${esc(priceStr)} <span>/ ngày</span></p>
+                    <p class="vehicle-price">${esc(priceStr)} <span>/ giờ</span></p>
                     <div class="vehicle-actions">
                       <a href="#chi-tiet-xe" class="btn btn-outline btn-detail-vrp" style="padding:8px 12px;font-size:12.5px">Chi tiết</a>
                       <a href="weekly-vehicle-schedule.html?xe=${encodeURIComponent(fullName)}" class="btn btn-rent">Thuê xe</a>
@@ -294,9 +294,6 @@ if (vehicleSection) {
             if (places.length && !places.includes(data.place)) matches = false;
             if (brands.length && !brands.includes(data.brand)) matches = false;
             if (deliveries.length && !deliveries.some(value => data.delivery.includes(value))) matches = false;
-            if (price === "under-200" && data.price >= 200000) matches = false;
-            if (price === "200-400" && (data.price < 200000 || data.price > 400000)) matches = false;
-            if (price === "over-400" && data.price <= 400000) matches = false;
             if (price === "under-25" && data.price >= 25000) matches = false;
             if (price === "25-50" && (data.price < 25000 || data.price > 50000)) matches = false;
             if (price === "over-50" && data.price <= 50000) matches = false;

@@ -305,15 +305,21 @@ def calculate_order_pricing(
     if calc_req.price_id:
         price_record = db.query(PriceTable).filter(PriceTable.price_id == calc_req.price_id).first()
     if not price_record:
-        price_record = db.query(PriceTable).filter(PriceTable.vehicle_id == vehicle.vehicle_id).first()
+        price_record = (
+            db.query(PriceTable)
+            .filter(PriceTable.vehicle_id == vehicle.vehicle_id)
+            .order_by(PriceTable.price_id.desc())
+            .first()
+        )
 
     start_naive = calc_req.start_time.replace(tzinfo=None)
     end_naive = calc_req.end_time.replace(tzinfo=None)
     elapsed_seconds = round((end_naive - start_naive).total_seconds())
+    duration_hours = max(1, math.ceil(elapsed_seconds / 3600))
     duration_days = max(1, math.ceil(elapsed_seconds / 86400))
 
     unit_amount = Decimal(str(price_record.amount)) if (price_record and price_record.amount) else Decimal("0.00")
-    rental_amount = (unit_amount * Decimal(duration_days)).quantize(Decimal("0.01"))
+    rental_amount = (unit_amount * Decimal(duration_hours)).quantize(Decimal("0.01"))
     delivery_fee = delivery_info["delivery_fee"]
     total_amount = (rental_amount + delivery_fee).quantize(Decimal("0.01"))
     br03 = calculate_deposit_br03(db, total_amount)
@@ -321,6 +327,7 @@ def calculate_order_pricing(
     return {
         "vehicle_id": vehicle.vehicle_id,
         "price_id": price_record.price_id if price_record else calc_req.price_id,
+        "duration_hours": duration_hours,
         "duration_days": duration_days,
         "unit_price": unit_amount.quantize(Decimal("0.01")),
         "rental_amount": rental_amount,
