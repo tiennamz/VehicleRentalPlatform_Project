@@ -19,6 +19,7 @@ from app.services.vehicle import (
     get_owner_store,
     check_vehicle,
     serialize_vehicle,
+    get_vehicle_detail
 )
 from app.utils.cloudinary_helper import (
     upload_vehicle_image_to_cloudinary,
@@ -236,3 +237,12 @@ def delete_vehicle_api(vehicle_id: int,db: Session = Depends(get_db),current_use
 @router.patch("/{vehicle_id}/pause")
 def pause_vehicle(vehicle_id: int, db: Session =  Depends(get_db), user: User =  Depends(check_store_owner)):
     return pause_vehicle_service(vehicle_id, db)
+
+@router.get("/{vehicle_id}/detail")
+def get_vehicle_detail_api(vehicle_id: int,start_time: Optional[datetime] = None,end_time: Optional[datetime] = None,db: Session = Depends(get_db)):
+    if (start_time is None) != (end_time is None):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Phải truyền cả start_time và end_time"
+        )
+    return get_vehicle_detail(db=db,vehicle_id=vehicle_id,start_time=start_time,end_time=end_time)

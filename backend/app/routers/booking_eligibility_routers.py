@@ -21,11 +21,15 @@ from app.services.booking_eligibility_services import (
     create_rental_order,
     get_order_by_id,
 )
-from app.routers.user_routers import _get_optional_user
 from app.schemas.user_schemas import PersonalProfileUpdateSchema
 from app.services.user_services import get_personal_profile, update_personal_profile
 from app.utils.response import create_response
-from dependencies.middleware import RoleID
+from dependencies.middleware import (
+    RoleID,
+    ensure_owner_or_roles,
+    get_current_user,
+    is_operator,
+)
 
 router = APIRouter(tags=["Booking Eligibility & Vehicle Search (TF13D97)"])
 
@@ -34,23 +38,16 @@ router = APIRouter(tags=["Booking Eligibility & Vehicle Search (TF13D97)"])
 def get_profile_endpoint(
     request: Request,
     user_id: int,
-    current_user: Optional[User] = Depends(_get_optional_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    can_view_docs = False
-    if current_user is not None:
-        is_Privileged = any(
-            getattr(ur, "role_id", None) in {RoleID.ADMIN, RoleID.STAFF, RoleID.STORE_OWNER}
-            for ur in current_user.user_roles
-        )
-        if current_user.user_id == user_id or is_Privileged:
-            can_view_docs = True
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Bạn không có quyền xem hồ sơ của người dùng khác.",
-            )
-    data = get_personal_profile(db=db, user_id=user_id, include_sensitive_docs=can_view_docs)
+    ensure_owner_or_roles(
+        current_user=current_user,
+        owner_user_id=user_id,
+        allowed_role_ids={RoleID.ADMIN, RoleID.STAFF},
+        detail="Bạn không có quyền xem hồ sơ của người dùng khác.",
+    )
+    data = get_personal_profile(db=db, user_id=user_id, include_sensitive_docs=True)
     return create_response(request, status.HTTP_200_OK, "Lấy thông tin hồ sơ cá nhân thành công", data)
 
 
@@ -59,15 +56,22 @@ def update_profile_endpoint(
     request: Request,
     user_id: int,
     profile_data: PersonalProfileUpdateSchema,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    ensure_owner_or_roles(
+        current_user=current_user,
+        owner_user_id=user_id,
+        allowed_role_ids={RoleID.ADMIN},
+        detail="Bạn không có quyền chỉnh sửa hồ sơ của người dùng khác.",
+    )
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     data = update_personal_profile(
         db=db,
         user_id=user_id,
         profile_data=profile_data,
-        accessor_id=user_id,
+        accessor_id=current_user.user_id,
         ip_address=ip_address,
         user_agent=user_agent,
     )
@@ -79,8 +83,15 @@ def submit_license_endpoint(
     request: Request,
     user_id: int,
     license_data: DriverLicenseSubmitSchema,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    ensure_owner_or_roles(
+        current_user=current_user,
+        owner_user_id=user_id,
+        allowed_role_ids={RoleID.ADMIN},
+        detail="Bạn không có quyền nộp hồ sơ giấy phép lái xe cho người dùng khác.",
+    )
     lic = submit_driver_license(db, user_id=user_id, license_data=license_data)
     data = {
         "drivers_license_id": lic.drivers_license_id,
@@ -196,8 +207,16 @@ def calculate_order_pricing_endpoint(
 def create_order_endpoint(
     request: Request,
     order_data: OrderCreateSchema,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if order_data.renter_id is None:
+        order_data.renter_id = current_user.user_id
+    elif order_data.renter_id != current_user.user_id and not is_operator(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền tạo đơn thuê cho người dùng khác.",
+        )
     order = create_rental_order(db=db, order_data=order_data)
     return create_response(request, status.HTTP_201_CREATED, "Tạo đơn đặt xe thành công", _serialize_order(order))
 
@@ -206,7 +225,22 @@ def create_order_endpoint(
 def get_order_endpoint(
     request: Request,
     order_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     order = get_order_by_id(db=db, order_id=order_id)
+    store_owner_id = (
+        order.vehicle.store.owner_id
+        if getattr(order, "vehicle", None) and getattr(order.vehicle, "store", None)
+        else None
+    )
+    if (
+        order.renter_id != current_user.user_id
+        and store_owner_id != current_user.user_id
+        and not is_operator(current_user)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem thông tin đơn thuê này.",
+        )
     return create_response(request, status.HTTP_200_OK, "Lấy chi tiết đơn thuê thành công", _serialize_order(order))

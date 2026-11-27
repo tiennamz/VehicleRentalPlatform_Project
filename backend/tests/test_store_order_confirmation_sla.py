@@ -164,9 +164,17 @@ def test_api_store_orders_confirm_reject_and_operator_escalation():
     app.dependency_overrides[get_db] = override_get_db
     try:
         client = TestClient(app)
+        from app.core.security import create_access_token
+
+        owner_headers = {
+            "Authorization": f"Bearer {create_access_token({'sub': 'owner_a@vrp.vn', 'email': 'owner_a@vrp.vn', 'user_id': 10, 'role_id': [4]})}"
+        }
+        op_headers = {
+            "Authorization": f"Bearer {create_access_token({'sub': 'owner_a@vrp.vn', 'email': 'owner_a@vrp.vn', 'user_id': 10, 'role_id': [3]})}"
+        }
 
         # 1. GET /stores/orders auto-escalates overdue orders
-        res_list = client.get("/stores/orders", params={"store_id": 100})
+        res_list = client.get("/stores/orders", params={"store_id": 100}, headers=owner_headers)
         assert res_list.status_code == 200
         rows = {item["order_id"]: item for item in res_list.json()["data"]}
         assert rows[order_overdue.order_id]["order_status"] == STATUS_ESCALATED_OPERATOR
@@ -175,7 +183,7 @@ def test_api_store_orders_confirm_reject_and_operator_escalation():
         # 2. Confirm within 15 min
         res_confirm = client.post(
             f"/stores/orders/{order_confirm.order_id}/confirm",
-            headers={"X-User-Id": "10"},
+            headers=owner_headers,
         )
         assert res_confirm.status_code == 200
         assert res_confirm.json()["data"]["order_status"] == STATUS_CONFIRMED
@@ -183,7 +191,7 @@ def test_api_store_orders_confirm_reject_and_operator_escalation():
         # 3. Reject without reason -> 422
         res_bad_reject = client.post(
             f"/stores/orders/{order_reject.order_id}/reject",
-            headers={"X-User-Id": "10"},
+            headers=owner_headers,
             json={"rejection_reason": "  "},
         )
         assert res_bad_reject.status_code == 422
@@ -191,7 +199,7 @@ def test_api_store_orders_confirm_reject_and_operator_escalation():
         # 4. Reject with valid reason -> 200
         res_reject = client.post(
             f"/stores/orders/{order_reject.order_id}/reject",
-            headers={"X-User-Id": "10"},
+            headers=owner_headers,
             json={"rejection_reason": "Trùng lịch thuê trực tiếp tại cửa hàng"},
         )
         assert res_reject.status_code == 200
@@ -201,13 +209,13 @@ def test_api_store_orders_confirm_reject_and_operator_escalation():
         # 5. Late reject on already-escalated order -> 409
         res_late = client.post(
             f"/stores/orders/{order_overdue.order_id}/reject",
-            headers={"X-User-Id": "10"},
+            headers=owner_headers,
             json={"rejection_reason": "Quá hạn nhưng vẫn bấm từ chối"},
         )
         assert res_late.status_code == 409
 
         # 6. Operator endpoint returns escalated orders
-        res_op = client.get("/operator/orders/escalated")
+        res_op = client.get("/operator/orders/escalated", headers=op_headers)
         assert res_op.status_code == 200
         op_ids = [item["order_id"] for item in res_op.json()["data"]]
         assert order_overdue.order_id in op_ids

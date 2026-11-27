@@ -108,14 +108,14 @@
   </aside>
   <main class="store-main">
     <div class="page-head">
-      <h1>Doanh thu · Tháng 11/2026</h1>
-      <p>Thống kê doanh thu, hoa hồng 12%, đối soát tuần.</p>
+      <h1>Doanh thu &amp; Đối soát tuần (BR-09)</h1>
+      <p>Hoa hồng nền tảng <strong>12% chỉ tính trên tiền thuê xe</strong>, không tính trên phí giao nhận và không tính trên đơn hủy.</p>
     </div>
     <div class="stats-grid" style="margin-bottom:24px">
-      <div class="stat-card"><strong>45,8tr</strong><span>Doanh thu tháng</span></div>
-      <div class="stat-card"><strong>38,2tr</strong><span>Tháng trước</span></div>
-      <div class="stat-card"><strong>+19%</strong><span>Tăng trưởng</span></div>
-      <div class="stat-card"><strong>5,5tr</strong><span>Hoa hồng nền tảng</span></div>
+      <div class="stat-card"><strong id="revTotalRental">44,0tr</strong><span>Tổng tiền thuê (tính HH)</span></div>
+      <div class="stat-card"><strong id="revTotalDelivery">1,8tr</strong><span>Phí giao nhận (0% HH)</span></div>
+      <div class="stat-card"><strong id="revCommission12">5,28tr</strong><span>Hoa hồng 12% (BR-09)</span></div>
+      <div class="stat-card"><strong id="revNetPayout">40,52tr</strong><span>Thực nhận cửa hàng</span></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px" class="rev-grid">
       <div class="card">
@@ -128,12 +128,17 @@
         <div style="display:flex;justify-content:space-between;padding:10px 0"><span>6. Feliz S + khác</span><strong style="color:var(--primary)">5,8tr</strong></div>
       </div>
       <div class="card">
-        <h3 style="margin-bottom:16px">Đối soát 4 tuần gần nhất</h3>
-        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f4f2"><span>Tuần 44 (28/10–03/11)</span><strong>8,2tr</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f4f2"><span>Tuần 45 (04–10/11)</span><strong>11,5tr</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f4f2"><span>Tuần 46 (11–17/11)</span><strong style="color:var(--primary)">14,1tr</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f4f2"><span>Tuần 47 (đang chạy)</span><strong>12,0tr</strong></div>
-        <p style="margin-top:14px;font-size:13px;color:var(--muted)">Hoa hồng mặc định 12% trên tiền thuê. Tiền cọc hoàn trả không tính hoa hồng.</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <h3 style="margin:0">Đối soát tuần theo BR-09</h3>
+          <button type="button" class="btn btn-primary" id="btnGenerateWeeklyRec" style="padding:7px 12px;font-size:12.5px">Chốt đối soát tuần</button>
+        </div>
+        <div id="weeklyReconciliationList">
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f4f2"><span>Tuần 44 (28/10–03/11)</span><strong>8,2tr</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f4f2"><span>Tuần 45 (04–10/11)</span><strong>11,5tr</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f4f2"><span>Tuần 46 (11–17/11)</span><strong style="color:var(--primary)">14,1tr</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f4f2"><span>Tuần 47 (đang chạy)</span><strong>12,0tr</strong></div>
+        </div>
+        <p style="margin-top:14px;font-size:13px;color:var(--muted)" id="br09RuleCaption">BR-09: Hoa hồng 12% chỉ tính trên tiền thuê xe, KHÔNG tính trên phí giao nhận. Cửa hàng nhận 88% tiền thuê + 100% phí giao nhận.</p>
       </div>
     </div>
     <div class="card" style="margin-top:18px"

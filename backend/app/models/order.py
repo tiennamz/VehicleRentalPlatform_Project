@@ -30,6 +30,8 @@ class Order(Base):
     cancel_reason = Column(Text, nullable=True)
     refund_rate = Column(Numeric(5, 2), default=0)
     refund_amount = Column(Numeric(12, 2), default=0)
+    commission_rate = Column(Numeric(5, 2), default=12)
+    commission_amount = Column(Numeric(12, 2), default=0)
 
     renter = relationship("User", back_populates="rented_orders", foreign_keys=[renter_id])
     vehicle = relationship("Vehicle", back_populates="orders")

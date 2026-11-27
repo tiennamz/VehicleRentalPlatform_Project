@@ -166,11 +166,16 @@ def test_api_cancel_preview_cancel_and_customer_order_history():
     app.dependency_overrides[get_db] = override_get_db
     try:
         client = TestClient(app)
+        from app.core.security import create_access_token
+
+        renter_headers = {
+            "Authorization": f"Bearer {create_access_token({'sub': 'a@vrp.vn', 'email': 'a@vrp.vn', 'user_id': 20, 'role_id': [2]})}"
+        }
 
         # 1. Xem trước hoàn cọc BR-04 (trước 30h -> 100%)
         res_preview = client.get(
             f"/orders/{order_active.order_id}/cancel-preview",
-            headers={"X-User-Id": "20"},
+            headers=renter_headers,
         )
         assert res_preview.status_code == 200
         preview_data = res_preview.json()["data"]
@@ -178,7 +183,7 @@ def test_api_cancel_preview_cancel_and_customer_order_history():
         assert preview_data["refund_amount"] == 300000.0
 
         # 2. Danh sách đơn hiện tại (scope=active) chỉ gồm order_active
-        res_active = client.get("/orders/my", params={"scope": "active"}, headers={"X-User-Id": "20"})
+        res_active = client.get("/orders/my", params={"scope": "active"}, headers=renter_headers)
         assert res_active.status_code == 200
         active_ids = [o["order_id"] for o in res_active.json()["data"]["orders"]]
         assert active_ids == [order_active.order_id]
@@ -186,7 +191,7 @@ def test_api_cancel_preview_cancel_and_customer_order_history():
         # 3. Hủy đơn order_active -> hoàn 100% cọc (300.000đ)
         res_cancel = client.post(
             f"/orders/{order_active.order_id}/cancel",
-            headers={"X-User-Id": "20"},
+            headers=renter_headers,
             json={"cancel_reason": "Thay đổi kế hoạch du lịch"},
         )
         assert res_cancel.status_code == 200
@@ -196,7 +201,7 @@ def test_api_cancel_preview_cancel_and_customer_order_history():
         assert cancel_data["refund_amount"] == 300000.0
 
         # 4. Lịch sử đơn (scope=history) gồm cả order_active (đã hủy) và order_history (hoàn thành), có timeline sự kiện
-        res_hist = client.get("/orders/my", params={"scope": "history"}, headers={"X-User-Id": "20"})
+        res_hist = client.get("/orders/my", params={"scope": "history"}, headers=renter_headers)
         assert res_hist.status_code == 200
         hist_payload = res_hist.json()["data"]
         hist_ids = {o["order_id"] for o in hist_payload["orders"]}

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
+from app.models.user import User
 from app.schemas.delivery_schemas import (
     DeliveryConfigSchema,
     DeliveryFeeCalculateRequestSchema,
@@ -12,6 +13,7 @@ from app.services.delivery_services import (
     calculate_and_validate_delivery_fee,
 )
 from app.utils.response import create_response
+from dependencies.middleware import check_admin
 
 router = APIRouter(tags=["Delivery Configuration & Fee Calculation"])
 
@@ -36,6 +38,7 @@ def get_delivery_config_endpoint(
 def update_delivery_config_endpoint(
     request: Request,
     config_data: DeliveryConfigSchema,
+    current_user: User = Depends(check_admin),
     db: Session = Depends(get_db),
 ):
     cfg = update_delivery_config(db, config_data)

@@ -11,7 +11,7 @@ from app.models.vehicle import Vehicle
 from app.models.order import Order
 
 from app.database.database import get_db
-from dependencies.middleware import get_current_user
+from dependencies.middleware import get_current_user, check_admin as require_admin
 from app.models.user import User
 from app.schemas.store import StoreResponse, PublicStoreResponse
 from app.services.store import ( register_store, get_my_store, get_pending_stores, approve_store, reject_store, get_public_stores)
@@ -178,18 +178,15 @@ def get_my_store_api(current_user: User = Depends(get_current_user),db: Session 
     return get_my_store(db=db,owner_id=current_user.user_id)
 
 @router.get("/pending",response_model=list[StoreResponse])
-def get_pending_stores_api(current_user: User = Depends(get_current_user),db: Session = Depends(get_db)):
-    check_admin(current_user)
+def get_pending_stores_api(current_user: User = Depends(require_admin),db: Session = Depends(get_db)):
     return get_pending_stores(db=db)
 
 @router.patch("/{store_id}/approve",response_model=StoreResponse)
-def approve_store_api(store_id: int,current_user: User = Depends(get_current_user),db: Session = Depends(get_db)):
-    check_admin(current_user)
+def approve_store_api(store_id: int,current_user: User = Depends(require_admin),db: Session = Depends(get_db)):
     return approve_store(db=db,store_id=store_id)
 
 @router.patch("/{store_id}/reject",response_model=StoreResponse)
-def reject_store_api(store_id: int,current_user: User = Depends(get_current_user),db: Session = Depends(get_db)):
-    check_admin(current_user)
+def reject_store_api(store_id: int,current_user: User = Depends(require_admin),db: Session = Depends(get_db)):
     return reject_store(db=db,store_id=store_id)
 
 @router.get("/public",response_model=list[PublicStoreResponse])
