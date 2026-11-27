@@ -382,6 +382,12 @@ window.showToast = function (msg) {
     const ctrl = area.__vrpState;
     if (!ctrl || !ctrl.ready) return;
 
+    if (ctrl.area.dataset.vrpLoading === "1") {
+      clearHost(ctrl);
+      setTargetVisible(ctrl, true);
+      return;
+    }
+
     if (ctrl.area.dataset.empty === "none") {
       clearHost(ctrl);
       setTargetVisible(ctrl, true);
@@ -793,8 +799,6 @@ window.showToast = function (msg) {
       }
       if (opt) pickupHour.value = opt.value;
     }
-  } else if (pickupDate) {
-    pickupDate.value = today;
   }
 
   if (returnDate && /^\d{4}-\d{2}-\d{2}/.test(giveBack)) {
@@ -808,8 +812,6 @@ window.showToast = function (msg) {
       }
       if (optR) returnHour.value = optR.value;
     }
-  } else if (returnDate) {
-    returnDate.value = tomorrow;
   }
 
   function currentDate() { return (pickupDate && pickupDate.value) || today; }
@@ -968,7 +970,7 @@ window.showToast = function (msg) {
   function checkedValues(name) {
     return Array.from(panel.querySelectorAll('input[name="' + name + '"]:checked')).map(function (input) {
       return input.value;
-    });
+    }).filter(Boolean);
   }
 
   function getSelectedFilters() {
@@ -1123,28 +1125,35 @@ window.showToast = function (msg) {
 
   let activeRequestId = 0;
   async function applyFiltersAndSort() {
-    if (!api || apiMode === false) {
-      applyLocalFiltersAndSort();
+    if (!api) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:42px 16px;color:#64748b;font-size:14px;">Không thể kết nối API tìm xe.</div>';
+      updateResultCount(0);
       return;
     }
 
     const requestId = ++activeRequestId;
+    const area = grid.closest("[data-data-area]");
+    if (area) area.dataset.vrpLoading = "1";
+    if (window.VRPDataState && area) window.VRPDataState.refresh(area);
+    if (api.showLoadingPopup) api.showLoadingPopup("Đang tải danh sách xe...");
+
     try {
-      const items = await api.fetchVehicles(getSelectedFilters(), 2200);
+      const items = await api.fetchVehicles(getSelectedFilters(), 15000);
       if (requestId !== activeRequestId) return;
 
-      if (apiMode === null && items.length === 0) {
-        apiMode = false;
-        applyLocalFiltersAndSort();
-        return;
-      }
-
+      if (area) delete area.dataset.vrpLoading;
       apiMode = true;
       renderApiCards(items);
     } catch (err) {
       if (requestId !== activeRequestId) return;
-      if (apiMode === null) apiMode = false;
-      applyLocalFiltersAndSort();
+      if (area) delete area.dataset.vrpLoading;
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:42px 16px;color:#e11d48;font-size:14px;">Không thể tải danh sách xe từ cơ sở dữ liệu. Vui lòng thử lại sau.</div>';
+      if (window.VRPDataState && area) window.VRPDataState.refresh(area);
+      updateResultCount(0);
+    } finally {
+      if (requestId === activeRequestId && api.hideLoadingPopup) {
+        api.hideLoadingPopup();
+      }
     }
   }
 
@@ -1221,14 +1230,21 @@ window.showToast = function (msg) {
     resetBtn.addEventListener("click", function () {
       panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
       panel.querySelectorAll('input[type="radio"]').forEach(function (r) { r.checked = r.value === ""; });
+      if (pickupDateEl) pickupDateEl.value = "";
+      if (returnDateEl) returnDateEl.value = "";
       if (sortSelect) sortSelect.value = "default";
       applyFiltersAndSort();
     });
   }
 
   hydrateFiltersFromUrl();
-  applyLocalFiltersAndSort();
-  applyFiltersAndSort();
+  if (api) {
+    grid.innerHTML = "";
+    if (resultsCountEl) resultsCountEl.textContent = "Đang tải xe...";
+    applyFiltersAndSort();
+  } else {
+    applyLocalFiltersAndSort();
+  }
 })();
 
 

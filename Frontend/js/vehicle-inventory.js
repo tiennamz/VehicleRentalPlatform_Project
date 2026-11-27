@@ -595,6 +595,12 @@ window.showToast = function (msg) {
     const ctrl = area.__vrpState;
     if (!ctrl || !ctrl.ready) return;
 
+    if (ctrl.area.dataset.vrpLoading === "1") {
+      clearHost(ctrl);
+      setTargetVisible(ctrl, true);
+      return;
+    }
+
     if (ctrl.area.dataset.empty === "none") {
       clearHost(ctrl);
       setTargetVisible(ctrl, true);
@@ -793,7 +799,7 @@ window.showToast = function (msg) {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "store-dashboard.html": "index.html",
+        "index.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -828,7 +834,6 @@ window.showToast = function (msg) {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "index.html": "store-dashboard.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "vehicle-inventory.html";
@@ -977,11 +982,21 @@ window.showToast = function (msg) {
 
   function init() {
     var modal = document.getElementById('vehicleEditModal');
-    var cards = document.querySelectorAll('.vehicle-card');
-    if (!modal || !cards.length) return;
-    var list = load();
-    try { if (!localStorage.getItem(KEY)) save(list); } catch (e) {}
-    updateCards(list);
+    if (!modal) return;
+    var grid = document.querySelector('.vehicles-grid');
+    var hasToken = Boolean(getToken());
+    var list = [];
+
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    if (hasToken) {
+      if (grid) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:36px 16px;color:#64748b;font-size:14px;">Đang tải dữ liệu xe từ hệ thống...</div>';
+      }
+      var initHeading = document.querySelector('.page-head h1');
+      if (initHeading) initHeading.textContent = 'Kho xe';
+    } else if (grid) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:36px 16px;color:#64748b;font-size:14px;">Vui lòng đăng nhập tài khoản cửa hàng để xem dữ liệu kho xe.</div>';
+    }
 
     var selected = 0;
     var pendingEditImageFile = null;
@@ -1054,24 +1069,40 @@ window.showToast = function (msg) {
         card.addEventListener('keydown', function (e) {
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(i); }
         });
+        var delBtn = card.querySelector('.btn-delete-card');
+        if (delBtn) {
+          delBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            deleteVehicleAt(i);
+          });
+        }
       });
     }
 
     function renderDynamicGrid(items) {
       var grid = document.querySelector('.vehicles-grid');
       if (!grid) return;
-      grid.innerHTML = items.map(function (v) {
-        var color = v.status === 'Sẵn sàng' ? '#047857' : v.status === 'Đang thuê' ? '#b45309' : '#475569';
-        var imgSrc = v.image || FALLBACK_IMG;
-        return '<div class="vehicle-card">' +
-          '<div class="thumb"><img src="' + imgSrc + '" alt=""></div>' +
-          '<div class="body">' +
-            '<h3>' + v.name + '</h3>' +
-            '<div class="meta">' + v.plate + ' · <span style="color:' + color + ';font-weight:600">' + v.status + '</span></div>' +
-            '<div class="price">' + money(v.price) + ' <small>/ giờ</small></div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
+      grid.hidden = false;
+      grid.style.display = '';
+      if (!items.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 16px;color:#64748b;font-size:14px;">Cửa hàng chưa có xe nào trong kho. Hãy bấm <strong>+ Thêm xe</strong> để thêm xe mới.</div>';
+      } else {
+        grid.innerHTML = items.map(function (v) {
+          var color = v.status === 'Sẵn sàng' ? '#047857' : v.status === 'Đang thuê' ? '#b45309' : '#475569';
+          var imgSrc = v.image || FALLBACK_IMG;
+          return '<div class="vehicle-card">' +
+            '<div class="thumb"><img src="' + imgSrc + '" alt=""></div>' +
+            '<div class="body">' +
+              '<h3>' + v.name + '</h3>' +
+              '<div class="meta">' + v.plate + ' · <span style="color:' + color + ';font-weight:600">' + v.status + '</span></div>' +
+              '<div class="price" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+                '<span>' + money(v.price) + ' <small>/ giờ</small></span>' +
+                '<button type="button" class="btn-delete-card" style="padding:4px 10px;border-radius:6px;border:1px solid #fecaca;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:600;cursor:pointer;">Xóa</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
 
       var heading = document.querySelector('.page-head h1');
       if (heading) heading.textContent = 'Kho xe · ' + items.length + ' xe';
@@ -1083,16 +1114,133 @@ window.showToast = function (msg) {
         statStrong[3].textContent = String(items.filter(function (x) { return x.status === 'Bảo dưỡng'; }).length);
       }
       bindCardHandlers();
+      if (window.VRPDataState) window.VRPDataState.refresh(grid);
+    }
+
+    var deleteModal = document.getElementById('deleteVehicleModal');
+    var deleteMsgEl = document.getElementById('deleteVehicleMessage');
+    var confirmDeleteBtn = document.getElementById('confirmDeleteVehicle');
+    var cancelDeleteBtn = document.getElementById('cancelDeleteVehicle');
+    var closeDeleteBtn = document.getElementById('closeDeleteVehicleModal');
+    var pendingDeleteIndex = -1;
+
+    function closeDeleteModal() {
+      if (!deleteModal) return;
+      deleteModal.classList.remove('is-open');
+      deleteModal.setAttribute('aria-hidden', 'true');
+      pendingDeleteIndex = -1;
+      if (confirmDeleteBtn) {
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.textContent = 'Xác nhận xóa';
+      }
+    }
+
+    function openDeleteConfirm(index) {
+      var current = list[index];
+      if (!current) return;
+      if (!deleteModal) {
+        executeDeleteVehicle(index);
+        return;
+      }
+      pendingDeleteIndex = index;
+      if (deleteMsgEl) {
+        deleteMsgEl.textContent = 'Bạn có chắc muốn xóa xe "' + current.name + '" (' + current.plate + ')? Xe sẽ bị ẩn khỏi kho xe và trang tìm thuê.';
+      }
+      deleteModal.classList.add('is-open');
+      deleteModal.setAttribute('aria-hidden', 'false');
+      if (confirmDeleteBtn) confirmDeleteBtn.focus();
+    }
+
+    async function executeDeleteVehicle(index) {
+      var current = list[index];
+      if (!current) return;
+      if (confirmDeleteBtn) {
+        confirmDeleteBtn.disabled = true;
+        confirmDeleteBtn.textContent = 'Đang xóa...';
+      }
+      if (current.isApi) {
+        var token = getToken();
+        if (!token) {
+          closeDeleteModal();
+          toast('Vui lòng đăng nhập tài khoản cửa hàng để xóa xe!');
+          return;
+        }
+        try {
+          var res = await fetch(API_BASE + '/vehicles/' + current.id, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+          });
+          var json = await res.json().catch(function () { return {}; });
+          if (!res.ok) {
+            throw new Error(json.detail || json.error || 'Không thể xóa xe');
+          }
+        } catch (err) {
+          closeDeleteModal();
+          toast(err.message || 'Xóa xe thất bại');
+          return;
+        }
+      }
+      list.splice(index, 1);
+      save(list);
+      renderDynamicGrid(list);
+      closeDeleteModal();
+      if (modal.classList.contains('is-open')) close();
+      toast('Đã xóa xe thành công.');
+    }
+
+    if (closeDeleteBtn) closeDeleteBtn.addEventListener('click', closeDeleteModal);
+    if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+    if (deleteModal) {
+      deleteModal.addEventListener('click', function (e) {
+        if (e.target === deleteModal) closeDeleteModal();
+      });
+    }
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.addEventListener('click', function () {
+        if (pendingDeleteIndex >= 0) executeDeleteVehicle(pendingDeleteIndex);
+      });
+    }
+
+    function deleteVehicleAt(index) {
+      openDeleteConfirm(index);
     }
 
     async function loadVehiclesFromApi() {
       var token = getToken();
       if (!token) return;
+      var grid = document.querySelector('.vehicles-grid');
+      if (grid) {
+        grid.dataset.vrpLoading = '1';
+        if (window.VRPDataState) window.VRPDataState.refresh(grid);
+      }
+      var popup = document.getElementById('vrpInventoryLoadingPopup');
+      if (!popup) {
+        if (!document.getElementById('vrpInvLoadStyle')) {
+          var st = document.createElement('style');
+          st.id = 'vrpInvLoadStyle';
+          st.textContent = '#vrpInventoryLoadingPopup{position:fixed;inset:0;z-index:99995;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,0.38);backdrop-filter:blur(2px)}#vrpInventoryLoadingPopup.is-open{display:flex}#vrpInventoryLoadingPopup .box{background:#fff;border-radius:16px;padding:24px 28px;min-width:240px;text-align:center;box-shadow:0 20px 50px rgba(15,23,42,0.22);display:flex;flex-direction:column;align-items:center;gap:12px}#vrpInventoryLoadingPopup .spin{width:36px;height:36px;border-radius:50%;border:3.5px solid #d1fae5;border-top-color:#079b70;animation:vrpInvSpin 0.8s linear infinite}@keyframes vrpInvSpin{to{transform:rotate(360deg)}}';
+          document.head.appendChild(st);
+        }
+        popup = document.createElement('div');
+        popup.id = 'vrpInventoryLoadingPopup';
+        popup.innerHTML = '<div class="box"><div class="spin"></div><p style="margin:0;font-size:14.5px;font-weight:600;color:#14243a">Đang tải dữ liệu kho xe...</p></div>';
+        document.body.appendChild(popup);
+      }
+      popup.classList.add('is-open');
       try {
         var res = await fetch(API_BASE + '/vehicles/my-store', { headers: getAuthHeaders(), cache: 'no-store' });
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (grid) {
+            delete grid.dataset.vrpLoading;
+            grid.hidden = false;
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:36px 16px;color:#e11d48;font-size:14px;">Không thể tải danh sách xe (HTTP ' + res.status + ').</div>';
+            if (window.VRPDataState) window.VRPDataState.refresh(grid);
+          }
+          return;
+        }
         var rows = await res.json();
         if (Array.isArray(rows)) {
+          if (grid) delete grid.dataset.vrpLoading;
           list = rows.map(function (v) {
             return normalize({
               id: v.vehicle_id,
@@ -1106,7 +1254,17 @@ window.showToast = function (msg) {
           });
           renderDynamicGrid(list);
         }
-      } catch (err) {}
+      } catch (err) {
+        if (grid) {
+          delete grid.dataset.vrpLoading;
+          grid.hidden = false;
+          grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:36px 16px;color:#e11d48;font-size:14px;">Không thể kết nối máy chủ để tải kho xe.</div>';
+          if (window.VRPDataState) window.VRPDataState.refresh(grid);
+        }
+      } finally {
+        if (grid) delete grid.dataset.vrpLoading;
+        popup.classList.remove('is-open');
+      }
     }
 
     window.__vrpReloadInventory = loadVehiclesFromApi;
@@ -1115,6 +1273,12 @@ window.showToast = function (msg) {
 
     document.getElementById('closeVehicleModal').addEventListener('click', close);
     document.getElementById('cancelVehicleEdit').addEventListener('click', close);
+    var deleteVehicleBtn = document.getElementById('deleteVehicleBtn');
+    if (deleteVehicleBtn) {
+      deleteVehicleBtn.addEventListener('click', function () {
+        deleteVehicleAt(selected);
+      });
+    }
     modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 

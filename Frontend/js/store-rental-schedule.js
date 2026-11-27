@@ -929,7 +929,7 @@ window.__vrpGo = function (href) { location.href = href; };
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "store-dashboard.html": "index.html",
+        "index.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -964,7 +964,6 @@ window.__vrpGo = function (href) { location.href = href; };
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "index.html": "store-dashboard.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "store-rental-schedule.html";

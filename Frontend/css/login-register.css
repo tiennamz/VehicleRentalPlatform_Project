@@ -475,3 +475,50 @@ body {
     opacity: 0.65;
     cursor: not-allowed;
 }
+
+.terms-agree {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    margin: 4px 0 14px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #475569;
+    cursor: pointer;
+    text-align: left;
+}
+
+.terms-agree input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
+    margin: 2px 0 0 !important;
+    padding: 0 !important;
+    accent-color: #079b70;
+    cursor: pointer;
+}
+
+.terms-agree a {
+    color: #079b70;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.terms-agree a:hover {
+    color: #0d4a38;
+}
+
+.modal-card--terms {
+    max-width: 780px;
+    padding: 24px 24px 20px;
+}
+
+.terms-iframe {
+    width: 100%;
+    height: 62vh;
+    border: 1px solid #e2ebe6;
+    border-radius: 12px;
+    background: #f8fafc;
+    margin-top: 8px;
+}

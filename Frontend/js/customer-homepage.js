@@ -271,7 +271,9 @@ if (vehicleSection) {
                 </div>
               </article>`;
         }).join("");
+        vehicleGrid.hidden = false;
         emptyMessage.hidden = items.length > 0;
+        if (window.VRPDataState) window.VRPDataState.refresh(vehicleGrid);
     }
 
     function filterLocalVehicles() {
@@ -336,25 +338,29 @@ if (vehicleSection) {
     }
 
     async function filterVehicles() {
-        if (!api || apiMode === false) {
-            filterLocalVehicles();
+        if (!api) {
+            vehicleGrid.innerHTML = "";
+            emptyMessage.textContent = "Không thể kết nối API tìm xe.";
+            emptyMessage.hidden = false;
             return;
         }
         const reqId = ++activeReqId;
+        emptyMessage.hidden = true;
+        if (api.showLoadingPopup) api.showLoadingPopup("Đang tải danh sách xe...");
         try {
-            const items = await api.fetchVehicles(getFilterPayload(), 2200);
+            const items = await api.fetchVehicles(getFilterPayload(), 15000);
             if (reqId !== activeReqId) return;
-            if (apiMode === null && items.length === 0) {
-                apiMode = false;
-                filterLocalVehicles();
-                return;
-            }
             apiMode = true;
             renderApiVehicles(items);
         } catch (err) {
             if (reqId !== activeReqId) return;
-            if (apiMode === null) apiMode = false;
-            filterLocalVehicles();
+            vehicleGrid.innerHTML = "";
+            emptyMessage.textContent = "Không thể tải danh sách xe từ cơ sở dữ liệu.";
+            emptyMessage.hidden = false;
+        } finally {
+            if (reqId === activeReqId && api.hideLoadingPopup) {
+                api.hideLoadingPopup();
+            }
         }
     }
 
@@ -428,8 +434,12 @@ if (vehicleSection) {
     });
     sortSelect.addEventListener("change", sortVehicles);
 
-    filterLocalVehicles();
-    filterVehicles();
+    if (api) {
+        vehicleGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:42px 16px;color:#64748b;font-size:14px;">Đang tải danh sách xe từ hệ thống...</div>';
+        filterVehicles();
+    } else {
+        filterLocalVehicles();
+    }
 }
 
 

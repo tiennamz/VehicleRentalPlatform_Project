@@ -59,10 +59,10 @@
         </div>
 
         <!-- Thông tin tài khoản trong popup (không ghi trạng thái hoạt động) -->
-        <div class="nav-popup-user" id="popupUserProfileBtn" role="button" tabindex="0" title="Tài khoản Vũ Đức">
-            <div class="user-avatar">VU</div>
+        <div class="nav-popup-user" id="popupUserProfileBtn" role="button" tabindex="0" title="Tài khoản">
+            <div class="user-avatar">TK</div>
             <div class="user-info">
-                <span class="popup-name">Vũ Đức</span>
+                <span class="popup-name">Tài khoản</span>
             </div>
         </div>
 
@@ -137,7 +137,7 @@
                     <div class="blank-icon-wrap">
                         <i class="fa-regular fa-user"></i>
                     </div>
-                    <h2>Tài khoản Vũ Đức</h2>
+                    <h2>Tài khoản của tôi</h2>
                     <p>Vui lòng chọn một chức năng trong phần <strong>Tài khoản của tôi</strong> để hiển thị nội dung.
                     </p>
                 </div>
@@ -152,7 +152,7 @@
 
                 <div class="profile-layout">
                     <div class="profile-avatar-box">
-                        <div class="profile-big-avatar" id="profileBigAvatar" onclick="document.getElementById('avatarFileInput').click()" title="Bấm để đổi ảnh đại diện">VU</div>
+                        <div class="profile-big-avatar" id="profileBigAvatar" onclick="document.getElementById('avatarFileInput').click()" title="Bấm để đổi ảnh đại diện">TK</div>
                         <input type="file" id="avatarFileInput" accept="image/*" onchange="handleAvatarChange(event)" hidden>
                         <button type="button" class="btn-change-avatar" id="changeAvatarBtn" onclick="document.getElementById('avatarFileInput').click()">
                             <i class="fa-solid fa-camera"></i> Đổi ảnh
@@ -163,22 +163,22 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="profileNameInput">Họ và tên</label>
-                                <input type="text" id="profileNameInput" value="Vũ Đức" class="form-input" placeholder="Nhập họ và tên" required>
+                                <input type="text" id="profileNameInput" value="" class="form-input" placeholder="Nhập họ và tên" required>
                             </div>
                             <div class="form-group">
                                 <label for="profilePhoneInput">Số điện thoại</label>
-                                <input type="tel" id="profilePhoneInput" value="0987 654 321" class="form-input" placeholder="Nhập số điện thoại" required>
+                                <input type="tel" id="profilePhoneInput" value="" class="form-input" placeholder="Nhập số điện thoại" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="profileEmailInput">Email</label>
-                                <input type="email" id="profileEmailInput" value="vuduc@gmail.com" class="form-input" readonly>
+                                <input type="email" id="profileEmailInput" value="" class="form-input" readonly>
                             </div>
                             <div class="form-group">
                                 <label for="profileDobInput">Ngày sinh</label>
-                                <input type="date" id="profileDobInput" value="1998-08-15" class="form-input" required>
+                                <input type="date" id="profileDobInput" value="" class="form-input" required>
                             </div>
                         </div>
 
@@ -315,86 +315,6 @@
                     data-empty-icon="🧾"
                     data-empty-title="Chưa có đơn thuê nào"
                     data-empty-text="Không có đơn thuê ở trạng thái này. Chọn tab khác để xem các đơn còn lại.">
-
-                    <!-- Đơn 1: Chờ cửa hàng xác nhận -->
-                    <div class="order-card" data-status="pending">
-                        <div class="order-img">
-                            <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=300"
-                                alt="Honda Vision">
-                        </div>
-
-                        <div class="order-info">
-                            <div class="order-badge pending">Chờ cửa hàng xác nhận</div>
-                            <h3 class="order-car-title">HONDA VISION 2024</h3>
-                            <p class="order-meta">Mã đơn: VRP-202611-001</p>
-                            <p class="order-meta">Thời gian: 20/11/2026 - 22/11/2026</p>
-                            <p class="order-meta">Nhận xe: 22/4 Lê Đình Dương, Hải Châu, Đà Nẵng</p>
-
-                            <div class="order-price-row">
-                                <span class="order-total-label">Tổng tiền:</span>
-                                <span class="order-total-price">750.000 đ</span>
-                            </div>
-                            <p class="order-meta">Tiền cọc: 225.000 đ</p>
-                        </div>
-
-                        <div class="order-actions">
-                            <button class="btn-action btn-detail" onclick="showOrderDetail(this)">Xem chi tiết</button>
-                            <button class="btn-action btn-cancel" onclick="showCancelOrder(this)">Hủy đơn</button>
-                        </div>
-                    </div>
-
-                    <!-- Đơn 2: Đang thuê -->
-                    <div class="order-card" data-status="renting">
-                        <div class="order-img">
-                            <img src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=300"
-                                alt="Hyundai SantaFe">
-                        </div>
-
-                        <div class="order-info">
-                            <div class="order-badge active">Đang thuê</div>
-                            <h3 class="order-car-title">HYUNDAI SANTAFE 2024</h3>
-                            <p class="order-meta">Mã đơn: VRP-202611-002</p>
-                            <p class="order-meta">Thời gian: 10/11/2026 - 18/11/2026</p>
-                            <p class="order-meta">Nhận xe: Hải Châu, Đà Nẵng</p>
-
-                            <div class="order-price-row">
-                                <span class="order-total-label">Tổng tiền:</span>
-                                <span class="order-total-price">2.700.000 đ</span>
-                            </div>
-                            <p class="order-meta">Tiền cọc: 810.000 đ</p>
-                        </div>
-
-                        <div class="order-actions">
-                            <button class="btn-action btn-detail" onclick="showOrderDetail(this)">Xem chi tiết</button>
-                        </div>
-                    </div>
-
-                    <!-- Đơn 3: Đã hoàn thành -->
-                    <div class="order-card" data-status="completed">
-                        <div class="order-img">
-                            <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=300"
-                                alt="Xe máy">
-                        </div>
-
-                        <div class="order-info">
-                            <div class="order-badge completed">Đã hoàn thành</div>
-                            <h3 class="order-car-title">HONDA AIR BLADE 2023</h3>
-                            <p class="order-meta">Mã đơn: VRP-202610-003</p>
-                            <p class="order-meta">Thời gian: 01/10/2026 - 03/10/2026</p>
-                            <p class="order-meta">Nhận xe: Mỹ Khê, Đà Nẵng</p>
-
-                            <div class="order-price-row">
-                                <span class="order-total-label">Tổng tiền:</span>
-                                <span class="order-total-price">600.000 đ</span>
-                            </div>
-                            <p class="order-meta">Tiền cọc: 200.000 đ</p>
-                        </div>
-
-                        <div class="order-actions">
-                            <button class="btn-action btn-detail" onclick="showOrderDetail(this)">Xem chi tiết</button>
-                        </div>
-                    </div>
-
                 </div>
             </div>
 
@@ -487,43 +407,6 @@
                     data-empty-icon="⭐"
                     data-empty-title="Chưa có đánh giá nào"
                     data-empty-text="Các đánh giá bạn gửi sau chuyến đi sẽ hiển thị tại đây.">
-                    <div class="review-card">
-                        <div class="review-header">
-                            <div>
-                                <h4 class="review-target">HONDA VISION 2024 - Chủ xe: Hoàng Long</h4>
-                                <div class="review-stars">
-                                    <i class="fa-solid fa-star"></i>
-                                    <i class="fa-solid fa-star"></i>
-                                    <i class="fa-solid fa-star"></i>
-                                    <i class="fa-solid fa-star"></i>
-                                    <i class="fa-solid fa-star"></i>
-                                    <span>5.0</span>
-                                </div>
-                            </div>
-                            <span class="review-date">05/11/2026</span>
-                        </div>
-                        <p class="review-content">Xe mới, chạy êm và rất tiết kiệm xăng. Chủ xe nhiệt tình giao nhận
-                            đúng giờ. Sẽ tiếp tục ủng hộ lần sau!</p>
-                    </div>
-
-                    <div class="review-card">
-                        <div class="review-header">
-                            <div>
-                                <h4 class="review-target">HYUNDAI SANTAFE 2024 - Chủ xe: Đức Mạnh</h4>
-                                <div class="review-stars">
-                                    <i class="fa-solid fa-star"></i>
-                                    <i class="fa-solid fa-star"></i>
-                                    <i class="fa-solid fa-star"></i>
-                                    <i class="fa-solid fa-star"></i>
-                                    <i class="fa-solid fa-star"></i>
-                                    <span>5.0</span>
-                                </div>
-                            </div>
-                            <span class="review-date">03/11/2026</span>
-                        </div>
-                        <p class="review-content">Nội thất sạch sẽ thơm tho, xe đời mới đi rất đầm và êm trên cao tốc.
-                            Bác tài chu đáo, hỗ trợ hành lý nhiệt tình.</p>
-                    </div>
                 </div>
             </div>
         </main>

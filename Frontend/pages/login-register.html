@@ -47,6 +47,11 @@
                     Quên mật khẩu?
                 </div>
 
+                <label class="terms-agree" for="loginTermsCheckbox">
+                    <input type="checkbox" id="loginTermsCheckbox">
+                    <span>Tôi đã đọc và đồng ý với <a href="terms-and-privacy.html" target="_blank" rel="noopener noreferrer" id="openTermsLink">Điều khoản sử dụng &amp; Chính sách bảo vệ dữ liệu cá nhân</a></span>
+                </label>
+
                 <button class="submit" type="submit">
                     Đăng nhập
                 </button>
@@ -169,6 +174,19 @@
         </div>
     </div>
 
+    <!-- TERMS & PRIVACY POPUP MODAL -->
+    <div class="modal-overlay" id="termsModal">
+        <div class="modal-card modal-card--terms">
+            <button type="button" class="modal-close" id="closeTermsModal" aria-label="Đóng">&times;</button>
+            <h2>Điều khoản sử dụng &amp; Chính sách bảo vệ dữ liệu</h2>
+            <iframe class="terms-iframe" id="termsFrame" title="Điều khoản sử dụng" src="about:blank"></iframe>
+            <div class="modal-actions" style="margin-top: 14px;">
+                <button type="button" class="btn-cancel" id="cancelTermsModal">Đóng</button>
+                <button type="button" class="btn-submit" id="acceptTermsBtn">Đồng ý điều khoản</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function switchMode() {
             var auth = document.getElementById("auth");
@@ -182,7 +200,7 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script type="module" src="../js/login-register.js?v=6"></script>
+    <script type="module" src="../js/login-register.js?v=7"></script>
 </body>
 
 </html>

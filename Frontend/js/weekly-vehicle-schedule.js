@@ -698,15 +698,7 @@ window.showToast = function (msg) {
         }
 
         function demoFor(date) {
-            var list = [];
-            var dow = date.getDay();
-            if (dow === 2) {
-                list.push({ dateKey: dateKey(date), start: 9, end: 17, state: "confirmed", id: "RG-2026-00101", note: "Khách đã xác nhận" });
-            }
-            if (dow === 4) {
-                list.push({ dateKey: dateKey(date), start: 18, end: 23, state: "pending", id: "RG-2026-00140", note: "Chờ cửa hàng duyệt" });
-            }
-            return list;
+            return [];
         }
 
         function blocksFor(date) {
@@ -1094,7 +1086,7 @@ window.showToast = function (msg) {
 /* Liên kết giữa các giao diện đã tách */
 (function () {
     var MAP = {
-        "store-dashboard.html": "index.html",
+        "index.html": "index.html",
         "sprint-review-report.html": "sprint-review-report.html",
         "customer-account.html": "customer-account.html",
         "weekly-vehicle-schedule.html": "weekly-vehicle-schedule.html",
@@ -1129,7 +1121,6 @@ window.showToast = function (msg) {
     };
     var ALIAS = {
     "store-homepage.html": "store-homepage.html",
-    "index.html": "store-dashboard.html",
     "how-it-works.html": "how-it-works.html"
 };
     var PAGE = "weekly-vehicle-schedule.html";

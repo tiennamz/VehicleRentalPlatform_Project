@@ -31,7 +31,23 @@ app.add_middleware(
 )
 
 import os
+import threading
 handle_exception(app)
+
+
+def _warm_db_pool():
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        pass
+
+
+@app.on_event("startup")
+def warm_up_database_pool():
+    threading.Thread(target=_warm_db_pool, daemon=True).start()
+
+
 if os.getenv("AUTO_CREATE_TABLES", "false").lower() == "true":
     try:
         Base.metadata.create_all(bind=engine)

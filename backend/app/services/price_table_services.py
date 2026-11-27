@@ -23,7 +23,7 @@ def update_price_service(vehicle_id: int, price: int, db: Session):
 # API tính tổng tiền
 
 def calculate_price_service(num_of_days: int, vehicle_id: int, db: Session):
-    vehicle = db.query(PriceTable).filter(vehicle_id == PriceTable.vehicle_id).first()
+    price_vehicle = db.query(PriceTable).filter(vehicle_id == PriceTable.vehicle_id).first()
     if not price_vehicle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

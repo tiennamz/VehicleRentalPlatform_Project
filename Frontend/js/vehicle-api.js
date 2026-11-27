@@ -81,7 +81,7 @@
     var query = buildVehiclesQuery(filters);
     var url = API_BASE + "/vehicles" + (query ? "?" + query : "");
     var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-    var timer = controller ? setTimeout(function () { controller.abort(); }, timeoutMs || 2200) : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, timeoutMs || 15000) : null;
 
     try {
       var res = await fetch(url, {
@@ -250,6 +250,46 @@
     document.body.appendChild(backdrop);
   }
 
+  function ensureLoadingPopup() {
+    var existing = document.getElementById("vrpLoadingPopup");
+    if (existing) return existing;
+    if (!document.getElementById("vrpLoadingPopupStyle")) {
+      var st = document.createElement("style");
+      st.id = "vrpLoadingPopupStyle";
+      st.textContent =
+        "#vrpLoadingPopup{position:fixed;inset:0;z-index:99995;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,0.38);backdrop-filter:blur(2px);padding:16px}" +
+        "#vrpLoadingPopup.is-open{display:flex}" +
+        "#vrpLoadingPopup .vrp-load-box{background:#fff;border-radius:16px;padding:24px 28px;min-width:250px;max-width:90vw;text-align:center;box-shadow:0 20px 50px rgba(15,23,42,0.22);display:flex;flex-direction:column;align-items:center;gap:12px}" +
+        "#vrpLoadingPopup .vrp-load-spin{width:38px;height:38px;border-radius:50%;border:3.5px solid #d1fae5;border-top-color:#079b70;animation:vrpLoadSpin 0.8s linear infinite}" +
+        "#vrpLoadingPopup .vrp-load-text{margin:0;font-size:14.5px;font-weight:600;color:#14243a}" +
+        "@keyframes vrpLoadSpin{to{transform:rotate(360deg)}}";
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var wrap = document.createElement("div");
+    wrap.id = "vrpLoadingPopup";
+    wrap.setAttribute("role", "status");
+    wrap.setAttribute("aria-live", "polite");
+    wrap.innerHTML =
+      '<div class="vrp-load-box">' +
+        '<div class="vrp-load-spin" aria-hidden="true"></div>' +
+        '<p class="vrp-load-text">Đang tải dữ liệu xe...</p>' +
+      "</div>";
+    (document.body || document.documentElement).appendChild(wrap);
+    return wrap;
+  }
+
+  function showLoadingPopup(message) {
+    var el = ensureLoadingPopup();
+    var txt = el.querySelector(".vrp-load-text");
+    if (txt) txt.textContent = message || "Đang tải dữ liệu xe...";
+    el.classList.add("is-open");
+  }
+
+  function hideLoadingPopup() {
+    var el = document.getElementById("vrpLoadingPopup");
+    if (el) el.classList.remove("is-open");
+  }
+
   window.VRPVehicleAPI = {
     API_BASE: API_BASE,
     DEFAULT_COORDS: DEFAULT_COORDS,
@@ -261,6 +301,8 @@
     fetchVehicles: fetchVehicles,
     normalizeVehicleForStorage: normalizeVehicleForStorage,
     saveSelectedVehicle: saveSelectedVehicle,
-    openVehicleModal: openVehicleModal
+    openVehicleModal: openVehicleModal,
+    showLoadingPopup: showLoadingPopup,
+    hideLoadingPopup: hideLoadingPopup
   };
 })();

@@ -221,7 +221,15 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     const email_login = document.getElementById("email_login").value.trim();
     const password_login = document.getElementById("password_login").value.trim();
     const login_message = document.getElementById("loginMessage");
+    const termsCheckbox = document.getElementById("loginTermsCheckbox");
     login_message.textContent = "";
+
+    if (termsCheckbox && !termsCheckbox.checked) {
+        login_message.textContent = "Vui lòng tích đồng ý với Điều khoản sử dụng trước khi đăng nhập!";
+        login_message.style.color = "#e11d48";
+        termsCheckbox.focus();
+        return;
+    }
 
     const originalBtnText = submitBtn.textContent;
     submitBtn.disabled = true;
@@ -287,7 +295,13 @@ document.getElementById("loginForm").addEventListener("submit", async function (
             localStorage.setItem("vrp_user_email", payload.email || email_login);
         } catch (err) {}
 
-        window.location.href = targetPage;
+        // Xóa sạch dữ liệu vừa nhập trên form đăng nhập để tránh bị truy vết qua Back/bfcache
+        this.reset();
+        document.getElementById("email_login").value = "";
+        document.getElementById("password_login").value = "";
+        if (termsCheckbox) termsCheckbox.checked = false;
+
+        window.location.replace(targetPage);
     } catch (error) {
         login_message.style.color = 'red';
         if (error.code?.startsWith("auth/")) {
@@ -364,6 +378,16 @@ document.getElementById("registerForm").addEventListener("submit", async functio
         // 3. Đăng xuất phiên tạm của Firebase (chạy nền, không đợi làm chậm UI)
         signOut(auth).catch(() => { });
 
+        // Xóa sạch dữ liệu vừa nhập trên form đăng ký ngay khi thành công
+        this.reset();
+        inputs.forEach((input) => {
+            if (input.type === "checkbox" || input.type === "radio") {
+                input.checked = false;
+            } else {
+                input.value = "";
+            }
+        });
+
         // 4. Hiển thị thông báo thành công
         Swal.fire({
             title: "Đăng ký thành công!",
@@ -372,9 +396,6 @@ document.getElementById("registerForm").addEventListener("submit", async functio
             confirmButtonText: "Đã hiểu"
         });
 
-        inputs.forEach((input) => {
-            input.value = "";
-        });
         switchMode();
     } catch (error) {
         message.style.color = "#d33";
@@ -391,4 +412,20 @@ document.getElementById("registerForm").addEventListener("submit", async functio
         submitBtn.style.opacity = "1";
         submitBtn.style.cursor = "pointer";
     }
-}); 
+});
+
+// Liên kết Điều khoản sử dụng & Chính sách bảo vệ dữ liệu cá nhân mở sang tab mới qua thẻ <a target="_blank">
+
+// Xóa sạch dữ liệu form khi quay lại trang bằng nút Back / bfcache
+window.addEventListener("pageshow", function () {
+    const lf = document.getElementById("loginForm");
+    const rf = document.getElementById("registerForm");
+    if (lf) lf.reset();
+    if (rf) rf.reset();
+    const el = document.getElementById("email_login");
+    const pw = document.getElementById("password_login");
+    const cb = document.getElementById("loginTermsCheckbox");
+    if (el) el.value = "";
+    if (pw) pw.value = "";
+    if (cb) cb.checked = false;
+});

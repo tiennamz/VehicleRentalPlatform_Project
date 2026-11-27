@@ -1017,9 +1017,19 @@ document.querySelectorAll(".btn-rent-vrp").forEach(function (btn) {
     bindStaticFeaturedCards();
 
     if (featuredGrid && api) {
-      api.fetchVehicles({ sort: "rating-desc" }, 2200).then(function (items) {
-        if (!items || !items.length) return;
-        var topItems = items.slice(0, 6);
+      var areaInit = featuredGrid.closest("[data-data-area]");
+      if (areaInit) areaInit.dataset.vrpLoading = "1";
+      featuredGrid.innerHTML = "";
+      if (api.showLoadingPopup) api.showLoadingPopup("Đang tải danh sách xe...");
+      api.fetchVehicles({ sort: "rating-desc" }, 15000).then(function (items) {
+        if (areaInit) delete areaInit.dataset.vrpLoading;
+        if (api.hideLoadingPopup) api.hideLoadingPopup();
+        if (!items || !items.length) {
+          featuredGrid.innerHTML = "";
+          if (window.VRPDataState && areaInit) window.VRPDataState.refresh(areaInit);
+          return;
+        }
+        var topItems = items;
         var map = Object.create(null);
         featuredGrid.innerHTML = topItems.map(function (v) {
           map[String(v.vehicle_id)] = v;
@@ -1072,7 +1082,9 @@ document.querySelectorAll(".btn-rent-vrp").forEach(function (btn) {
         var area = featuredGrid.closest("[data-data-area]");
         if (window.VRPDataState && area) window.VRPDataState.refresh(area);
       }).catch(function () {
-        /* Giữ nguyên thẻ tĩnh mặc định khi backend chưa chạy */
+        if (areaInit) delete areaInit.dataset.vrpLoading;
+        if (api.hideLoadingPopup) api.hideLoadingPopup();
+        featuredGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:36px 16px;color:#64748b;font-size:14px;">Không thể tải danh sách xe từ hệ thống.</div>';
       });
     }
   }

@@ -125,59 +125,7 @@
   var STORAGE_KEY = "vrp_favorites";
   var DEFAULT_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120";
 
-  var SEED = [
-    {
-      id: 1,
-      category: "xe-may",
-      name: "HONDA VISION 2024",
-      transmission: "Xe tay ga",
-      seats: "2 chỗ",
-      fuel: "Xăng",
-      rating: 5.0,
-      trips: 1,
-      location: "Hải Châu, Đà Nẵng",
-      price: "20K",
-      period: "/giờ",
-      owner: "Hoàng Long",
-      ownerAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120",
-      image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=600",
-      tags: ["Miễn thế chấp"]
-    },
-    {
-      id: 2,
-      category: "xe-may",
-      name: "YAMAHA JANUS 2023",
-      transmission: "Xe tay ga",
-      seats: "2 chỗ",
-      fuel: "Xăng",
-      rating: 4.9,
-      trips: 12,
-      location: "Mỹ Khê, Đà Nẵng",
-      price: "20K",
-      period: "/giờ",
-      owner: "Minh Thư",
-      ownerAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120",
-      image: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=600",
-      tags: ["Miễn thế chấp", "Giao xe tận nơi"]
-    },
-    {
-      id: 3,
-      category: "o-to",
-      name: "HYUNDAI SANTAFE 2024",
-      transmission: "Số tự động",
-      seats: "7 chỗ",
-      fuel: "Dầu",
-      rating: 5.0,
-      trips: 40,
-      location: "Hải Châu, Đà Nẵng",
-      price: "150K",
-      period: "/giờ",
-      owner: "Đức Mạnh",
-      ownerAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=120",
-      image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600",
-      tags: ["Có tài xế chuyên nghiệp"]
-    }
-  ];
+  var SEED = [];
 
   function clone(list) {
     return JSON.parse(JSON.stringify(list));

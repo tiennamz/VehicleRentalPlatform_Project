@@ -45,8 +45,24 @@
   }
 
   function clearCookie(name) {
-    document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; Max-Age=0; path=/; SameSite=Lax";
-    document.cookie = name + "=; Max-Age=0; path=/";
+    var paths = ["/", "/pages", "/pages/", "/Frontend/pages", "/Frontend/pages/"];
+    var dirPath = (window.location.pathname || "/").replace(/\/[^/]*$/, "") || "/";
+    if (paths.indexOf(dirPath) === -1) paths.push(dirPath);
+    paths.forEach(function (p) {
+      document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; Max-Age=0; path=" + p + "; SameSite=Lax";
+      document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; Max-Age=0; path=" + p;
+    });
+    document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; Max-Age=0";
+  }
+
+  function clearAllCookies() {
+    var raw = document.cookie || "";
+    if (!raw) return;
+    raw.split(";").forEach(function (pair) {
+      var eqIdx = pair.indexOf("=");
+      var name = (eqIdx !== -1 ? pair.slice(0, eqIdx) : pair).trim();
+      if (name) clearCookie(name);
+    });
   }
 
   function parseJwt(token) {
@@ -104,12 +120,14 @@
   }
 
   function clearAuthState() {
+    clearAllCookies();
     clearCookie("access_token");
     clearCookie("vrp_logged_in");
     clearCookie("vrp_role");
     clearCookie("vrp_user_name");
     clearCookie("vrp_user_email");
     try {
+      localStorage.removeItem("access_token");
       localStorage.removeItem("vrp_logged_in");
       localStorage.removeItem("vrp_role");
       localStorage.removeItem("vrp_user_name");
@@ -120,7 +138,7 @@
 
   function logout() {
     clearAuthState();
-    window.location.href = "login-register.html";
+    window.location.replace("login-register.html");
   }
 
   var token = getCookie("access_token");
@@ -347,6 +365,19 @@
     syncDom();
   }
   window.addEventListener("load", syncDom);
+  window.addEventListener("pageshow", function (event) {
+    var currentToken = getCookie("access_token");
+    var currentPayload = currentToken ? parseJwt(currentToken) : null;
+    var stillValid = Boolean(currentPayload && (!currentPayload.exp || currentPayload.exp * 1000 > Date.now()));
+    if (!stillValid) {
+      clearAuthState();
+      if (STORE_PAGES.indexOf(currentPath) !== -1 || AUTH_REQUIRED_PAGES.indexOf(currentPath) !== -1) {
+        window.location.replace("login-register.html");
+      } else if (event.persisted) {
+        window.location.reload();
+      }
+    }
+  });
 
   window.VRPAuth = {
     isLoggedIn: isTokenValid,

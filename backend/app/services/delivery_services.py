@@ -1,11 +1,16 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+import time
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
+from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 from app.models.system_config import SystemConfig
 from app.schemas.delivery_schemas import DeliveryConfigSchema, DeliveryMethodEnum
+
+_DELIVERY_CONFIG_CACHE: Dict[int, tuple[float, Dict[str, Any]]] = {}
+_DELIVERY_CONFIG_TTL_SECONDS = 60.0
 
 DEFAULT_DELIVERY_CONFIG = {
     "allow_store_pickup": ("true", "Cho phép khách nhận xe trực tiếp tại cửa hàng"),
@@ -20,11 +25,44 @@ def get_utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def _cache_key(db: Session) -> Optional[int]:
+    try:
+        bind = db.get_bind() if hasattr(db, "get_bind") else None
+        return id(bind) if bind is not None else None
+    except Exception:
+        return None
+
+
+def invalidate_delivery_config_cache(db: Optional[Session] = None) -> None:
+    if db is None:
+        _DELIVERY_CONFIG_CACHE.clear()
+        return
+    key = _cache_key(db)
+    if key is not None:
+        _DELIVERY_CONFIG_CACHE.pop(key, None)
+
+
+def _on_system_config_change(mapper, connection, target) -> None:
+    _DELIVERY_CONFIG_CACHE.clear()
+
+
+event.listen(SystemConfig, "after_insert", _on_system_config_change)
+event.listen(SystemConfig, "after_update", _on_system_config_change)
+event.listen(SystemConfig, "after_delete", _on_system_config_change)
+
+
 def get_delivery_config(db: Session) -> Dict[str, Any]:
     """
     Lấy cấu hình giao nhận xe hiện tại từ bảng system_config.
     Nếu chưa có trong DB thì trả về giá trị mặc định chuẩn.
     """
+    ckey = _cache_key(db)
+    now_mono = time.monotonic()
+    if ckey is not None:
+        cached = _DELIVERY_CONFIG_CACHE.get(ckey)
+        if cached and (now_mono - cached[0]) < _DELIVERY_CONFIG_TTL_SECONDS:
+            return dict(cached[1])
+
     keys = list(DEFAULT_DELIVERY_CONFIG.keys())
     rows = db.query(SystemConfig).filter(SystemConfig.config_key.in_(keys)).all()
     raw_map = {r.config_key: r.config_value for r in rows}
@@ -37,13 +75,16 @@ def get_delivery_config(db: Session) -> Dict[str, Any]:
         val = raw_map.get(key, DEFAULT_DELIVERY_CONFIG[key][0])
         return Decimal(str(val).strip()).quantize(Decimal("0.01"))
 
-    return {
+    result = {
         "allow_store_pickup": _get_bool("allow_store_pickup"),
         "allow_home_delivery": _get_bool("allow_home_delivery"),
         "max_delivery_radius_km": _get_decimal("max_delivery_radius_km"),
         "delivery_base_fee": _get_decimal("delivery_base_fee"),
         "delivery_fee_per_km": _get_decimal("delivery_fee_per_km"),
     }
+    if ckey is not None:
+        _DELIVERY_CONFIG_CACHE[ckey] = (now_mono, dict(result))
+    return result
 
 
 def update_delivery_config(db: Session, config_data: DeliveryConfigSchema) -> Dict[str, Any]:
@@ -74,6 +115,7 @@ def update_delivery_config(db: Session, config_data: DeliveryConfigSchema) -> Di
 
     try:
         db.commit()
+        invalidate_delivery_config_cache(db)
         return get_delivery_config(db)
     except Exception as e:
         db.rollback()
