@@ -318,3 +318,23 @@ CREATE TABLE IF NOT EXISTS weekly_reconciliations (
     generated_at DATETIME NULL,
     FOREIGN KEY (store_id) REFERENCES stores(store_id)
 );
+CREATE TABLE receipts (
+    receipt_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    transaction_id BIGINT NOT NULL,
+    receipt_number VARCHAR(50) NOT NULL UNIQUE,
+    amount DECIMAL(12, 2) NOT NULL,
+    payment_method VARCHAR(100) NOT NULL,
+    issued_at DATETIME NOT NULL,
+
+    CONSTRAINT uq_receipts_order_id UNIQUE (order_id),
+    CONSTRAINT uq_receipts_transaction_id UNIQUE (transaction_id),
+
+    CONSTRAINT fk_receipts_order
+        FOREIGN KEY (order_id)
+        REFERENCES orders(order_id),
+
+    CONSTRAINT fk_receipts_transaction
+        FOREIGN KEY (transaction_id)
+        REFERENCES transactions(transaction_id)
+);
