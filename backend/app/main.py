@@ -7,6 +7,7 @@ from app.routers.verification_routers import router as verification_routers
 from app.routers.audit_routers import router as audit_routers
 from app.routers.booking_eligibility_routers import router as booking_eligibility_routers
 from app.routers.delivery_routers import router as delivery_routers
+from app.routers.payment_routers import router as payment_router
 from sqlalchemy.orm import Session
 from app.utils.response import handle_exception, create_response
 from sqlalchemy import text
@@ -130,3 +131,4 @@ app.include_router(store_order_confirmation_routers)
 app.include_router(favorite_vehicle_router)
 app.include_router(system_config_routers)
 app.include_router(city_analytics_routers)
+app.include_router(payment_router)
