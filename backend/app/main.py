@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from app.database.database import Base, engine, get_db
+from app.database.database import Base, engine, get_db, SessionLocal
 from app.routers.auth_routers import router as auth_routers
 from app.routers.user_routers import router as user_routers
 from app.routers.verification_routers import router as verification_routers
@@ -20,6 +20,8 @@ from app.routers.reconciliation_routers import router as reconciliation_routers
 from app.routers.favorite_vehicle_routers import router as favorite_vehicle_router
 from app.routers.system_config_routers import router as system_config_routers
 from app.routers.city_analytics_routers import router as city_analytics_routers
+from app.services.order_expiration_services import auto_cancel_expired_orders
+import time
 
 app = FastAPI(
     title='Vehicle Rental Platfrom',
@@ -46,10 +48,29 @@ def _warm_db_pool():
     except Exception:
         pass
 
+def _auto_cancel_expired_orders():
+    while True:
+        db = SessionLocal()
+        try:
+            cancelled_count = auto_cancel_expired_orders(db)
+            if cancelled_count > 0:
+                print(
+                    f"[ORDER EXPIRATION] Đã tự động hủy "
+                    f"{cancelled_count} đơn quá hạn."
+                )
+        except Exception as e:
+            print(f"[ORDER EXPIRATION] Lỗi: {e}")
+        finally:
+            db.close()
+        time.sleep(30)
 
 @app.on_event("startup")
 def warm_up_database_pool():
     threading.Thread(target=_warm_db_pool, daemon=True).start()
+    threading.Thread(
+        target=_auto_cancel_expired_orders,
+        daemon=True
+    ).start()
 
 
 if os.getenv("AUTO_CREATE_TABLES", "false").lower() == "true":
