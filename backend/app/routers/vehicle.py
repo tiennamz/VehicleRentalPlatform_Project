@@ -222,7 +222,7 @@ def get_my_store_vehicles_api(db: Session = Depends(get_db), current_user: User 
     return get_vehicles(db=db, user_id=current_user.user_id)
 
 
-@router.get("", response_model=list[VehicleResponse])
+@router.get("/owner", response_model=list[VehicleResponse])
 def get_vehicles_api(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return get_vehicles(db=db, user_id=current_user.user_id)
 
