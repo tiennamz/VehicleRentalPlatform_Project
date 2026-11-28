@@ -397,7 +397,7 @@ def create_rental_order(
         )
 
     # 3. Kiểm tra xe và tính tương thích hạng bằng lái
-    vehicle = db.query(Vehicle).filter(Vehicle.vehicle_id == order_data.vehicle_id).first()
+    vehicle = (db.query(Vehicle).filter(Vehicle.vehicle_id == order_data.vehicle_id).with_for_update().first())
     if not vehicle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -424,10 +424,14 @@ def create_rental_order(
         db.query(Order)
         .filter(
             Order.vehicle_id == vehicle.vehicle_id,
-            or_(Order.order_status.is_(None), ~Order.order_status.in_(INACTIVE_ORDER_STATUSES)),
+            or_(
+                Order.order_status.is_(None),
+                ~Order.order_status.in_(INACTIVE_ORDER_STATUSES),
+            ),
             Order.start_time < end_naive,
             Order.end_time > start_naive,
         )
+        .with_for_update()
         .first()
     )
     if conflict_order:
